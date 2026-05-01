@@ -203,19 +203,18 @@ const calcularPrecio = (servicio, adicionales, promociones, fecha, horaInicio) =
 const storage = {
   async get(key, fallback) {
     try {
-      if (typeof window !== 'undefined' && window.storage) {
-        const r = await window.storage.get(key);
-        return r ? JSON.parse(r.value) : fallback;
-      }
-    } catch (e) { /* not found */ }
-    return fallback;
+      const v = localStorage.getItem(key);
+      return v ? JSON.parse(v) : fallback;
+    } catch (e) {
+      return fallback;
+    }
   },
   async set(key, value) {
     try {
-      if (typeof window !== 'undefined' && window.storage) {
-        await window.storage.set(key, JSON.stringify(value));
-      }
-    } catch (e) { console.error('storage err', e); }
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+      console.error('storage error', e);
+    }
   }
 };
 
@@ -3595,3 +3594,5 @@ function TabConfiguracion({ config, setConfig }) {
     </div>
   );
 }
+
+export default App;

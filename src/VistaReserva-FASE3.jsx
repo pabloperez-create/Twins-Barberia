@@ -164,9 +164,11 @@ export function VistaReserva({ supabase, barberiaId }) {
     setError("");
     try {
       const precioTotal = calcularPrecioTotal();
+      const reservaId = `r-${Date.now()}`;
 
-      await supabase.from("reservas").insert({
-        id: `r-${Date.now()}`,
+      // 1. Guardar reserva en Supabase
+      const { error: errorSupabase } = await supabase.from("reservas").insert({
+        id: reservaId,
         barberia_id: barberiaId,
         barbero_id: barberoSeleccionado,
         servicio_id: servicioSeleccionado.id,
@@ -188,6 +190,44 @@ export function VistaReserva({ supabase, barberiaId }) {
         precio_final: precioTotal,
         estado: "confirmada",
       });
+
+      if (errorSupabase) throw errorSupabase;
+
+      // 2. Enviar email de confirmación (solo si el cliente proporcionó email)
+      if (clienteEmail) {
+        try {
+          const barberoData = barberos.find(
+            (b) => b.id === barberoSeleccionado,
+          );
+
+          const emailResponse = await fetch("/api/send-confirmation-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              clienteEmail: clienteEmail,
+              clienteNombre: clienteNombre,
+              barberiaNombre: "TWINS Barbería",
+              barberoNombre: barberoData?.nombre || "el profesional",
+              servicioNombre: servicioSeleccionado.nombre,
+              fecha: fechaSeleccionada,
+              hora: horaSeleccionada,
+              precio: precioTotal,
+              whatsappBarberia: "56967402940",
+              reservaId: reservaId,
+            }),
+          });
+
+          const emailResult = await emailResponse.json();
+
+          if (!emailResponse.ok) {
+            console.error("⚠️ Reserva guardada pero email falló:", emailResult);
+          } else {
+            console.log("✅ Email enviado:", emailResult);
+          }
+        } catch (emailError) {
+          console.error("⚠️ Error enviando email:", emailError);
+        }
+      }
 
       setPaso(6);
     } catch (err) {

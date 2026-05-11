@@ -1,33 +1,7 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
-import {
-  Scissors,
-  Calendar,
-  Clock,
-  User,
-  Plus,
-  Trash2,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  Settings,
-  X,
-  Edit3,
-  DollarSign,
-  Users,
-  Briefcase,
-  BookOpen,
-  ArrowLeft,
-  Bell,
-  Mail,
-  MessageSquare,
-  Send,
-  ExternalLink,
-  BarChart3,
-  TrendingUp,
-  Award,
-  LogOut,
-} from "lucide-react";
+import { Scissors, LogOut, Home } from "lucide-react";
+import { VistaReserva } from "./VistaReserva-FASE3";
 
 // ============== CONFIGURACIÓN SUPABASE ==============
 const SUPABASE_URL = "https://fgtbhkeqzcqpjhziyijt.supabase.co";
@@ -37,7 +11,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ============== COMPONENTE PRINCIPAL ==============
 export default function App() {
-  const [vista, setVista] = useState("login"); // 'login' | 'inicio' | 'cliente' | 'admin'
+  const [vista, setVista] = useState("login"); // 'login' | 'inicio' | 'reserva' | 'admin'
   const [usuario, setUsuario] = useState(null);
   const [barberia, setBarberia] = useState(null);
   const [cargando, setCargando] = useState(false);
@@ -70,7 +44,12 @@ export default function App() {
       localStorage.setItem("rol", usuarios.rol);
 
       setUsuario(usuarios);
-      setVista("admin");
+
+      if (usuarios.rol === "admin" || usuarios.rol === "gerente") {
+        setVista("admin");
+      } else {
+        setVista("inicio");
+      }
     } catch (err) {
       setError("Error en login: " + err.message);
     }
@@ -80,7 +59,6 @@ export default function App() {
   // ============== LOGOUT ==============
   const handleLogout = () => {
     localStorage.removeItem("usuario_id");
-    localStorage.removeItem("barberia_id");
     localStorage.removeItem("rol");
     setUsuario(null);
     setBarberia(null);
@@ -91,19 +69,17 @@ export default function App() {
   useEffect(() => {
     const verificarSesion = async () => {
       const usuarioId = localStorage.getItem("usuario_id");
-      const barberiaId = localStorage.getItem("barberia_id");
 
-      if (usuarioId && barberiaId) {
+      if (usuarioId) {
         try {
-          const { data: usuarios, error: errorUsuarios } = await supabase
+          const { data: usr } = await supabase
             .from("usuarios")
             .select("*")
-            .eq("email", email)
+            .eq("id", usuarioId)
             .single();
 
           if (usr) {
             setUsuario(usr);
-            setBarberia(usr.barberia);
             setVista(
               usr.rol === "admin" || usr.rol === "gerente" ? "admin" : "inicio",
             );
@@ -128,20 +104,24 @@ export default function App() {
     return (
       <VistaInicio
         usuario={usuario}
-        barberia={barberia}
         onLogout={handleLogout}
         onNavigate={(v) => setVista(v)}
+        supabase={supabase}
       />
     );
+  }
+
+  if (vista === "reserva") {
+    return <VistaReserva supabase={supabase} barberiaId="org-twins" />;
   }
 
   if (vista === "admin") {
     return (
       <VistaAdmin
         usuario={usuario}
-        barberia={barberia}
         onLogout={handleLogout}
         onNavigate={(v) => setVista(v)}
+        supabase={supabase}
       />
     );
   }
@@ -152,7 +132,7 @@ export default function App() {
 // ============== VISTA LOGIN ==============
 function VistaLogin({ onLogin, cargando, error }) {
   const [email, setEmail] = useState("alonso@twins.cl");
-  const [password, setPassword] = useState("alonso123");
+  const [password, setPassword] = useState("hash_alonso123");
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -206,9 +186,8 @@ function VistaLogin({ onLogin, cargando, error }) {
         </form>
 
         <div className="mt-6 text-center text-stone-400 text-sm">
-          <p>Prueba con:</p>
-          <p className="mt-2">admin@twins.cl / alonso123</p>
-          <p>o barbero</p>
+          <p>Demo - Admin:</p>
+          <p>alonso@twins.cl / hash_alonso123</p>
         </div>
       </div>
     </div>
@@ -216,89 +195,121 @@ function VistaLogin({ onLogin, cargando, error }) {
 }
 
 // ============== VISTA INICIO (CLIENTE) ==============
-function VistaInicio({ usuario, barberia, onLogout, onNavigate }) {
+function VistaInicio({ usuario, onLogout, onNavigate, supabase }) {
+  const [barberia, setBarberia] = useState(null);
+  const [cargando, setCargando] = useState(true);
+
+  useEffect(() => {
+    cargarBarberia();
+  }, []);
+
+  const cargarBarberia = async () => {
+    try {
+      const { data } = await supabase
+        .from("barberia")
+        .select("*")
+        .eq("id", usuario?.barberia_id)
+        .single();
+
+      setBarberia(data);
+    } catch (err) {
+      console.error("Error cargando barbería:", err);
+    }
+    setCargando(false);
+  };
+
   return (
     <div className="min-h-screen bg-stone-950 text-white p-6">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-12">
         <div>
-          <h1 className="text-3xl font-bold">TWINS</h1>
-          <p className="text-stone-400 text-sm">Hola, {usuario?.nombre}</p>
+          <h1 className="text-4xl font-bold">TWINS</h1>
+          <p className="text-stone-400">Bienvenido</p>
         </div>
         <button
           onClick={onLogout}
           className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded"
         >
-          <LogOut size={18} /> Salir
+          <LogOut size={18} />
+          Salir
         </button>
       </div>
 
       <div className="max-w-2xl mx-auto">
-        <div className="bg-stone-900 p-8 rounded border border-stone-700 text-center">
-          <h2 className="text-2xl mb-4">🎉 ¡Hola {usuario?.nombre}!</h2>
-          <p className="text-stone-300 mb-6">
-            Aquí irá el flujo de reserva de 6 pasos.
-          </p>
-          <button
-            onClick={() => onNavigate("inicio")}
-            className="bg-amber-200 text-stone-950 px-6 py-2 rounded font-bold hover:bg-amber-100"
-          >
-            Reservar Ahora
-          </button>
-        </div>
+        {cargando ? (
+          <p>Cargando...</p>
+        ) : (
+          <>
+            <div className="bg-stone-900 p-8 rounded border border-stone-700 mb-8">
+              <h2 className="text-3xl font-bold mb-2">{barberia?.nombre}</h2>
+              <p className="text-stone-400 mb-6">
+                {barberia?.plan === "profesional" && "Plan Profesional"}
+                {barberia?.plan === "basico" && "Plan Básico"}
+                {barberia?.plan === "empresarial" && "Plan Empresarial"}
+              </p>
+
+              <button
+                onClick={() => onNavigate("reserva")}
+                className="w-full bg-amber-200 text-stone-950 px-6 py-3 rounded font-bold text-lg hover:bg-amber-100 transition"
+              >
+                Reservar Hora Ahora →
+              </button>
+            </div>
+
+            <div className="text-center text-stone-400 text-sm">
+              <p>¿Necesitas ayuda? Contacta con nosotros por WhatsApp</p>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 }
 
 // ============== VISTA ADMIN ==============
-function VistaAdmin({ usuario, barberia, onLogout, onNavigate }) {
+function VistaAdmin({ usuario, onLogout, onNavigate, supabase }) {
   const [tab, setTab] = useState("agenda");
   const [reservas, setReservas] = useState([]);
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
-    const cargarReservas = async () => {
-      try {
-        const barberiaId = localStorage.getItem("barberia_id");
-        const { data, error } = await supabase
-          .from("reservas")
-          .select(
-            "*, barbero:barbero_id(nombre), servicio:servicio_id(nombre, precio)",
-          )
-          .eq("barberia_id", barberiaId)
-          .order("fecha", { ascending: true });
-
-        if (!error) {
-          setReservas(data || []);
-        }
-      } catch (err) {
-        console.error("Error cargando reservas:", err);
-      }
-      setCargando(false);
-    };
-
     cargarReservas();
   }, []);
 
+  const cargarReservas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("reservas")
+        .select(
+          "*, barbero:barbero_id(nombre), servicio:servicio_id(nombre, precio)",
+        )
+        .eq("barberia_id", usuario?.barberia_id)
+        .order("fecha", { ascending: true });
+
+      if (!error) {
+        setReservas(data || []);
+      }
+    } catch (err) {
+      console.error("Error cargando reservas:", err);
+    }
+    setCargando(false);
+  };
+
   return (
     <div className="min-h-screen bg-stone-950 text-white p-6">
-      {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">TWINS Admin</h1>
-          <p className="text-stone-400 text-sm">
-            {usuario?.nombre} • {barberia?.nombre}
-          </p>
+          <p className="text-stone-400 text-sm">{usuario?.nombre}</p>
         </div>
         <button
           onClick={onLogout}
           className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded"
         >
-          <LogOut size={18} /> Salir
+          <LogOut size={18} />
+          Salir
         </button>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-4 mb-8 border-b border-stone-700">
         {["agenda", "estadisticas", "configuracion"].map((t) => (
           <button
@@ -315,7 +326,6 @@ function VistaAdmin({ usuario, barberia, onLogout, onNavigate }) {
         ))}
       </div>
 
-      {/* Contenido */}
       <div className="max-w-6xl">
         {tab === "agenda" && (
           <div>
@@ -324,14 +334,14 @@ function VistaAdmin({ usuario, barberia, onLogout, onNavigate }) {
               <p>Cargando...</p>
             ) : (
               <div className="bg-stone-900 rounded border border-stone-700 p-4">
-                <p className="text-stone-400">
+                <p className="text-stone-400 mb-4">
                   Total de reservas: {reservas.length}
                 </p>
                 {reservas.length === 0 ? (
-                  <p className="text-stone-400 mt-4">No hay reservas aún</p>
+                  <p className="text-stone-400">No hay reservas aún</p>
                 ) : (
-                  <div className="mt-4 space-y-2">
-                    {reservas.slice(0, 5).map((r) => (
+                  <div className="space-y-3">
+                    {reservas.slice(0, 10).map((r) => (
                       <div
                         key={r.id}
                         className="bg-stone-800 p-3 rounded flex justify-between items-center"
@@ -381,11 +391,7 @@ function VistaAdmin({ usuario, barberia, onLogout, onNavigate }) {
           <div>
             <h2 className="text-2xl font-bold mb-4">Configuración</h2>
             <div className="bg-stone-900 p-6 rounded border border-stone-700">
-              <p className="text-stone-400">Barbería: {barberia?.nombre}</p>
-              <p className="text-stone-400 mt-2">Plan: {barberia?.plan}</p>
-              <p className="text-stone-400 mt-2">
-                Barberos permitidos: {barberia?.barberos_permitidos}
-              </p>
+              <p className="text-stone-400 mb-2">Barbería: {usuario?.nombre}</p>
             </div>
           </div>
         )}

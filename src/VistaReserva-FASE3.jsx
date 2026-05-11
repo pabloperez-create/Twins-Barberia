@@ -1,0 +1,520 @@
+import React, { useState, useEffect } from "react";
+import {
+  ChevronRight,
+  ChevronLeft,
+  Check,
+  AlertCircle,
+  User,
+} from "lucide-react";
+
+export function VistaReserva({ supabase, barberiaId }) {
+  const [paso, setPaso] = useState(1);
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState("");
+
+  const [servicioSeleccionado, setServicioSeleccionado] = useState(null);
+  const [adicionalesSeleccionados, setAdicionalesSeleccionados] = useState([]);
+  const [barberoSeleccionado, setBarberoSeleccionado] = useState(null);
+  const [fechaSeleccionada, setFechaSeleccionada] = useState("");
+  const [horaSeleccionada, setHoraSeleccionada] = useState("");
+  const [clienteNombre, setClienteNombre] = useState("");
+  const [clienteTelefono, setClienteTelefono] = useState("");
+  const [clienteEmail, setClienteEmail] = useState("");
+
+  const [servicios, setServicios] = useState([]);
+  const [adicionales, setAdicionales] = useState([]);
+  const [barberos, setBarberos] = useState([]);
+  const [horariosBarbero, setHorariosBarbero] = useState([]);
+
+  useEffect(() => {
+    cargarDatos();
+  }, []);
+
+  const cargarDatos = async () => {
+    try {
+      const { data: srvs } = await supabase
+        .from("servicios_principales")
+        .select("*")
+        .eq("barberia_id", barberiaId);
+
+      const { data: ads } = await supabase
+        .from("servicios_adicionales")
+        .select("*")
+        .eq("barberia_id", barberiaId);
+
+      const { data: brbs } = await supabase
+        .from("barberos")
+        .select("*")
+        .eq("barberia_id", barberiaId);
+
+      console.log("Servicios cargados:", srvs);
+      console.log("Adicionales cargados:", ads);
+      console.log("Barberos cargados:", brbs);
+
+      setServicios(srvs || []);
+      setAdicionales(ads || []);
+      setBarberos(brbs || []);
+    } catch (err) {
+      console.error("Error cargando datos:", err);
+      setError("Error cargando datos");
+    }
+  };
+
+  const cargarHorariosBarbero = async (barberoId, fecha) => {
+    try {
+      const { data: reservasExistentes } = await supabase
+        .from("reservas")
+        .select("hora_inicio, duracion_minutos")
+        .eq("barbero_id", barberoId)
+        .eq("fecha", fecha)
+        .eq("estado", "confirmada");
+
+      const barbero = barberos.find((b) => b.id === barberoId);
+      const horaInicio = new Date(`2000-01-01 ${barbero.horario_inicio}`);
+      const horaFin = new Date(`2000-01-01 ${barbero.horario_fin}`);
+
+      const duracionServicio = servicioSeleccionado?.duracion_minutos || 30;
+      const duracionAdicionales = adicionalesSeleccionados.reduce(
+        (sum, id) =>
+          sum + (adicionales.find((a) => a.id === id)?.duracion_minutos || 0),
+        0,
+      );
+      const duracionTotal = duracionServicio + duracionAdicionales;
+
+      const horariosDisponibles = [];
+      let hora = new Date(horaInicio);
+
+      while (hora.getTime() + duracionTotal * 60000 <= horaFin.getTime()) {
+        const horaStr = hora.toTimeString().slice(0, 5);
+
+        const estaDisponible = !reservasExistentes.some((r) => {
+          const horaRes = new Date(`2000-01-01 ${r.hora_inicio}`);
+          const horaResEnd = new Date(
+            horaRes.getTime() + r.duracion_minutos * 60000,
+          );
+          return (
+            hora < horaResEnd &&
+            new Date(hora.getTime() + duracionTotal * 60000) > horaRes
+          );
+        });
+
+        if (estaDisponible) {
+          horariosDisponibles.push(horaStr);
+        }
+
+        hora.setMinutes(hora.getMinutes() + 15);
+      }
+
+      setHorariosBarbero(horariosDisponibles);
+    } catch (err) {
+      console.error("Error cargando horarios:", err);
+    }
+  };
+
+  const calcularPrecioTotal = () => {
+    let total = servicioSeleccionado?.precio || 0;
+    adicionalesSeleccionados.forEach((id) => {
+      const adicional = adicionales.find((a) => a.id === id);
+      if (adicional) total += adicional.precio;
+    });
+    return total;
+  };
+
+  const irAlSiguiente = () => {
+    if (paso < 6) {
+      if (validarPaso()) {
+        setPaso(paso + 1);
+        setError("");
+      }
+    }
+  };
+
+  const irAlAnterior = () => {
+    if (paso > 1) setPaso(paso - 1);
+  };
+
+  const validarPaso = () => {
+    // Paso 1: Servicio principal (obligatorio)
+    if (paso === 1 && !servicioSeleccionado) {
+      setError("Selecciona un servicio");
+      return false;
+    }
+    // Paso 2: Servicios adicionales (OPCIONAL - sin validación)
+
+    // Paso 3: Barbero (obligatorio)
+    if (paso === 3 && !barberoSeleccionado) {
+      setError("Selecciona un barbero");
+      return false;
+    }
+    // Paso 4: Fecha y hora (obligatorio)
+    if (paso === 4 && (!fechaSeleccionada || !horaSeleccionada)) {
+      setError("Selecciona fecha y hora");
+      return false;
+    }
+    // Paso 5: Datos del cliente (obligatorio nombre y teléfono)
+    if (paso === 5 && (!clienteNombre || !clienteTelefono)) {
+      setError("Completa nombre y teléfono");
+      return false;
+    }
+    return true;
+  };
+
+  const confirmarReserva = async () => {
+    setCargando(true);
+    setError("");
+    try {
+      const precioTotal = calcularPrecioTotal();
+
+      await supabase.from("reservas").insert({
+        id: `r-${Date.now()}`,
+        barberia_id: barberiaId,
+        barbero_id: barberoSeleccionado,
+        servicio_id: servicioSeleccionado.id,
+        adicionales_ids: adicionalesSeleccionados,
+        cliente_nombre: clienteNombre,
+        cliente_telefono: clienteTelefono,
+        cliente_email: clienteEmail || null,
+        fecha: fechaSeleccionada,
+        hora_inicio: horaSeleccionada,
+        duracion_minutos:
+          servicioSeleccionado.duracion_minutos +
+          adicionalesSeleccionados.reduce(
+            (sum, id) =>
+              sum +
+              (adicionales.find((a) => a.id === id)?.duracion_minutos || 0),
+            0,
+          ),
+        precio_original: precioTotal,
+        precio_final: precioTotal,
+        estado: "confirmada",
+      });
+
+      setPaso(6);
+    } catch (err) {
+      setError("Error: " + err.message);
+    }
+    setCargando(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-stone-950 text-white p-6">
+      <div className="max-w-4xl mx-auto mb-8">
+        <h1 className="text-4xl font-bold mb-2">Reservar Hora</h1>
+        <p className="text-stone-400">Paso {paso} de 6</p>
+      </div>
+
+      <div className="max-w-4xl mx-auto mb-8">
+        <div className="flex gap-2">
+          {[1, 2, 3, 4, 5, 6].map((p) => (
+            <div
+              key={p}
+              className={`h-1 flex-1 rounded ${p <= paso ? "bg-amber-200" : "bg-stone-700"}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="max-w-2xl mx-auto">
+        {error && (
+          <div className="bg-red-900 border border-red-700 text-red-200 p-4 rounded mb-6 flex items-start gap-3">
+            <AlertCircle size={20} className="flex-shrink-0 mt-0.5" />
+            <p>{error}</p>
+          </div>
+        )}
+
+        {paso === 1 && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">
+              ¿Qué servicio necesitas?
+            </h2>
+            <div className="grid gap-4">
+              {servicios.map((servicio) => (
+                <button
+                  key={servicio.id}
+                  onClick={() => setServicioSeleccionado(servicio)}
+                  className={`p-6 rounded border-2 text-left transition ${
+                    servicioSeleccionado?.id === servicio.id
+                      ? "border-amber-200 bg-amber-200 bg-opacity-10"
+                      : "border-stone-700 hover:border-stone-600"
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold text-lg">{servicio.nombre}</h3>
+                      <p className="text-stone-400 text-sm mt-1">
+                        {servicio.duracion_minutos} minutos
+                      </p>
+                    </div>
+                    <p className="text-amber-200 font-bold">
+                      ${servicio.precio.toLocaleString()}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {paso === 2 && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">¿Servicios adicionales?</h2>
+            <p className="text-stone-400 mb-6">
+              Selecciona los que desees (opcional)
+            </p>
+            <div className="grid gap-3">
+              {adicionales.map((adicional) => (
+                <button
+                  key={adicional.id}
+                  onClick={() => {
+                    if (adicionalesSeleccionados.includes(adicional.id)) {
+                      setAdicionalesSeleccionados(
+                        adicionalesSeleccionados.filter(
+                          (id) => id !== adicional.id,
+                        ),
+                      );
+                    } else {
+                      setAdicionalesSeleccionados([
+                        ...adicionalesSeleccionados,
+                        adicional.id,
+                      ]);
+                    }
+                  }}
+                  className={`p-4 rounded border-2 text-left transition flex justify-between items-center ${
+                    adicionalesSeleccionados.includes(adicional.id)
+                      ? "border-amber-200 bg-amber-200 bg-opacity-10"
+                      : "border-stone-700 hover:border-stone-600"
+                  }`}
+                >
+                  <div>
+                    <h3 className="font-bold">{adicional.nombre}</h3>
+                    <p className="text-stone-400 text-sm">
+                      {adicional.duracion_minutos} min
+                    </p>
+                  </div>
+                  <p className="text-amber-200">
+                    +${adicional.precio.toLocaleString()}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {paso === 3 && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">
+              ¿Con quién deseas tu corte?
+            </h2>
+            <div className="grid gap-4">
+              {barberos.map((barbero) => (
+                <button
+                  key={barbero.id}
+                  onClick={() => {
+                    setBarberoSeleccionado(barbero.id);
+                    setHoraSeleccionada("");
+                  }}
+                  className={`p-6 rounded border-2 text-left transition ${
+                    barberoSeleccionado === barbero.id
+                      ? "border-amber-200 bg-amber-200 bg-opacity-10"
+                      : "border-stone-700 hover:border-stone-600"
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 bg-stone-800 rounded-full flex items-center justify-center flex-shrink-0">
+                      <User size={32} className="text-amber-200" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg">{barbero.nombre}</h3>
+                      <p className="text-stone-400 text-sm">
+                        {barbero.especialidad || "Barbero"}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {paso === 4 && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">¿Cuándo prefieres?</h2>
+
+            <div className="mb-8">
+              <label className="block text-sm font-semibold mb-3">Fecha</label>
+              <input
+                type="date"
+                value={fechaSeleccionada}
+                onChange={(e) => {
+                  setFechaSeleccionada(e.target.value);
+                  setHoraSeleccionada("");
+                  if (e.target.value && barberoSeleccionado) {
+                    cargarHorariosBarbero(barberoSeleccionado, e.target.value);
+                  }
+                }}
+                min={new Date().toISOString().split("T")[0]}
+                className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-3 text-white"
+              />
+            </div>
+
+            {fechaSeleccionada && (
+              <div>
+                <label className="block text-sm font-semibold mb-3">Hora</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {horariosBarbero.map((hora) => (
+                    <button
+                      key={hora}
+                      onClick={() => setHoraSeleccionada(hora)}
+                      className={`p-3 rounded border-2 transition ${
+                        horaSeleccionada === hora
+                          ? "border-amber-200 bg-amber-200 text-stone-950"
+                          : "border-stone-700 hover:border-stone-600"
+                      }`}
+                    >
+                      {hora}
+                    </button>
+                  ))}
+                </div>
+                {horariosBarbero.length === 0 && (
+                  <p className="text-red-400 text-sm mt-3">
+                    No hay horarios disponibles
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {paso === 5 && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Tus datos</h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold mb-2">
+                  Nombre
+                </label>
+                <input
+                  type="text"
+                  value={clienteNombre}
+                  onChange={(e) => setClienteNombre(e.target.value)}
+                  placeholder="Tu nombre"
+                  className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-3 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-2">
+                  Teléfono
+                </label>
+                <input
+                  type="tel"
+                  value={clienteTelefono}
+                  onChange={(e) => setClienteTelefono(e.target.value)}
+                  placeholder="+56912345678"
+                  className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-3 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-2">
+                  Email (opcional)
+                </label>
+                <input
+                  type="email"
+                  value={clienteEmail}
+                  onChange={(e) => setClienteEmail(e.target.value)}
+                  placeholder="tu@email.com"
+                  className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-3 text-white"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {paso === 6 && (
+          <div>
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Check size={40} className="text-white" />
+              </div>
+              <h2 className="text-3xl font-bold mb-2">¡Reserva Confirmada!</h2>
+            </div>
+
+            <div className="bg-stone-900 p-6 rounded border border-stone-700 space-y-4">
+              <div className="flex justify-between">
+                <span className="text-stone-400">Barbero:</span>
+                <span className="font-semibold">
+                  {barberos.find((b) => b.id === barberoSeleccionado)?.nombre}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-stone-400">Servicio:</span>
+                <span className="font-semibold">
+                  {servicioSeleccionado?.nombre}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-stone-400">Fecha:</span>
+                <span className="font-semibold">{fechaSeleccionada}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-stone-400">Hora:</span>
+                <span className="font-semibold">{horaSeleccionada}</span>
+              </div>
+              <div className="border-t border-stone-700 pt-4 flex justify-between">
+                <span className="font-semibold">Total:</span>
+                <span className="text-amber-200 font-bold text-xl">
+                  ${calcularPrecioTotal().toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {paso !== 6 && (
+          <div className="flex gap-4 mt-8">
+            {paso > 1 && (
+              <button
+                onClick={irAlAnterior}
+                className="flex items-center gap-2 px-6 py-3 bg-stone-800 hover:bg-stone-700 rounded border border-stone-700"
+              >
+                <ChevronLeft size={20} />
+                Anterior
+              </button>
+            )}
+
+            {paso < 5 && (
+              <button
+                onClick={irAlSiguiente}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-amber-200 hover:bg-amber-100 text-stone-950 font-bold rounded"
+              >
+                Siguiente
+                <ChevronRight size={20} />
+              </button>
+            )}
+
+            {paso === 5 && (
+              <button
+                onClick={confirmarReserva}
+                disabled={cargando}
+                className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 font-bold rounded disabled:opacity-50"
+              >
+                {cargando ? "Confirmando..." : "Confirmar"}
+              </button>
+            )}
+          </div>
+        )}
+
+        {paso === 6 && (
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full px-6 py-3 bg-amber-200 hover:bg-amber-100 text-stone-950 font-bold rounded mt-8"
+          >
+            Hacer otra reserva
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}

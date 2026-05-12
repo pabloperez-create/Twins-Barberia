@@ -381,6 +381,27 @@ export function VistaReserva({ supabase, barberiaId }) {
           } else {
             console.log("✅ Email enviado:", emailResult);
           }
+
+          // Si la reserva es para HOY, enviar también recordatorio inmediato
+          const hoy = new Date().toISOString().split("T")[0];
+          if (fechaSeleccionada === hoy) {
+            try {
+              console.log(
+                "🔥 Reserva para HOY detectada, enviando recordatorio inmediato...",
+              );
+              const reminderResponse = await fetch(
+                `/api/send-reminder-emails?single=${reservaId}`,
+                { method: "POST" },
+              );
+              const reminderResult = await reminderResponse.json();
+              console.log("✅ Recordatorio inmediato:", reminderResult);
+            } catch (reminderError) {
+              console.error(
+                "⚠️ Error en recordatorio inmediato:",
+                reminderError,
+              );
+            }
+          }
         } catch (emailError) {
           console.error("⚠️ Error enviando email:", emailError);
         }

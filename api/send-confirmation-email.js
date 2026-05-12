@@ -26,6 +26,7 @@ export default async function handler(req, res) {
       hora,
       precio,
       whatsappBarberia,
+      direccionBarberia,
       reservaId,
     } = req.body;
 
@@ -35,6 +36,15 @@ export default async function handler(req, res) {
 
     const mensajeWhatsApp = `Hola ${barberiaNombre}! 👋 Confirmo mi reserva del ${fecha} a las ${hora} con ${barberoNombre}. Código: ${reservaId}`;
     const linkWhatsApp = `https://wa.me/${whatsappBarberia}?text=${encodeURIComponent(mensajeWhatsApp)}`;
+
+    // Bloque de dirección (solo si existe y no es "Por definir")
+    const bloqueDireccion = direccionBarberia && direccionBarberia !== "Por definir" ? `
+          <tr>
+            <td style="padding: 8px 16px;">
+              <p style="margin: 0; color: #78716c; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Dirección</p>
+              <p style="margin: 4px 0 0 0; color: #1c1917; font-size: 16px; font-weight: 600;">${direccionBarberia}</p>
+            </td>
+          </tr>` : '';
 
     const emailHtml = `
 <!DOCTYPE html>
@@ -79,7 +89,7 @@ export default async function handler(req, res) {
               <p style="margin: 0; color: #78716c; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Fecha y Hora</p>
               <p style="margin: 4px 0 0 0; color: #1c1917; font-size: 16px; font-weight: 600;">${fecha} a las ${hora}</p>
             </td>
-          </tr>
+          </tr>${bloqueDireccion}
           <tr>
             <td style="padding: 8px 16px;">
               <p style="margin: 0; color: #78716c; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Total</p>

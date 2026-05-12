@@ -5,6 +5,8 @@ import {
   Check,
   AlertCircle,
   User,
+  Users,
+  Info,
 } from "lucide-react";
 
 export function VistaReserva({ supabase, barberiaId }) {
@@ -15,6 +17,7 @@ export function VistaReserva({ supabase, barberiaId }) {
   const [servicioSeleccionado, setServicioSeleccionado] = useState(null);
   const [adicionalesSeleccionados, setAdicionalesSeleccionados] = useState([]);
   const [barberoSeleccionado, setBarberoSeleccionado] = useState(null);
+  const [barberoAsignado, setBarberoAsignado] = useState(null); // El barbero final (cuando es "cualquiera")
   const [fechaSeleccionada, setFechaSeleccionada] = useState("");
   const [horaSeleccionada, setHoraSeleccionada] = useState("");
   const [clienteNombre, setClienteNombre] = useState("");
@@ -25,6 +28,9 @@ export function VistaReserva({ supabase, barberiaId }) {
   const [adicionales, setAdicionales] = useState([]);
   const [barberos, setBarberos] = useState([]);
   const [horariosBarbero, setHorariosBarbero] = useState([]);
+
+  // Constante para identificar "cualquier barbero"
+  const CUALQUIERA = "cualquiera";
 
   useEffect(() => {
     cargarDatos();
@@ -60,6 +66,45 @@ export function VistaReserva({ supabase, barberiaId }) {
     }
   };
 
+  // Calcula la duración total del servicio + adicionales
+  const calcularDuracionTotal = () => {
+    const duracionServicio = servicioSeleccionado?.duracion_minutos || 30;
+    const duracionAdicionales = adicionalesSeleccionados.reduce(
+      (sum, id) =>
+        sum + (adicionales.find((a) => a.id === id)?.duracion_minutos || 0),
+      0,
+    );
+    return duracionServicio + duracionAdicionales;
+  };
+
+  // Verifica si un barbero está disponible en una hora específica
+  const barberoDisponibleEnHora = (barbero, hora, reservasDelBarbero) => {
+    const duracionTotal = calcularDuracionTotal();
+    const horaInicio = new Date(`2000-01-01 ${barbero.horario_inicio}`);
+    const horaFin = new Date(`2000-01-01 ${barbero.horario_fin}`);
+    const horaTest = new Date(`2000-01-01 ${hora}`);
+
+    // Validar que esté dentro del horario de trabajo
+    if (horaTest < horaInicio) return false;
+    if (horaTest.getTime() + duracionTotal * 60000 > horaFin.getTime())
+      return false;
+
+    // Validar que no choque con reservas existentes
+    const choca = reservasDelBarbero.some((r) => {
+      const horaRes = new Date(`2000-01-01 ${r.hora_inicio}`);
+      const horaResEnd = new Date(
+        horaRes.getTime() + r.duracion_minutos * 60000,
+      );
+      return (
+        horaTest < horaResEnd &&
+        new Date(horaTest.getTime() + duracionTotal * 60000) > horaRes
+      );
+    });
+
+    return !choca;
+  };
+
+  // Carga horarios cuando el cliente elige UN barbero específico
   const cargarHorariosBarbero = async (barberoId, fecha) => {
     try {
       const { data: reservasExistentes } = await supabase
@@ -73,14 +118,7 @@ export function VistaReserva({ supabase, barberiaId }) {
       const horaInicio = new Date(`2000-01-01 ${barbero.horario_inicio}`);
       const horaFin = new Date(`2000-01-01 ${barbero.horario_fin}`);
 
-      const duracionServicio = servicioSeleccionado?.duracion_minutos || 30;
-      const duracionAdicionales = adicionalesSeleccionados.reduce(
-        (sum, id) =>
-          sum + (adicionales.find((a) => a.id === id)?.duracion_minutos || 0),
-        0,
-      );
-      const duracionTotal = duracionServicio + duracionAdicionales;
-
+      const duracionTotal = calcularDuracionTotal();
       const horariosDisponibles = [];
       let hora = new Date(horaInicio);
 
@@ -108,6 +146,100 @@ export function VistaReserva({ supabase, barberiaId }) {
       setHorariosBarbero(horariosDisponibles);
     } catch (err) {
       console.error("Error cargando horarios:", err);
+    }
+  };
+
+  // Carga horarios cuando el cliente elige "Cualquier barbero"
+  // Muestra horarios donde AL MENOS UN barbero esté disponible
+  const cargarHorariosCualquierBarbero = async (fecha) => {
+    try {
+      const { data: reservasExistentes } = await supabase
+        .from("reservas")
+        .select("barbero_id, hora_inicio, duracion_minutos")
+        .eq("barberia_id", barberiaId)
+        .eq("fecha", fecha)
+        .eq("estado", "confirmada");
+
+      // Encontrar el rango horario global (más temprano y más tarde de todos los barberos)
+      let horaMinima = null;
+      let horaMaxima = null;
+
+      barberos.forEach((b) => {
+        const inicio = new Date(`2000-01-01 ${b.horario_inicio}`);
+        const fin = new Date(`2000-01-01 ${b.horario_fin}`);
+        if (!horaMinima || inicio < horaMinima) horaMinima = inicio;
+        if (!horaMaxima || fin > horaMaxima) horaMaxima = fin;
+      });
+
+      if (!horaMinima || !horaMaxima) {
+        setHorariosBarbero([]);
+        return;
+      }
+
+      const horariosDisponibles = [];
+      let hora = new Date(horaMinima);
+      const duracionTotal = calcularDuracionTotal();
+
+      while (hora.getTime() + duracionTotal * 60000 <= horaMaxima.getTime()) {
+        const horaStr = hora.toTimeString().slice(0, 5);
+
+        // ¿Hay al menos un barbero disponible a esta hora?
+        const hayAlguienDisponible = barberos.some((barbero) => {
+          const reservasDelBarbero = reservasExistentes.filter(
+            (r) => r.barbero_id === barbero.id,
+          );
+          return barberoDisponibleEnHora(barbero, horaStr, reservasDelBarbero);
+        });
+
+        if (hayAlguienDisponible) {
+          horariosDisponibles.push(horaStr);
+        }
+
+        hora.setMinutes(hora.getMinutes() + 15);
+      }
+
+      setHorariosBarbero(horariosDisponibles);
+    } catch (err) {
+      console.error("Error cargando horarios (cualquier barbero):", err);
+    }
+  };
+
+  // Asigna el barbero "menos cargado" entre los disponibles a una hora
+  const asignarBarberoBalanceado = async (fecha, hora) => {
+    try {
+      const { data: reservasDelDia } = await supabase
+        .from("reservas")
+        .select("barbero_id, hora_inicio, duracion_minutos")
+        .eq("barberia_id", barberiaId)
+        .eq("fecha", fecha)
+        .eq("estado", "confirmada");
+
+      // Filtrar barberos disponibles a esa hora
+      const barberosDisponibles = barberos.filter((barbero) => {
+        const reservasDelBarbero = reservasDelDia.filter(
+          (r) => r.barbero_id === barbero.id,
+        );
+        return barberoDisponibleEnHora(barbero, hora, reservasDelBarbero);
+      });
+
+      if (barberosDisponibles.length === 0) {
+        return null; // No hay nadie disponible
+      }
+
+      // Contar reservas por barbero ese día y elegir al menos cargado
+      const barberosConCarga = barberosDisponibles.map((barbero) => {
+        const cantidadReservas = reservasDelDia.filter(
+          (r) => r.barbero_id === barbero.id,
+        ).length;
+        return { ...barbero, cantidadReservas };
+      });
+
+      barberosConCarga.sort((a, b) => a.cantidadReservas - b.cantidadReservas);
+
+      return barberosConCarga[0]; // El que menos tiene
+    } catch (err) {
+      console.error("Error asignando barbero:", err);
+      return null;
     }
   };
 
@@ -141,9 +273,9 @@ export function VistaReserva({ supabase, barberiaId }) {
     }
     // Paso 2: Servicios adicionales (OPCIONAL - sin validación)
 
-    // Paso 3: Barbero (obligatorio)
+    // Paso 3: Barbero (obligatorio - puede ser "cualquiera")
     if (paso === 3 && !barberoSeleccionado) {
-      setError("Selecciona un barbero");
+      setError("Selecciona un barbero (o 'Cualquiera')");
       return false;
     }
     // Paso 4: Fecha y hora (obligatorio)
@@ -151,26 +283,61 @@ export function VistaReserva({ supabase, barberiaId }) {
       setError("Selecciona fecha y hora");
       return false;
     }
-    // Paso 5: Datos del cliente (obligatorio nombre y teléfono)
-    if (paso === 5 && (!clienteNombre || !clienteTelefono)) {
-      setError("Completa nombre y teléfono");
+    // Paso 5: Datos del cliente (todos obligatorios: nombre, teléfono y email)
+    if (paso === 5 && (!clienteNombre || !clienteTelefono || !clienteEmail)) {
+      setError("Completa nombre, teléfono y email");
+      return false;
+    }
+    // Validación adicional de formato email
+    if (paso === 5 && clienteEmail && !/\S+@\S+\.\S+/.test(clienteEmail)) {
+      setError("El email no es válido");
       return false;
     }
     return true;
   };
 
   const confirmarReserva = async () => {
+    // Validar paso 5 ANTES de proceder
+    if (!validarPaso()) {
+      return;
+    }
+
     setCargando(true);
     setError("");
     try {
       const precioTotal = calcularPrecioTotal();
       const reservaId = `r-${Date.now()}`;
 
+      // Determinar el barbero final
+      let barberoFinalId = barberoSeleccionado;
+      let barberoFinalData = null;
+
+      if (barberoSeleccionado === CUALQUIERA) {
+        // Asignar barbero balanceado
+        const asignado = await asignarBarberoBalanceado(
+          fechaSeleccionada,
+          horaSeleccionada,
+        );
+
+        if (!asignado) {
+          setError("No hay barberos disponibles a esa hora. Selecciona otra.");
+          setCargando(false);
+          return;
+        }
+
+        barberoFinalId = asignado.id;
+        barberoFinalData = asignado;
+        setBarberoAsignado(asignado);
+      } else {
+        barberoFinalData = barberos.find((b) => b.id === barberoFinalId);
+        setBarberoAsignado(barberoFinalData);
+      }
+
       // 1. Guardar reserva en Supabase
       const { error: errorSupabase } = await supabase.from("reservas").insert({
         id: reservaId,
         barberia_id: barberiaId,
-        barbero_id: barberoSeleccionado,
+        barbero_id: barberoFinalId,
         servicio_id: servicioSeleccionado.id,
         adicionales_ids: adicionalesSeleccionados,
         cliente_nombre: clienteNombre,
@@ -178,14 +345,7 @@ export function VistaReserva({ supabase, barberiaId }) {
         cliente_email: clienteEmail || null,
         fecha: fechaSeleccionada,
         hora_inicio: horaSeleccionada,
-        duracion_minutos:
-          servicioSeleccionado.duracion_minutos +
-          adicionalesSeleccionados.reduce(
-            (sum, id) =>
-              sum +
-              (adicionales.find((a) => a.id === id)?.duracion_minutos || 0),
-            0,
-          ),
+        duracion_minutos: calcularDuracionTotal(),
         precio_original: precioTotal,
         precio_final: precioTotal,
         estado: "confirmada",
@@ -193,13 +353,9 @@ export function VistaReserva({ supabase, barberiaId }) {
 
       if (errorSupabase) throw errorSupabase;
 
-      // 2. Enviar email de confirmación (solo si el cliente proporcionó email)
+      // 2. Enviar email de confirmación
       if (clienteEmail) {
         try {
-          const barberoData = barberos.find(
-            (b) => b.id === barberoSeleccionado,
-          );
-
           const emailResponse = await fetch("/api/send-confirmation-email", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -207,7 +363,7 @@ export function VistaReserva({ supabase, barberiaId }) {
               clienteEmail: clienteEmail,
               clienteNombre: clienteNombre,
               barberiaNombre: "TWINS Barbería",
-              barberoNombre: barberoData?.nombre || "el profesional",
+              barberoNombre: barberoFinalData?.nombre || "el profesional",
               servicioNombre: servicioSeleccionado.nombre,
               fecha: fechaSeleccionada,
               hora: horaSeleccionada,
@@ -346,6 +502,41 @@ export function VistaReserva({ supabase, barberiaId }) {
               ¿Con quién deseas tu corte?
             </h2>
             <div className="grid gap-4">
+              {/* Opción "Cualquier barbero disponible" - destacada */}
+              <button
+                onClick={() => {
+                  setBarberoSeleccionado(CUALQUIERA);
+                  setHoraSeleccionada("");
+                }}
+                className={`p-6 rounded border-2 text-left transition ${
+                  barberoSeleccionado === CUALQUIERA
+                    ? "border-amber-200 bg-amber-200 bg-opacity-10"
+                    : "border-stone-700 hover:border-stone-600"
+                }`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-16 h-16 bg-amber-200 bg-opacity-20 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Users size={32} className="text-amber-200" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-lg">
+                      Cualquier barbero disponible
+                    </h3>
+                    <p className="text-stone-400 text-sm">
+                      Te asignamos el que tenga mayor disponibilidad
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              {/* Separador visual */}
+              <div className="flex items-center gap-3 my-2">
+                <div className="flex-1 h-px bg-stone-700"></div>
+                <p className="text-stone-500 text-xs">O ELIGE UN ESPECÍFICO</p>
+                <div className="flex-1 h-px bg-stone-700"></div>
+              </div>
+
+              {/* Lista de barberos específicos */}
               {barberos.map((barbero) => (
                 <button
                   key={barbero.id}
@@ -389,7 +580,14 @@ export function VistaReserva({ supabase, barberiaId }) {
                   setFechaSeleccionada(e.target.value);
                   setHoraSeleccionada("");
                   if (e.target.value && barberoSeleccionado) {
-                    cargarHorariosBarbero(barberoSeleccionado, e.target.value);
+                    if (barberoSeleccionado === CUALQUIERA) {
+                      cargarHorariosCualquierBarbero(e.target.value);
+                    } else {
+                      cargarHorariosBarbero(
+                        barberoSeleccionado,
+                        e.target.value,
+                      );
+                    }
                   }
                 }}
                 min={new Date().toISOString().split("T")[0]}
@@ -432,7 +630,7 @@ export function VistaReserva({ supabase, barberiaId }) {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold mb-2">
-                  Nombre
+                  Nombre <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
@@ -445,7 +643,7 @@ export function VistaReserva({ supabase, barberiaId }) {
 
               <div>
                 <label className="block text-sm font-semibold mb-2">
-                  Teléfono
+                  Teléfono <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="tel"
@@ -458,8 +656,11 @@ export function VistaReserva({ supabase, barberiaId }) {
 
               <div>
                 <label className="block text-sm font-semibold mb-2">
-                  Email (opcional)
+                  Email <span className="text-red-400">*</span>
                 </label>
+                <p className="text-stone-400 text-xs mb-2">
+                  Te enviaremos la confirmación y recordatorios de tu cita
+                </p>
                 <input
                   type="email"
                   value={clienteEmail}
@@ -485,9 +686,20 @@ export function VistaReserva({ supabase, barberiaId }) {
               <div className="flex justify-between">
                 <span className="text-stone-400">Barbero:</span>
                 <span className="font-semibold">
-                  {barberos.find((b) => b.id === barberoSeleccionado)?.nombre}
+                  {barberoAsignado?.nombre || "Asignado"}
                 </span>
               </div>
+              {barberoSeleccionado === CUALQUIERA && barberoAsignado && (
+                <div className="bg-amber-200 bg-opacity-10 border border-amber-200 border-opacity-30 rounded p-3 flex items-start gap-2">
+                  <Info
+                    size={16}
+                    className="text-amber-200 flex-shrink-0 mt-0.5"
+                  />
+                  <p className="text-amber-200 text-sm">
+                    Te asignamos a {barberoAsignado.nombre} por disponibilidad
+                  </p>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-stone-400">Servicio:</span>
                 <span className="font-semibold">

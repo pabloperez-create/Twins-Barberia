@@ -4,6 +4,7 @@ import { Scissors } from "lucide-react";
 import { VistaReserva } from "./VistaReserva-FASE3";
 import { VistaInicio } from "./VistaInicio";
 import { VistaAdmin } from "./VistaAdmin";
+import { VistaBarbero } from "./VistaBarbero";
 
 // ============== CONFIGURACIÓN SUPABASE ==============
 const SUPABASE_URL = "https://fgtbhkeqzcqpjhziyijt.supabase.co";
@@ -45,21 +46,22 @@ export default function App() {
       localStorage.setItem("rol", usuarios.rol);
 
       setUsuario(usuarios);
-
-      // Admin y barbero van al admin (el barbero verá solo lo suyo en el futuro)
-      if (usuarios.rol === "admin" || usuarios.rol === "gerente") {
-        setVista("admin");
-      } else if (usuarios.rol === "barbero") {
-        // TODO: Por ahora barbero también va al admin
-        // En próxima sesión: vista filtrada para barbero
-        setVista("admin");
-      } else {
-        setVista("inicio");
-      }
+      direccionarPorRol(usuarios.rol);
     } catch (err) {
       setError("Error en login: " + err.message);
     }
     setCargando(false);
+  };
+
+  // ============== ROUTING POR ROL ==============
+  const direccionarPorRol = (rol) => {
+    if (rol === "admin" || rol === "gerente") {
+      setVista("admin");
+    } else if (rol === "barbero") {
+      setVista("barbero"); // ⭐ Ahora va a su propia vista
+    } else {
+      setVista("inicio");
+    }
   };
 
   // ============== LOGOUT ==============
@@ -85,11 +87,7 @@ export default function App() {
 
           if (usr) {
             setUsuario(usr);
-            if (usr.rol === "admin" || usr.rol === "gerente" || usr.rol === "barbero") {
-              setVista("admin");
-            } else {
-              setVista("inicio");
-            }
+            direccionarPorRol(usr.rol);
           }
         } catch (err) {
           console.error("Error verificando sesión:", err);
@@ -125,6 +123,16 @@ export default function App() {
   if (vista === "admin") {
     return (
       <VistaAdmin
+        usuario={usuario}
+        onLogout={handleLogout}
+        supabase={supabase}
+      />
+    );
+  }
+
+  if (vista === "barbero") {
+    return (
+      <VistaBarbero
         usuario={usuario}
         onLogout={handleLogout}
         supabase={supabase}

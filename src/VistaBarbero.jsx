@@ -3,6 +3,7 @@ import { LogOut, Scissors } from "lucide-react";
 import { TabMisReservas } from "./barbero/TabMisReservas";
 import { TabMiPerfil } from "./barbero/TabMiPerfil";
 import { TabMiHorario } from "./barbero/TabMiHorario";
+import { TabMisDiasLibres } from "./barbero/TabMisDiasLibres";
 
 export function VistaBarbero({ usuario, onLogout, supabase }) {
   const [tab, setTab] = useState("reservas");
@@ -16,7 +17,6 @@ export function VistaBarbero({ usuario, onLogout, supabase }) {
 
   const cargarDatos = async () => {
     try {
-      // Cargar datos del barbero (vinculado al usuario)
       const { data: barberoData, error: errorBarbero } = await supabase
         .from("barberos")
         .select("*")
@@ -25,7 +25,6 @@ export function VistaBarbero({ usuario, onLogout, supabase }) {
 
       if (errorBarbero) throw errorBarbero;
 
-      // Cargar datos de la barbería
       const { data: barberiaData } = await supabase
         .from("barberia")
         .select("*")
@@ -43,6 +42,7 @@ export function VistaBarbero({ usuario, onLogout, supabase }) {
   const tabs = [
     { id: "reservas", label: "Mis Reservas" },
     { id: "horario", label: "Mi Horario" },
+    { id: "dias_libres", label: "Días Libres" },
     { id: "perfil", label: "Mi Perfil" },
   ];
 
@@ -91,7 +91,6 @@ export function VistaBarbero({ usuario, onLogout, supabase }) {
         </button>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-2 mb-8 border-b border-stone-700 overflow-x-auto">
         {tabs.map((t) => (
           <button
@@ -108,7 +107,6 @@ export function VistaBarbero({ usuario, onLogout, supabase }) {
         ))}
       </div>
 
-      {/* Contenido del tab */}
       <div className="max-w-6xl">
         {tab === "reservas" && (
           <TabMisReservas
@@ -122,6 +120,13 @@ export function VistaBarbero({ usuario, onLogout, supabase }) {
             supabase={supabase}
             barbero={barbero}
             onUpdate={cargarDatos}
+          />
+        )}
+        {tab === "dias_libres" && (
+          <TabMisDiasLibres
+            supabase={supabase}
+            barbero={barbero}
+            barberia={barberia}
           />
         )}
         {tab === "perfil" && (

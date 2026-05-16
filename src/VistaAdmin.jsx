@@ -6,6 +6,7 @@ import { TabServicios } from "./admin/TabServicios";
 import { TabAdicionales } from "./admin/TabAdicionales";
 import { TabBarberos } from "./admin/TabBarberos";
 import { TabEstadisticas } from "./admin/TabEstadisticas";
+import { TabBloqueos } from "./admin/TabBloqueos";
 
 export function VistaAdmin({ usuario, onLogout, supabase }) {
   const [tab, setTab] = useState("agenda");
@@ -35,6 +36,7 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
     { id: "servicios", label: "Servicios" },
     { id: "adicionales", label: "Adicionales" },
     { id: "barberos", label: "Barberos" },
+    { id: "bloqueos", label: "Bloqueos" },
     { id: "estadisticas", label: "Estadísticas" },
     { id: "configuracion", label: "Configuración" },
   ];
@@ -65,7 +67,6 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
         </button>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-2 mb-8 border-b border-stone-700 overflow-x-auto">
         {tabs.map((t) => (
           <button
@@ -82,7 +83,6 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
         ))}
       </div>
 
-      {/* Contenido del tab */}
       <div className="max-w-6xl">
         {tab === "agenda" && (
           <TabAgenda supabase={supabase} barberiaId={usuario?.barberia_id} />
@@ -98,6 +98,9 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
         )}
         {tab === "barberos" && (
           <TabBarberos supabase={supabase} barberiaId={usuario?.barberia_id} />
+        )}
+        {tab === "bloqueos" && (
+          <TabBloqueos supabase={supabase} barberiaId={usuario?.barberia_id} />
         )}
         {tab === "estadisticas" && (
           <TabEstadisticas

@@ -94,7 +94,7 @@ export function VistaReserva({ supabase, barberiaId }) {
     return duracionServicio + duracionAdicionales;
   };
 
-  const barberoDisponibleEnHora = (barbero, hora, reservasDelBarbero) => {
+  const barberoDisponibleEnHora = (barbero, hora, reservasDelBarbero, bloqueosDelBarbero = []) => {
     const duracionTotal = calcularDuracionTotal();
     const horaInicio = new Date(`2000-01-01 ${barbero.horario_inicio}`);
     const horaFin = new Date(`2000-01-01 ${barbero.horario_fin}`);
@@ -115,7 +115,29 @@ export function VistaReserva({ supabase, barberiaId }) {
       );
     });
 
-    return !choca;
+    if (choca) return false;
+
+    // Verificar bloqueos
+    const horaTestEnd = new Date(horaTest.getTime() + duracionTotal * 60000);
+    const chocaConBloqueo = bloqueosDelBarbero.some((b) => {
+      // Día completo
+      if (!b.hora_inicio) return true;
+      // Bloque de horas
+      const bInicio = new Date(`2000-01-01 ${b.hora_inicio}`);
+      const bFin = new Date(`2000-01-01 ${b.hora_fin}`);
+      return horaTest < bFin && horaTestEnd > bInicio;
+    });
+
+    return !chocaConBloqueo;
+  };
+
+  // Helper: obtener bloqueos aplicables a un barbero en una fecha
+  const obtenerBloqueosDelBarbero = (barberoId, fecha, todosLosBloqueos) => {
+    return todosLosBloqueos.filter((b) => {
+      const aplicaABarbero = b.barbero_id === barberoId || b.barbero_id === null;
+      const enRango = fecha >= b.fecha_inicio && fecha <= b.fecha_fin;
+      return aplicaABarbero && enRango;
+    });
   };
 
   const cargarHorariosBarbero = async (barberoId, fecha) => {
@@ -126,6 +148,25 @@ export function VistaReserva({ supabase, barberiaId }) {
         .eq("barbero_id", barberoId)
         .eq("fecha", fecha)
         .eq("estado", "confirmada");
+
+      // Cargar bloqueos del barbero + de la barbería
+      const { data: bloqueosExistentes } = await supabase
+        .from("bloqueos_horarios")
+        .select("*")
+        .eq("barberia_id", barberiaId)
+        .lte("fecha_inicio", fecha)
+        .gte("fecha_fin", fecha);
+
+      const bloqueosDelBarbero = (bloqueosExistentes || []).filter(
+        (b) => b.barbero_id === barberoId || b.barbero_id === null,
+      );
+
+      // Si hay bloqueo de día completo, no hay horarios
+      const tieneBloqueoCompleto = bloqueosDelBarbero.some((b) => !b.hora_inicio);
+      if (tieneBloqueoCompleto) {
+        setHorariosBarbero([]);
+        return;
+      }
 
       const barbero = barberos.find((b) => b.id === barberoId);
       const horaInicio = new Date(`2000-01-01 ${barbero.horario_inicio}`);
@@ -138,7 +179,7 @@ export function VistaReserva({ supabase, barberiaId }) {
       while (hora.getTime() + duracionTotal * 60000 <= horaFin.getTime()) {
         const horaStr = hora.toTimeString().slice(0, 5);
 
-        const estaDisponible = !reservasExistentes.some((r) => {
+        const chocaReserva = reservasExistentes.some((r) => {
           const horaRes = new Date(`2000-01-01 ${r.hora_inicio}`);
           const horaResEnd = new Date(
             horaRes.getTime() + r.duracion_minutos * 60000,
@@ -149,7 +190,18 @@ export function VistaReserva({ supabase, barberiaId }) {
           );
         });
 
-        if (estaDisponible) {
+        // Verificar bloqueos de horas
+        const chocaBloqueo = bloqueosDelBarbero.some((b) => {
+          if (!b.hora_inicio) return false; // ya descartado arriba
+          const bInicio = new Date(`2000-01-01 ${b.hora_inicio}`);
+          const bFin = new Date(`2000-01-01 ${b.hora_fin}`);
+          return (
+            hora < bFin &&
+            new Date(hora.getTime() + duracionTotal * 60000) > bInicio
+          );
+        });
+
+        if (!chocaReserva && !chocaBloqueo) {
           horariosDisponibles.push(horaStr);
         }
 
@@ -170,6 +222,25 @@ export function VistaReserva({ supabase, barberiaId }) {
         .eq("barberia_id", barberiaId)
         .eq("fecha", fecha)
         .eq("estado", "confirmada");
+
+      // Cargar todos los bloqueos relevantes
+      const { data: bloqueosExistentes } = await supabase
+        .from("bloqueos_horarios")
+        .select("*")
+        .eq("barberia_id", barberiaId)
+        .lte("fecha_inicio", fecha)
+        .gte("fecha_fin", fecha);
+
+      const todosLosBloqueos = bloqueosExistentes || [];
+
+      // Si hay un bloqueo a nivel de barbería (barbero_id = null) de día completo, no hay horarios
+      const barberiaCerrada = todosLosBloqueos.some(
+        (b) => b.barbero_id === null && !b.hora_inicio,
+      );
+      if (barberiaCerrada) {
+        setHorariosBarbero([]);
+        return;
+      }
 
       let horaMinima = null;
       let horaMaxima = null;
@@ -197,7 +268,17 @@ export function VistaReserva({ supabase, barberiaId }) {
           const reservasDelBarbero = reservasExistentes.filter(
             (r) => r.barbero_id === barbero.id,
           );
-          return barberoDisponibleEnHora(barbero, horaStr, reservasDelBarbero);
+          const bloqueosDelBarbero = obtenerBloqueosDelBarbero(
+            barbero.id,
+            fecha,
+            todosLosBloqueos,
+          );
+          return barberoDisponibleEnHora(
+            barbero,
+            horaStr,
+            reservasDelBarbero,
+            bloqueosDelBarbero,
+          );
         });
 
         if (hayAlguienDisponible) {
@@ -222,11 +303,31 @@ export function VistaReserva({ supabase, barberiaId }) {
         .eq("fecha", fecha)
         .eq("estado", "confirmada");
 
+      // Cargar bloqueos del día
+      const { data: bloqueosDelDia } = await supabase
+        .from("bloqueos_horarios")
+        .select("*")
+        .eq("barberia_id", barberiaId)
+        .lte("fecha_inicio", fecha)
+        .gte("fecha_fin", fecha);
+
+      const todosLosBloqueos = bloqueosDelDia || [];
+
       const barberosDisponibles = barberos.filter((barbero) => {
         const reservasDelBarbero = reservasDelDia.filter(
           (r) => r.barbero_id === barbero.id,
         );
-        return barberoDisponibleEnHora(barbero, hora, reservasDelBarbero);
+        const bloqueosDelBarbero = obtenerBloqueosDelBarbero(
+          barbero.id,
+          fecha,
+          todosLosBloqueos,
+        );
+        return barberoDisponibleEnHora(
+          barbero,
+          hora,
+          reservasDelBarbero,
+          bloqueosDelBarbero,
+        );
       });
 
       if (barberosDisponibles.length === 0) {
@@ -288,10 +389,6 @@ export function VistaReserva({ supabase, barberiaId }) {
       setError("Completa nombre, teléfono y email");
       return false;
     }
-    if (paso === 5 && clienteTelefono.length !== 8) {
-      setError("El teléfono debe tener 8 dígitos");
-      return false;
-    }
     if (paso === 5 && clienteEmail && !/\S+@\S+\.\S+/.test(clienteEmail)) {
       setError("El email no es válido");
       return false;
@@ -340,7 +437,7 @@ export function VistaReserva({ supabase, barberiaId }) {
         servicio_id: servicioSeleccionado.id,
         adicionales_ids: adicionalesSeleccionados,
         cliente_nombre: clienteNombre,
-        cliente_telefono: `569${clienteTelefono}`,
+        cliente_telefono: clienteTelefono,
         cliente_email: clienteEmail || null,
         fecha: fechaSeleccionada,
         hora_inicio: horaSeleccionada,
@@ -369,7 +466,8 @@ export function VistaReserva({ supabase, barberiaId }) {
               precio: precioTotal,
               whatsappBarberia:
                 barberiaData?.configuracion?.whatsapp || "56000000000",
-              direccionBarberia: barberiaData?.configuracion?.direccion || null,
+              direccionBarberia:
+                barberiaData?.configuracion?.direccion || null,
               reservaId: reservaId,
             }),
           });
@@ -380,27 +478,6 @@ export function VistaReserva({ supabase, barberiaId }) {
             console.error("⚠️ Reserva guardada pero email falló:", emailResult);
           } else {
             console.log("✅ Email enviado:", emailResult);
-          }
-
-          // Si la reserva es para HOY, enviar también recordatorio inmediato
-          const hoy = new Date().toISOString().split("T")[0];
-          if (fechaSeleccionada === hoy) {
-            try {
-              console.log(
-                "🔥 Reserva para HOY detectada, enviando recordatorio inmediato...",
-              );
-              const reminderResponse = await fetch(
-                `/api/send-reminder-emails?single=${reservaId}`,
-                { method: "POST" },
-              );
-              const reminderResult = await reminderResponse.json();
-              console.log("✅ Recordatorio inmediato:", reminderResult);
-            } catch (reminderError) {
-              console.error(
-                "⚠️ Error en recordatorio inmediato:",
-                reminderError,
-              );
-            }
           }
         } catch (emailError) {
           console.error("⚠️ Error enviando email:", emailError);
@@ -666,28 +743,13 @@ export function VistaReserva({ supabase, barberiaId }) {
                 <label className="block text-sm font-semibold mb-2">
                   Teléfono <span className="text-red-400">*</span>
                 </label>
-                <div className="flex">
-                  <div className="bg-stone-700 border border-stone-700 rounded-l px-4 py-3 text-stone-300 font-semibold flex items-center">
-                    +569
-                  </div>
-                  <input
-                    type="tel"
-                    value={
-                      clienteTelefono.length > 4
-                        ? `${clienteTelefono.slice(0, 4)} ${clienteTelefono.slice(4)}`
-                        : clienteTelefono
-                    }
-                    onChange={(e) => {
-                      const soloNumeros = e.target.value
-                        .replace(/\D/g, "")
-                        .slice(0, 8);
-                      setClienteTelefono(soloNumeros);
-                    }}
-                    placeholder="1234 5678"
-                    maxLength={9}
-                    className="flex-1 bg-stone-800 border border-stone-700 rounded-r px-4 py-3 text-white"
-                  />
-                </div>
+                <input
+                  type="tel"
+                  value={clienteTelefono}
+                  onChange={(e) => setClienteTelefono(e.target.value)}
+                  placeholder="+56912345678"
+                  className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-3 text-white"
+                />
               </div>
 
               <div>

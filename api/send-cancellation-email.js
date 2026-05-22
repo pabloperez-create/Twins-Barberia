@@ -1,6 +1,11 @@
 import { Resend } from 'resend';
+import { createClient } from '@supabase/supabase-js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const supabase = createClient(
+  process.env.VITE_SUPABASE_URL,
+  process.env.VITE_SUPABASE_KEY,
+);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -26,11 +31,23 @@ export default async function handler(req, res) {
       hora,
       motivo,
       whatsappBarberia,
-      mostrarWhatsApp = true, // ⭐ NUEVO
+      barberiaId, // ⭐ Para auto-leer feature
     } = req.body;
 
     if (!clienteEmail || !clienteNombre) {
       return res.status(400).json({ error: 'Faltan campos requeridos' });
+    }
+
+    // ⭐ Auto-leer feature whatsapp_recordatorios
+    let mostrarWhatsApp = true;
+    if (barberiaId) {
+      const { data: barberia } = await supabase
+        .from('barberia')
+        .select('configuracion')
+        .eq('id', barberiaId)
+        .single();
+      const features = barberia?.configuracion?.features || {};
+      mostrarWhatsApp = features.whatsapp_recordatorios === true;
     }
 
     const mensajeWhatsApp = `Hola ${barberiaNombre}! Me cancelaron mi reserva del ${fecha} a las ${hora}, me gustaría reagendar.`;
@@ -129,13 +146,11 @@ export default async function handler(req, res) {
     });
 
     if (error) {
-      console.error('Error Resend:', error);
       return res.status(500).json({ error: error.message });
     }
 
     return res.status(200).json({ success: true, messageId: data?.id });
   } catch (error) {
-    console.error('Error:', error);
     return res.status(500).json({ error: error.message });
   }
 }

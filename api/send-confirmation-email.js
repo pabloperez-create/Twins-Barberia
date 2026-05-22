@@ -1,6 +1,11 @@
 import { Resend } from 'resend';
+import { createClient } from '@supabase/supabase-js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const supabase = createClient(
+  process.env.VITE_SUPABASE_URL,
+  process.env.VITE_SUPABASE_KEY,
+);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -28,11 +33,23 @@ export default async function handler(req, res) {
       whatsappBarberia,
       direccionBarberia,
       reservaId,
-      mostrarWhatsApp = true, // ⭐ NUEVO - default true para compatibilidad
+      barberiaId, // ⭐ Para auto-leer feature
     } = req.body;
 
     if (!clienteEmail || !clienteNombre || !fecha || !hora) {
       return res.status(400).json({ error: 'Faltan campos requeridos' });
+    }
+
+    // ⭐ Auto-leer feature whatsapp_confirmacion
+    let mostrarWhatsApp = true; // Default por compatibilidad
+    if (barberiaId) {
+      const { data: barberia } = await supabase
+        .from('barberia')
+        .select('configuracion')
+        .eq('id', barberiaId)
+        .single();
+      const features = barberia?.configuracion?.features || {};
+      mostrarWhatsApp = features.whatsapp_confirmacion === true;
     }
 
     const mensajeWhatsApp = `Hola ${barberiaNombre}! 👋 Confirmo mi reserva del ${fecha} a las ${hora} con ${barberoNombre}. Código: ${reservaId}`;
@@ -46,7 +63,6 @@ export default async function handler(req, res) {
             </td>
           </tr>` : '';
 
-    // ⭐ Bloque WhatsApp condicional
     const bloqueWhatsApp = mostrarWhatsApp ? `
     <tr>
       <td style="padding: 20px 30px 10px 30px; text-align: center;">
@@ -157,7 +173,6 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       messageId: data?.id,
-      message: 'Email enviado correctamente',
     });
 
   } catch (error) {

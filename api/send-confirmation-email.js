@@ -27,21 +27,23 @@ export default async function handler(req, res) {
       barberiaNombre,
       barberoNombre,
       servicioNombre,
+      precioServicio, // ⭐ NUEVO - precio del servicio principal
+      adicionales,    // ⭐ NUEVO - array de {nombre, precio}
       fecha,
       hora,
       precio,
       whatsappBarberia,
       direccionBarberia,
       reservaId,
-      barberiaId, // ⭐ Para auto-leer feature
+      barberiaId,
     } = req.body;
 
     if (!clienteEmail || !clienteNombre || !fecha || !hora) {
       return res.status(400).json({ error: 'Faltan campos requeridos' });
     }
 
-    // ⭐ Auto-leer feature whatsapp_confirmacion
-    let mostrarWhatsApp = true; // Default por compatibilidad
+    // Auto-leer feature whatsapp_confirmacion
+    let mostrarWhatsApp = true;
     if (barberiaId) {
       const { data: barberia } = await supabase
         .from('barberia')
@@ -62,6 +64,34 @@ export default async function handler(req, res) {
               <p style="margin: 4px 0 0 0; color: #1c1917; font-size: 16px; font-weight: 600;">${direccionBarberia}</p>
             </td>
           </tr>` : '';
+
+    // ⭐ NUEVO: Bloque con servicio principal + adicionales desglosados
+    const tieneAdicionales = adicionales && Array.isArray(adicionales) && adicionales.length > 0;
+    const precioServicioMostrar = precioServicio || precio;
+
+    const bloqueServicios = tieneAdicionales ? `
+          <tr>
+            <td style="padding: 8px 16px;">
+              <p style="margin: 0; color: #78716c; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Servicio</p>
+              <p style="margin: 4px 0 0 0; color: #1c1917; font-size: 16px; font-weight: 600;">${servicioNombre} <span style="color: #78716c; font-weight: 400;">· $${precioServicioMostrar.toLocaleString('es-CL')}</span></p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 16px;">
+              <p style="margin: 0; color: #78716c; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Adicionales</p>
+              ${adicionales.map(ad => `
+                <p style="margin: 4px 0 0 0; color: #1c1917; font-size: 14px;">
+                  <span style="color: #16a34a; font-weight: 700;">+</span> ${ad.nombre} <span style="color: #78716c;">· $${ad.precio.toLocaleString('es-CL')}</span>
+                </p>
+              `).join('')}
+            </td>
+          </tr>` : `
+          <tr>
+            <td style="padding: 8px 16px;">
+              <p style="margin: 0; color: #78716c; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Servicio</p>
+              <p style="margin: 4px 0 0 0; color: #1c1917; font-size: 16px; font-weight: 600;">${servicioNombre}</p>
+            </td>
+          </tr>`;
 
     const bloqueWhatsApp = mostrarWhatsApp ? `
     <tr>
@@ -115,12 +145,7 @@ export default async function handler(req, res) {
     <tr>
       <td style="padding: 20px 30px;">
         <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #fafaf9; border-radius: 8px; padding: 24px;">
-          <tr>
-            <td style="padding: 8px 16px;">
-              <p style="margin: 0; color: #78716c; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Servicio</p>
-              <p style="margin: 4px 0 0 0; color: #1c1917; font-size: 16px; font-weight: 600;">${servicioNombre}</p>
-            </td>
-          </tr>
+          ${bloqueServicios}
           <tr>
             <td style="padding: 8px 16px;">
               <p style="margin: 0; color: #78716c; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Profesional</p>
@@ -134,9 +159,9 @@ export default async function handler(req, res) {
             </td>
           </tr>${bloqueDireccion}
           <tr>
-            <td style="padding: 8px 16px;">
+            <td style="padding: 12px 16px 8px 16px; border-top: 1px solid #e7e5e4;">
               <p style="margin: 0; color: #78716c; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Total</p>
-              <p style="margin: 4px 0 0 0; color: #d97706; font-size: 20px; font-weight: 700;">$${precio.toLocaleString('es-CL')}</p>
+              <p style="margin: 4px 0 0 0; color: #d97706; font-size: 24px; font-weight: 700;">$${precio.toLocaleString('es-CL')}</p>
             </td>
           </tr>
         </table>

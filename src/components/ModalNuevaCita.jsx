@@ -262,6 +262,13 @@ export function ModalNuevaCita({
       if (enviarEmail && clienteEmail.trim()) {
         try {
           const barberoNombre = barberos.find((b) => b.id === barberoId)?.nombre || "el profesional";
+          
+          // ⭐ Construir lista de adicionales con nombre y precio
+          const adicionalesDetalle = adicionalesSeleccionados.map((adId) => {
+            const ad = adicionales.find((a) => a.id === adId);
+            return ad ? { nombre: ad.nombre, precio: ad.precio } : null;
+          }).filter(Boolean);
+
           await fetch("/api/send-confirmation-email", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -272,6 +279,8 @@ export function ModalNuevaCita({
               barberiaNombre: barberia?.nombre || "Tu Barbería",
               barberoNombre,
               servicioNombre: servicioActual?.nombre || "tu servicio",
+              precioServicio: servicioActual?.precio || 0,
+              adicionales: adicionalesDetalle,
               fecha,
               hora,
               precio,
@@ -481,15 +490,43 @@ export function ModalNuevaCita({
                     <label className="block text-xs text-stone-400 mb-1">
                       Hora <span className="text-red-400">*</span>
                     </label>
-                    {/* ⭐ Forzar formato 24h con step y lang */}
-                    <input
-                      type="time"
-                      value={hora}
-                      onChange={(e) => setHora(e.target.value)}
-                      step="900"
-                      lang="es-ES"
-                      className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-white text-sm"
-                    />
+                    <div className="flex gap-1">
+                      <select
+                        value={hora ? hora.split(":")[0] : ""}
+                        onChange={(e) => {
+                          const h = e.target.value;
+                          const m = hora ? hora.split(":")[1] || "00" : "00";
+                          setHora(h ? `${h}:${m}` : "");
+                        }}
+                        className="flex-1 bg-stone-900 border border-stone-700 rounded px-2 py-2 text-white text-sm"
+                      >
+                        <option value="">HH</option>
+                        {Array.from({ length: 24 }, (_, i) => {
+                          const val = String(i).padStart(2, "0");
+                          return (
+                            <option key={val} value={val}>
+                              {val}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      <span className="text-white py-2 text-sm">:</span>
+                      <select
+                        value={hora ? hora.split(":")[1] || "" : ""}
+                        onChange={(e) => {
+                          const m = e.target.value;
+                          const h = hora ? hora.split(":")[0] : "";
+                          if (h) setHora(`${h}:${m}`);
+                        }}
+                        disabled={!hora}
+                        className="flex-1 bg-stone-900 border border-stone-700 rounded px-2 py-2 text-white text-sm disabled:opacity-50"
+                      >
+                        <option value="00">00</option>
+                        <option value="15">15</option>
+                        <option value="30">30</option>
+                        <option value="45">45</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>

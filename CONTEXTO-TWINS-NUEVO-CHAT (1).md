@@ -42,28 +42,52 @@ KEY (anon): sb_publishable_8E23tN1s3wbAIqjhX-1icg_VBCYqsMO
 | `johans@twins.cl` | `twins123` | barbero | |
 | `jose@twins.cl` | `twins123` | barbero | |
 | `cliente@twins.cl` | `cliente123` | cliente | Para probar reserva |
+| `pablo@twinsapp.cl` | (a crear) | super_admin | ⭐ Gestión SaaS (pendiente) |
 
 **Email testing (Resend):** `pablo.felipee.ps@gmail.com`
 **WhatsApp testing:** `56967402940`
 
 ---
 
-## 💰 MODELO DE NEGOCIO (3 PLANES)
+## 💰 MODELO DE NEGOCIO (3 PLANES + FEATURE FLAGS)
 
 | Plan | Mensual | Features |
 |------|---------|----------|
 | BASE | $50 + $10/barbero | Email solo |
-| PLUS ⭐ | $80 + $10/barbero | Email + WhatsApp |
-| PRO | $120-150 + $10/barbero | + Bot IA + Analytics |
+| PLUS ⭐ | $80 + $10/barbero | Email + WhatsApp + Stats |
+| PRO | $120-150 + $10/barbero | + Bot IA + Multi-sucursal |
 
 **Margen TWINS (PLUS):** ~73%
+
+### Catálogo de features (a implementar):
+
+**Plan BASE:**
+- email_confirmacion
+- email_recordatorio
+- multi_barberos (hasta 3)
+- flujo_reserva_publico
+
+**Plan PLUS (todo BASE + ):**
+- whatsapp_recordatorios
+- whatsapp_confirmacion
+- estadisticas_barberia
+- exportar_datos
+- personalizar_emails (logo, colores)
+
+**Plan PRO (todo PLUS + ):**
+- multi_sucursal
+- bot_whatsapp_ia
+- analytics_avanzados
+- estadisticas_barberos (cada barbero ve sus stats)
+- marketing_automatizado
+- integraciones (Google Calendar)
 
 ---
 
 ## 📊 BASE DE DATOS (11 tablas, RLS DESACTIVADO)
 
-1. **barberia** - Organizaciones
-2. **usuarios** - Login (admin, barbero, cliente)
+1. **barberia** - Organizaciones (con `configuracion.features` jsonb)
+2. **usuarios** - Login (admin, barbero, cliente, super_admin)
 3. **barberos** - Estilistas (vinculados a usuarios via `usuario_id`)
 4. **servicios_principales** - Cortes (con `activo`)
 5. **servicios_adicionales** - Extras (con `activo`)
@@ -72,7 +96,7 @@ KEY (anon): sb_publishable_8E23tN1s3wbAIqjhX-1icg_VBCYqsMO
 8. **notificaciones**
 9. **configuracion**
 10. **estadisticas**
-11. **bloqueos_horarios** ⭐ (días libres y vacaciones)
+11. **bloqueos_horarios** (días libres y vacaciones)
 
 ### Estructura `bloqueos_horarios`:
 ```sql
@@ -86,6 +110,27 @@ hora_fin TIME DEFAULT NULL
 motivo TEXT DEFAULT NULL
 creado_por_usuario_id TEXT
 fecha_creacion TIMESTAMP DEFAULT NOW()
+```
+
+### Estructura propuesta para `barberia.configuracion.features`:
+```json
+{
+  "whatsapp": "56967402940",
+  "direccion": "...",
+  "instagram": "...",
+  "horario_atencion": "...",
+  "features": {
+    "whatsapp_recordatorios": false,
+    "whatsapp_confirmacion": false,
+    "estadisticas_barberia": true,
+    "estadisticas_barberos": false,
+    "exportar_datos": false,
+    "multi_sucursal": false,
+    "personalizar_emails": false,
+    "logo_propio": false,
+    "bot_whatsapp": false
+  }
+}
 ```
 
 ---
@@ -125,15 +170,11 @@ fecha_creacion TIMESTAMP DEFAULT NOW()
 └── package.json
 ```
 
-### Dependencias npm clave:
+### Dependencias npm:
 - `@supabase/supabase-js`
 - `lucide-react`
 - `resend`
-- `@fullcalendar/react` ⭐
-- `@fullcalendar/daygrid`
-- `@fullcalendar/timegrid`
-- `@fullcalendar/interaction`
-- `@fullcalendar/core`
+- `@fullcalendar/react`, `daygrid`, `timegrid`, `interaction`, `core`
 
 ---
 
@@ -156,11 +197,11 @@ fecha_creacion TIMESTAMP DEFAULT NOW()
 - Cada email tiene botón WhatsApp (estrategia ventana 24h)
 
 ### Panel Admin (Alonso) - 7 tabs
-- **Agenda:** ⭐ Vista calendario con FullCalendar (Mes/Semana/Día)
-  - Color por barbero (automático)
+- **Agenda:** ⭐ Calendario FullCalendar (Mes/Semana/Día)
+  - Color por barbero
   - Bloqueos en rojo
-  - Modal de detalles al click
-  - Botones Cancelar + Reagendar
+  - Modal de detalles
+  - Cancelar + Reagendar
   - "+ Nueva cita" deshabilitado (próximamente)
 - **Servicios:** CRUD principales
 - **Adicionales:** CRUD extras
@@ -175,11 +216,6 @@ fecha_creacion TIMESTAMP DEFAULT NOW()
 - **Días Libres:** Crear bloqueos con reasignación inteligente
 - **Mi Perfil:** Editar nombre, especialidad, contraseña
 
-### Estrategia ventana 24h WhatsApp
-- Botón verde "Confirmar por WhatsApp" en cada email
-- Cliente hace click → abre wa.me → ventana 72h gratis
-- Ahorro estimado en Twilio: 35-50%
-
 ### Reasignación inteligente de reservas
 Cuando un barbero crea un bloqueo:
 1. Sistema detecta reservas afectadas
@@ -187,35 +223,78 @@ Cuando un barbero crea un bloqueo:
 3. Sugiere reasignar (default) o cancelar
 4. Email apropiado al cliente según acción
 
+### Estrategia ventana 24h WhatsApp
+- Botón verde "Confirmar por WhatsApp" en cada email
+- Cliente hace click → abre wa.me → ventana 72h gratis
+- Ahorro estimado en Twilio: 35-50%
+
 ---
 
-## ⏳ PENDIENTE
+## ⏳ PENDIENTE (POR PRIORIDAD)
 
-### Opción E: Twilio WhatsApp
-- Recordatorio 1-2h antes
-- Aprovechar ventana 24h
-- Template aprobado por Meta (3-5 días)
-- Estimado: 3-4 horas + espera Meta
+### 🥇 PRIORIDAD 1: Feature Flags / Plan Gating ⭐ ESTRATÉGICO
 
-### "+ Nueva cita" desde admin
+**Objetivo:** Activar/desactivar funcionalidades según el plan contratado, sin tocar código.
+
+**Decisiones tomadas:**
+- ✅ Acceso super-admin: login con `pablo@twinsapp.cl` rol `super_admin`
+- ✅ Aplicación de features: requiere logout/login
+- ✅ UX: mostrar feature bloqueada con CTA "Upgrade tu plan"
+- ✅ Arquitectura: campo `configuracion.features` jsonb en tabla barberia
+- ✅ Catálogo: BASE / PLUS / PRO definidos
+
+**Plan técnico (~2 horas):**
+1. SQL: agregar `features` jsonb al campo configuracion de TWINS
+2. Crear usuario `pablo@twinsapp.cl` con rol `super_admin`
+3. Crear helper `utils/features.js` con función `isFeatureEnabled(barberia, feature)`
+4. Crear `VistaSuperAdmin.jsx` con:
+   - Lista todas las barberías
+   - Editar features (toggle on/off)
+   - Cambiar plan contratado
+   - Ver estadísticas globales
+5. Modificar componentes para usar feature flags:
+   - VistaAdmin: ocultar tabs según features
+   - Emails: con/sin botón WhatsApp
+   - VistaBarbero: ocultar stats personales si OFF
+6. Modificar App.jsx routing: si rol = super_admin → VistaSuperAdmin
+7. Crear componente `FeatureBloqueada` con CTA "Upgrade tu plan"
+
+**Beneficios estratégicos:**
+- Vender más caro planes superiores
+- Hacer demos diferenciados sin tocar código
+- Promociones temporales
+- Upsell automático ("¿quieres analytics? Sube a PRO")
+- Diferenciar barberías
+
+---
+
+### 🥈 PRIORIDAD 2: Twilio WhatsApp (~3-4h + 3-5 días Meta)
+- Cuenta Twilio + verificación Meta
+- Template "recordatorio_cita" aprobado
+- Endpoint `/api/send-reminder-whatsapp`
+- Cron 1-2h antes de cada cita
+- Detección de ventana 24h activa
+- **Esta es la feature que justifica el plan PLUS ($80/mes)**
+
+---
+
+### 🥉 PRIORIDAD 3: "+ Nueva cita" funcional (~1h)
 - Botón ya existe (deshabilitado)
-- Permite agregar citas manuales (cliente llamó por teléfono, WhatsApp, etc.)
-- Reutilizar VistaReserva-FASE3 o crear modal compacto
+- Para clientes que llaman/escriben por WhatsApp directo
+- Modal compacto: cliente + servicio + barbero + fecha/hora
+- Crear reserva manualmente desde admin
 
-### Fase 5: Producción real
-- Reactivar RLS con policies
+---
+
+### Otras pendientes:
 - Self-signup nuevas barberías
 - Sistema facturación + Mercado Pago
-- Dominio propio
-- Configurar Resend con dominio propio
-
-### Mejoras futuras
+- Reactivar RLS con policies
+- Dominio propio + Resend con dominio
 - Foto de barbero
 - Horario por día de la semana
 - Bloqueos recurrentes
-- Vista calendario admin compartida (recursos por columna)
-- Stats avanzadas con gráficos
-- Notificación a barbero cuando le reasignan
+- Notificación a barbero cuando le reasignan reservas
 
 ---
 
@@ -244,6 +323,7 @@ Cuando un barbero crea un bloqueo:
 4. ✅ Reservas viejas sin email recibieron recordatorio
 5. ✅ App.jsx contaminado con código de proyecto fútbol (Firebase)
 6. ✅ Múltiples versiones de archivos en Downloads causaban confusión
+7. ✅ Calendario mostraba todo en blanco (faltaba `eventDisplay="block"`)
 
 ---
 
@@ -290,7 +370,8 @@ npm install @fullcalendar/react @fullcalendar/daygrid @fullcalendar/timegrid @fu
 10. Estrategia ventana 24h reduce costos Twilio 35-50%
 11. zsh interpreta `!` → usar comillas simples en greps
 12. FullCalendar dark mode = sobreescribir CSS con custom (`<style>` tag)
-13. Eventos en FullCalendar usan datetime ISO o strings 'YYYY-MM-DD'
+13. Eventos en FullCalendar vista mes → usar `eventDisplay="block"` para colores
+14. Feature flags con jsonb permiten escalar SaaS sin tocar código
 
 ---
 
@@ -320,37 +401,23 @@ npm install @fullcalendar/react @fullcalendar/daygrid @fullcalendar/timegrid @fu
 - Tabla `bloqueos_horarios`
 - Bloqueos con reasignación inteligente
 - Email de cancelación + reasignación
-- **Calendario visual con FullCalendar** ⭐ (Mes/Semana/Día)
+- Calendario visual con FullCalendar (Mes/Semana/Día)
+- Bug calendario colores blancos resuelto
 - ~20 archivos nuevos creados
-- 5 push exitosos
+- 6 push exitosos
 
 ---
 
-## 🎯 PRÓXIMA SESIÓN
+## 🎯 PRÓXIMA SESIÓN (RECOMENDADO)
 
-**Opciones disponibles para la próxima jornada:**
+**Implementar Feature Flags / Plan Gating** (~2 horas)
 
-### **Opción A: Twilio WhatsApp** (~3-4 horas + 3-5 días Meta)
-- Recordatorio 1-2h antes
-- Aprovecha ventana 24h
-- Habilita plan PLUS ($80/mes)
-- **Recomendado** porque desbloquea el modelo de negocio
+Esta es la **base estratégica** para escalar el SaaS. Sin esto, todos los planes tendrían las mismas features y no podrías cobrar diferenciado.
 
-### **Opción B: "+ Nueva cita" funcional** (~1 hora)
-- Permite agregar citas manuales desde admin
-- Para clientes que llaman/escriben
-- Más fácil, más rápido
-
-### **Opción C: Self-signup nuevas barberías** (~3-4 horas)
-- Página de signup público
-- Onboarding wizard
-- Inicio del modelo SaaS real
-
-### **Opción D: Pulir lo existente** (~2 horas)
-- Mejoras de UI/UX
-- Bug fixes
-- Performance
-- Testing con TWINS real
+Una vez listo:
+1. Twilio WhatsApp (habilita plan PLUS)
+2. "+ Nueva cita" funcional
+3. Self-signup nuevas barberías
 
 ---
 
@@ -360,28 +427,36 @@ npm install @fullcalendar/react @fullcalendar/daygrid @fullcalendar/timegrid @fu
 
 "Estoy continuando con TWINS Barbería. Ya tengo:
 - Flujo de reserva completo (6 pasos)
-- 5 emails automáticos (confirmación + recordatorio + cancelación + reasignación)
+- 5 emails automáticos
 - Panel admin con 7 tabs CRUD (incluye calendario visual)
 - Vista barbero con 4 tabs
 - Bloqueos con reasignación inteligente
-- Calendario FullCalendar Mes/Semana/Día con modal de detalles
+- Calendario FullCalendar funcionando
 
-Quiero implementar [Opción A / B / C / D]
+Quiero implementar Feature Flags / Plan Gating para diferenciar planes (BASE/PLUS/PRO).
+
+Decisiones tomadas:
+- Super-admin: usuario pablo@twinsapp.cl con rol super_admin
+- Features se aplican al hacer logout/login
+- Mostrar features bloqueadas con CTA 'Upgrade tu plan'
+- Arquitectura: configuracion.features jsonb en tabla barberia
 
 [Pegar contenido de este documento]"
 
 ---
 
-**Última actualización:** 2026-05-15 23:10 (hora Chile)
+**Última actualización:** 2026-05-15 23:30 (hora Chile)
 **Estado:**
 - Fase 1 ✅
 - Fase 2 ✅
 - Fase 3 ✅
-- Fase 4 ✅ (100% completa)
-- Panel Admin ✅ (100% completo + calendario)
-- Vista Barbero ✅ (100% completa)
+- Fase 4 ✅ (100%)
+- Panel Admin ✅ (100%)
+- Vista Barbero ✅ (100%)
 - Bloqueos ✅
-- Calendario ✅ ⭐ NUEVO
-- Fase 5 ⏳ (producción real)
+- Calendario ✅
+- **Feature Flags ⏳ (PRÓXIMA PRIORIDAD)**
+- Twilio ⏳
+- Producción real ⏳
 
-**Próximos pasos sugeridos:** Twilio WhatsApp → "+ Nueva cita" → Self-signup
+**Próximo paso:** Feature Flags / Plan Gating con super-admin

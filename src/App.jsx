@@ -5,6 +5,7 @@ import { VistaReserva } from "./VistaReserva-FASE3";
 import { VistaInicio } from "./VistaInicio";
 import { VistaAdmin } from "./VistaAdmin";
 import { VistaBarbero } from "./VistaBarbero";
+import { VistaSuperAdmin } from "./VistaSuperAdmin";
 
 // ============== CONFIGURACIÓN SUPABASE ==============
 const SUPABASE_URL = "https://fgtbhkeqzcqpjhziyijt.supabase.co";
@@ -19,7 +20,6 @@ export default function App() {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
 
-  // ============== LOGIN ==============
   const handleLogin = async (email, password) => {
     setCargando(true);
     setError("");
@@ -55,16 +55,17 @@ export default function App() {
 
   // ============== ROUTING POR ROL ==============
   const direccionarPorRol = (rol) => {
-    if (rol === "admin" || rol === "gerente") {
+    if (rol === "super_admin") {
+      setVista("super_admin"); // ⭐ NUEVA vista
+    } else if (rol === "admin" || rol === "gerente") {
       setVista("admin");
     } else if (rol === "barbero") {
-      setVista("barbero"); // ⭐ Ahora va a su propia vista
+      setVista("barbero");
     } else {
       setVista("inicio");
     }
   };
 
-  // ============== LOGOUT ==============
   const handleLogout = () => {
     localStorage.removeItem("usuario_id");
     localStorage.removeItem("rol");
@@ -72,7 +73,6 @@ export default function App() {
     setVista("login");
   };
 
-  // ============== VERIFICAR SESIÓN AL CARGAR ==============
   useEffect(() => {
     const verificarSesion = async () => {
       const usuarioId = localStorage.getItem("usuario_id");
@@ -140,6 +140,16 @@ export default function App() {
     );
   }
 
+  if (vista === "super_admin") {
+    return (
+      <VistaSuperAdmin
+        usuario={usuario}
+        onLogout={handleLogout}
+        supabase={supabase}
+      />
+    );
+  }
+
   return <div className="text-white p-4">Cargando...</div>;
 }
 
@@ -200,9 +210,9 @@ function VistaLogin({ onLogin, cargando, error }) {
         </form>
 
         <div className="mt-6 text-center text-stone-400 text-sm">
-          <p>Demo - Admin:</p>
-          <p>alonso@twins.cl / hash_alonso123</p>
-          <p className="mt-2 text-xs">Barberos: vicente@twins.cl / twins123</p>
+          <p>Demo:</p>
+          <p>Admin: alonso@twins.cl / hash_alonso123</p>
+          <p className="text-xs mt-1">Barbero: vicente@twins.cl / twins123</p>
         </div>
       </div>
     </div>

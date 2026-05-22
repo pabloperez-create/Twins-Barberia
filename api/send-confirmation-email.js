@@ -28,6 +28,7 @@ export default async function handler(req, res) {
       whatsappBarberia,
       direccionBarberia,
       reservaId,
+      mostrarWhatsApp = true, // ⭐ NUEVO - default true para compatibilidad
     } = req.body;
 
     if (!clienteEmail || !clienteNombre || !fecha || !hora) {
@@ -37,7 +38,6 @@ export default async function handler(req, res) {
     const mensajeWhatsApp = `Hola ${barberiaNombre}! 👋 Confirmo mi reserva del ${fecha} a las ${hora} con ${barberoNombre}. Código: ${reservaId}`;
     const linkWhatsApp = `https://wa.me/${whatsappBarberia}?text=${encodeURIComponent(mensajeWhatsApp)}`;
 
-    // Bloque de dirección (solo si existe y no es "Por definir")
     const bloqueDireccion = direccionBarberia && direccionBarberia !== "Por definir" ? `
           <tr>
             <td style="padding: 8px 16px;">
@@ -45,6 +45,33 @@ export default async function handler(req, res) {
               <p style="margin: 4px 0 0 0; color: #1c1917; font-size: 16px; font-weight: 600;">${direccionBarberia}</p>
             </td>
           </tr>` : '';
+
+    // ⭐ Bloque WhatsApp condicional
+    const bloqueWhatsApp = mostrarWhatsApp ? `
+    <tr>
+      <td style="padding: 20px 30px 10px 30px; text-align: center;">
+        <p style="margin: 0 0 16px 0; color: #57534e; font-size: 15px;">
+          Confirma tu reserva por WhatsApp para recibir actualizaciones:
+        </p>
+        <a href="${linkWhatsApp}" target="_blank" style="display: inline-block; background-color: #25D366; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px;">
+          💚 Confirmar por WhatsApp
+        </a>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 10px 30px 30px 30px; text-align: center;">
+        <p style="margin: 0; color: #a8a29e; font-size: 13px; font-style: italic;">
+          💡 Te enviaremos un recordatorio 1 día antes de tu cita
+        </p>
+      </td>
+    </tr>` : `
+    <tr>
+      <td style="padding: 20px 30px 30px 30px; text-align: center;">
+        <p style="margin: 0; color: #a8a29e; font-size: 13px; font-style: italic;">
+          💡 Te enviaremos un recordatorio 1 día antes de tu cita
+        </p>
+      </td>
+    </tr>`;
 
     const emailHtml = `
 <!DOCTYPE html>
@@ -99,27 +126,11 @@ export default async function handler(req, res) {
         </table>
       </td>
     </tr>
-    <tr>
-      <td style="padding: 20px 30px 10px 30px; text-align: center;">
-        <p style="margin: 0 0 16px 0; color: #57534e; font-size: 15px;">
-          Confirma tu reserva por WhatsApp para recibir actualizaciones:
-        </p>
-        <a href="${linkWhatsApp}" target="_blank" style="display: inline-block; background-color: #25D366; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px;">
-          💚 Confirmar por WhatsApp
-        </a>
-      </td>
-    </tr>
-    <tr>
-      <td style="padding: 10px 30px 30px 30px; text-align: center;">
-        <p style="margin: 0; color: #a8a29e; font-size: 13px; font-style: italic;">
-          💡 Te enviaremos un recordatorio 1 día antes de tu cita
-        </p>
-      </td>
-    </tr>
+    ${bloqueWhatsApp}
     <tr>
       <td style="background-color: #fafaf9; padding: 24px 30px; text-align: center; border-top: 1px solid #e7e5e4;">
         <p style="margin: 0; color: #78716c; font-size: 12px;">
-          ¿Necesitas cancelar o reagendar? Contáctanos por WhatsApp
+          ¿Necesitas cancelar o reagendar? Contáctanos
         </p>
         <p style="margin: 8px 0 0 0; color: #a8a29e; font-size: 11px;">
           Reserva ID: ${reservaId}

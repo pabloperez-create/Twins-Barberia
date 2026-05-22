@@ -4,6 +4,7 @@ import { TabMisReservas } from "./barbero/TabMisReservas";
 import { TabMiPerfil } from "./barbero/TabMiPerfil";
 import { TabMiHorario } from "./barbero/TabMiHorario";
 import { TabMisDiasLibres } from "./barbero/TabMisDiasLibres";
+import { isFeatureEnabled } from "./utils/features";
 
 export function VistaBarbero({ usuario, onLogout, supabase }) {
   const [tab, setTab] = useState("reservas");
@@ -39,12 +40,33 @@ export function VistaBarbero({ usuario, onLogout, supabase }) {
     setCargando(false);
   };
 
-  const tabs = [
-    { id: "reservas", label: "Mis Reservas" },
-    { id: "horario", label: "Mi Horario" },
-    { id: "dias_libres", label: "Días Libres" },
-    { id: "perfil", label: "Mi Perfil" },
-  ];
+  // ⭐ CONSTRUIR TABS SEGÚN FEATURES
+  const construirTabs = () => {
+    const tabs = [];
+
+    // Siempre disponibles (base del rol barbero)
+    tabs.push({ id: "reservas", label: "Mis Reservas" });
+    tabs.push({ id: "horario", label: "Mi Horario" });
+
+    // Días Libres - solo si feature bloqueos_horarios está activa
+    if (isFeatureEnabled(barberia, "bloqueos_horarios")) {
+      tabs.push({ id: "dias_libres", label: "Días Libres" });
+    }
+
+    // Mi Perfil - siempre disponible
+    tabs.push({ id: "perfil", label: "Mi Perfil" });
+
+    return tabs;
+  };
+
+  const tabs = construirTabs();
+
+  // Si el tab actual se desactivó, volver al primero
+  useEffect(() => {
+    if (barberia && !tabs.find((t) => t.id === tab)) {
+      setTab("reservas");
+    }
+  }, [barberia, tab]);
 
   if (cargando) {
     return (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { LogOut } from "lucide-react";
+import { LogOut, Crown } from "lucide-react";
 import { TabAgenda } from "./admin/TabAgenda";
 import { TabConfiguracion } from "./admin/TabConfiguracion";
 import { TabServicios } from "./admin/TabServicios";
@@ -7,6 +7,7 @@ import { TabAdicionales } from "./admin/TabAdicionales";
 import { TabBarberos } from "./admin/TabBarberos";
 import { TabEstadisticas } from "./admin/TabEstadisticas";
 import { TabBloqueos } from "./admin/TabBloqueos";
+import { isFeatureEnabled, PLANES } from "./utils/features";
 
 export function VistaAdmin({ usuario, onLogout, supabase }) {
   const [tab, setTab] = useState("agenda");
@@ -31,15 +32,41 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
     setCargando(false);
   };
 
-  const tabs = [
-    { id: "agenda", label: "Agenda" },
-    { id: "servicios", label: "Servicios" },
-    { id: "adicionales", label: "Adicionales" },
-    { id: "barberos", label: "Barberos" },
-    { id: "bloqueos", label: "Bloqueos" },
-    { id: "estadisticas", label: "Estadísticas" },
-    { id: "configuracion", label: "Configuración" },
-  ];
+  // ⭐ CONSTRUIR TABS DINÁMICAMENTE SEGÚN FEATURES
+  const construirTabs = () => {
+    const tabs = [];
+
+    // BASE - siempre disponibles
+    tabs.push({ id: "agenda", label: "Agenda" });
+    tabs.push({ id: "servicios", label: "Servicios" });
+    tabs.push({ id: "adicionales", label: "Adicionales" });
+    tabs.push({ id: "barberos", label: "Barberos" });
+
+    // BLOQUEOS - feature opcional
+    if (isFeatureEnabled(barberia, "bloqueos_horarios")) {
+      tabs.push({ id: "bloqueos", label: "Bloqueos" });
+    }
+
+    // ESTADÍSTICAS - feature PLUS
+    if (isFeatureEnabled(barberia, "estadisticas_barberia")) {
+      tabs.push({ id: "estadisticas", label: "Estadísticas" });
+    }
+
+    // CONFIGURACIÓN - siempre disponible
+    tabs.push({ id: "configuracion", label: "Configuración" });
+
+    return tabs;
+  };
+
+  const tabs = construirTabs();
+  const planActual = PLANES[barberia?.plan] || PLANES.base;
+
+  // Si el tab seleccionado se desactivó, volver a Agenda
+  useEffect(() => {
+    if (barberia && !tabs.find((t) => t.id === tab)) {
+      setTab("agenda");
+    }
+  }, [barberia, tab]);
 
   if (cargando) {
     return (
@@ -53,7 +80,21 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
     <div className="min-h-screen bg-stone-950 text-white p-6">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold">{barberia?.nombre || "Admin"}</h1>
+          <div className="flex items-center gap-3 mb-1">
+            <h1 className="text-3xl font-bold">{barberia?.nombre || "Admin"}</h1>
+            <span
+              className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded ${
+                barberia?.plan === "pro"
+                  ? "bg-violet-900 text-violet-200"
+                  : barberia?.plan === "plus"
+                    ? "bg-amber-900 text-amber-200"
+                    : "bg-stone-700 text-stone-300"
+              }`}
+            >
+              {barberia?.plan === "pro" && <Crown size={10} />}
+              {planActual.nombre.toUpperCase()}
+            </span>
+          </div>
           <p className="text-stone-400 text-sm">
             {usuario?.nombre} · {usuario?.rol}
           </p>

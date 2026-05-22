@@ -470,6 +470,14 @@ export function VistaReserva({ supabase, barberiaId }) {
               barberiaNombre: barberiaData?.nombre || "Tu Barbería",
               barberoNombre: barberoFinalData?.nombre || "el profesional",
               servicioNombre: servicioSeleccionado.nombre,
+              precioServicio: servicioSeleccionado.precio,
+              adicionales: adicionalesSeleccionados
+                .map((adId) => {
+                  const ad = adicionales.find((a) => a.id === adId);
+                  return ad ? { nombre: ad.nombre, precio: ad.precio } : null;
+                })
+                .filter(Boolean),
+              fecha: fechaSeleccionada,
               fecha: fechaSeleccionada,
               hora: horaSeleccionada,
               precio: precioTotal,

@@ -36,23 +36,19 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
   const construirTabs = () => {
     const tabs = [];
 
-    // BASE - siempre disponibles
     tabs.push({ id: "agenda", label: "Agenda" });
     tabs.push({ id: "servicios", label: "Servicios" });
     tabs.push({ id: "adicionales", label: "Adicionales" });
     tabs.push({ id: "barberos", label: "Barberos" });
 
-    // BLOQUEOS - feature opcional
     if (isFeatureEnabled(barberia, "bloqueos_horarios")) {
       tabs.push({ id: "bloqueos", label: "Bloqueos" });
     }
 
-    // ESTADÍSTICAS - feature PLUS
     if (isFeatureEnabled(barberia, "estadisticas_barberia")) {
       tabs.push({ id: "estadisticas", label: "Estadísticas" });
     }
 
-    // CONFIGURACIÓN - siempre disponible
     tabs.push({ id: "configuracion", label: "Configuración" });
 
     return tabs;
@@ -61,7 +57,6 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
   const tabs = construirTabs();
   const planActual = PLANES[barberia?.plan] || PLANES.base;
 
-  // Si el tab seleccionado se desactivó, volver a Agenda
   useEffect(() => {
     if (barberia && !tabs.find((t) => t.id === tab)) {
       setTab("agenda");
@@ -126,7 +121,12 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
 
       <div className="max-w-6xl">
         {tab === "agenda" && (
-          <TabAgenda supabase={supabase} barberiaId={usuario?.barberia_id} />
+          <TabAgenda
+            supabase={supabase}
+            barberiaId={usuario?.barberia_id}
+            usuario={usuario}
+            barberia={barberia}
+          />
         )}
         {tab === "servicios" && (
           <TabServicios supabase={supabase} barberiaId={usuario?.barberia_id} />

@@ -18,20 +18,14 @@ import {
   DollarSign,
 } from "lucide-react";
 import { Modal } from "../components/Modal";
+import { ModalNuevaCita } from "../components/ModalNuevaCita";
 
-// Paleta de colores para asignar a barberos automáticamente
 const COLORES_BARBEROS = [
-  "#10b981", // emerald
-  "#3b82f6", // blue
-  "#8b5cf6", // violet
-  "#f59e0b", // amber
-  "#ec4899", // pink
-  "#06b6d4", // cyan
-  "#f97316", // orange
-  "#84cc16", // lime
+  "#10b981", "#3b82f6", "#8b5cf6", "#f59e0b",
+  "#ec4899", "#06b6d4", "#f97316", "#84cc16",
 ];
 
-export function TabAgenda({ supabase, barberiaId }) {
+export function TabAgenda({ supabase, barberiaId, usuario, barberia }) {
   const calendarRef = useRef(null);
   const [vista, setVista] = useState("dayGridMonth");
   const [reservas, setReservas] = useState([]);
@@ -41,6 +35,7 @@ export function TabAgenda({ supabase, barberiaId }) {
   const [mensaje, setMensaje] = useState({ tipo: "", texto: "" });
 
   const [modalDetalles, setModalDetalles] = useState(null);
+  const [modalNuevaCita, setModalNuevaCita] = useState(false); // ⭐ NUEVO
   const [modalReagendar, setModalReagendar] = useState(null);
   const [nuevaFecha, setNuevaFecha] = useState("");
   const [nuevaHora, setNuevaHora] = useState("");
@@ -90,7 +85,6 @@ export function TabAgenda({ supabase, barberiaId }) {
     return COLORES_BARBEROS[index % COLORES_BARBEROS.length] || "#10b981";
   };
 
-  // Eventos para FullCalendar - todos como BLOQUES de color
   const eventosCalendario = [
     ...reservas.map((r) => {
       const color = getColorBarbero(r.barbero_id);
@@ -110,7 +104,7 @@ export function TabAgenda({ supabase, barberiaId }) {
         backgroundColor: esCancelada ? "#44403c" : color,
         borderColor: esCancelada ? "#44403c" : color,
         textColor: "#ffffff",
-        display: "block", // ⭐ FUERZA modo bloque en TODAS las vistas (incluido mes)
+        display: "block",
         classNames: esCancelada ? ["reserva-cancelada"] : ["reserva"],
         extendedProps: {
           tipo: "reserva",
@@ -235,21 +229,15 @@ export function TabAgenda({ supabase, barberiaId }) {
 
       if (error) throw error;
 
-      const { data: barberia } = await supabase
-        .from("barberia")
-        .select("*")
-        .eq("id", barberiaId)
-        .single();
-
       if (modalCancelar.cliente_email) {
         try {
           await fetch("/api/send-cancellation-email", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
+              barberiaId: barberiaId,
               clienteEmail: modalCancelar.cliente_email,
               clienteNombre: modalCancelar.cliente_nombre,
-              barberiaId: barberiaId,
               barberiaNombre: barberia?.nombre || "Tu Barbería",
               barberoNombre: modalCancelar.barbero?.nombre || "el profesional",
               servicioNombre: modalCancelar.servicio?.nombre || "tu servicio",
@@ -318,8 +306,6 @@ export function TabAgenda({ supabase, barberiaId }) {
         .fc-timegrid-axis {
           background-color: #1c1917;
         }
-        
-        /* ⭐ EVENTOS COMO BLOQUES DE COLOR (clave del fix) */
         .fc-event {
           border: none !important;
           padding: 3px 6px !important;
@@ -334,29 +320,19 @@ export function TabAgenda({ supabase, barberiaId }) {
           transform: scale(1.02);
           transition: transform 0.1s;
         }
-        
-        /* Forzar texto blanco en bloques */
         .fc-event-title, .fc-event-time {
           color: white !important;
         }
-        
-        /* Reservas canceladas */
         .reserva-cancelada {
           text-decoration: line-through;
           opacity: 0.4 !important;
         }
-        
-        /* Bloqueos en cursiva */
         .bloqueo .fc-event-title {
           font-style: italic;
         }
-        
-        /* Título del calendario */
         .fc-toolbar-title {
           color: #fde68a !important;
         }
-        
-        /* Botones del toolbar */
         .fc-button {
           background-color: #44403c !important;
           border: 1px solid #57534e !important;
@@ -372,8 +348,6 @@ export function TabAgenda({ supabase, barberiaId }) {
           color: #1c1917 !important;
           border-color: #fde68a !important;
         }
-        
-        /* "+X más" link */
         .fc-more-link {
           color: #a8a29e !important;
           font-weight: 600;
@@ -384,7 +358,6 @@ export function TabAgenda({ supabase, barberiaId }) {
         }
       `}</style>
 
-      {/* Header */}
       <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
         <div className="flex items-center gap-4">
           <h2 className="text-2xl font-bold">Agenda</h2>
@@ -422,17 +395,16 @@ export function TabAgenda({ supabase, barberiaId }) {
           </div>
         </div>
 
+        {/* ⭐ BOTÓN NUEVA CITA ACTIVADO */}
         <button
-          disabled
-          title="Próximamente: agregar citas manuales"
-          className="flex items-center gap-2 bg-stone-700 text-stone-400 font-bold px-4 py-2 rounded cursor-not-allowed opacity-60"
+          onClick={() => setModalNuevaCita(true)}
+          className="flex items-center gap-2 bg-amber-200 hover:bg-amber-100 text-stone-950 font-bold px-4 py-2 rounded"
         >
           <Plus size={18} />
           Nueva cita
         </button>
       </div>
 
-      {/* Leyenda */}
       {barberos.length > 0 && (
         <div className="bg-stone-900 border border-stone-700 rounded p-3 mb-4 flex flex-wrap gap-3 items-center">
           <span className="text-xs text-stone-400 font-semibold">
@@ -474,7 +446,6 @@ export function TabAgenda({ supabase, barberiaId }) {
         </div>
       )}
 
-      {/* Calendario */}
       <div className="bg-stone-900 border border-stone-700 rounded p-4">
         {cargando ? (
           <p className="text-stone-400 text-center py-12">
@@ -520,6 +491,20 @@ export function TabAgenda({ supabase, barberiaId }) {
         )}
       </div>
 
+      {/* ⭐ MODAL NUEVA CITA */}
+      <ModalNuevaCita
+        isOpen={modalNuevaCita}
+        onClose={() => setModalNuevaCita(false)}
+        onCreated={() => {
+          cargarDatos();
+          mostrarMensaje("success", "✅ Cita creada exitosamente");
+        }}
+        supabase={supabase}
+        barberiaId={barberiaId}
+        barberia={barberia}
+        usuario={usuario}
+      />
+
       {/* Modal DETALLES */}
       <Modal
         isOpen={!!modalDetalles}
@@ -563,12 +548,16 @@ export function TabAgenda({ supabase, barberiaId }) {
               </div>
             )}
 
+            {modalDetalles.creada_manualmente && (
+              <div className="bg-blue-900 bg-opacity-30 border border-blue-700 rounded p-2 text-xs text-blue-200">
+                ✋ Cita creada manualmente desde admin
+              </div>
+            )}
+
             <div className="bg-stone-800 rounded p-3">
               <div className="flex items-center gap-2 mb-2">
                 <User size={16} className="text-amber-200" />
-                <p className="font-bold text-lg">
-                  {modalDetalles.cliente_nombre}
-                </p>
+                <p className="font-bold text-lg">{modalDetalles.cliente_nombre}</p>
               </div>
               <div className="space-y-1.5 text-sm text-stone-300">
                 {modalDetalles.cliente_telefono && (
@@ -717,8 +706,9 @@ export function TabAgenda({ supabase, barberiaId }) {
             <div className="bg-stone-800 p-3 rounded text-sm">
               <p className="font-semibold">{modalCancelar.cliente_nombre}</p>
               <p className="text-stone-400">
-                {modalCancelar.fecha} · {modalCancelar.hora_inicio?.slice(0, 5)}{" "}
-                · {modalCancelar.servicio?.nombre}
+                {modalCancelar.fecha} ·{" "}
+                {modalCancelar.hora_inicio?.slice(0, 5)} ·{" "}
+                {modalCancelar.servicio?.nombre}
               </p>
             </div>
             <div>

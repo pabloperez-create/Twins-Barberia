@@ -100,7 +100,10 @@ export function TabMisDiasLibres({ supabase, barbero, barberia }) {
       return;
     }
     if (form.fecha_inicio > form.fecha_fin) {
-      mostrarMensaje("error", "La fecha de inicio debe ser anterior a la de fin");
+      mostrarMensaje(
+        "error",
+        "La fecha de inicio debe ser anterior a la de fin",
+      );
       return;
     }
     if (form.tipo === "bloque_horas") {
@@ -134,9 +137,7 @@ export function TabMisDiasLibres({ supabase, barbero, barberia }) {
         afectadas = afectadas.filter((r) => {
           const horaRes = r.hora_inicio.slice(0, 5);
           const horaResEnd = sumarMinutos(horaRes, r.duracion_minutos);
-          return (
-            horaRes < form.hora_fin && horaResEnd > form.hora_inicio
-          );
+          return horaRes < form.hora_fin && horaResEnd > form.hora_inicio;
         });
       }
 
@@ -190,7 +191,8 @@ export function TabMisDiasLibres({ supabase, barbero, barberia }) {
     const disponibles = [];
     for (const otroBarbero of barberos) {
       // 1. Verificar horario laboral
-      const horaInicioBarbero = otroBarbero.horario_inicio?.slice(0, 5) || "00:00";
+      const horaInicioBarbero =
+        otroBarbero.horario_inicio?.slice(0, 5) || "00:00";
       const horaFinBarbero = otroBarbero.horario_fin?.slice(0, 5) || "23:59";
       const horaRes = reserva.hora_inicio.slice(0, 5);
       const horaResEnd = sumarMinutos(horaRes, reserva.duracion_minutos);
@@ -285,6 +287,7 @@ export function TabMisDiasLibres({ supabase, barbero, barberia }) {
                 body: JSON.stringify({
                   clienteEmail: reserva.cliente_email,
                   clienteNombre: reserva.cliente_nombre,
+                  barberiaId: barbero.barberia_id,
                   barberiaNombre: barberia?.nombre || "Tu Barbería",
                   barberoNombre: barbero.nombre,
                   servicioNombre: reserva.servicio?.nombre || "tu servicio",
@@ -300,7 +303,9 @@ export function TabMisDiasLibres({ supabase, barbero, barberia }) {
           }
         } else if (decision.action === "reassign") {
           // Reasignar
-          const nuevoBarbero = barberos.find((b) => b.id === decision.barbero_id);
+          const nuevoBarbero = barberos.find(
+            (b) => b.id === decision.barbero_id,
+          );
           await supabase
             .from("reservas")
             .update({ barbero_id: decision.barbero_id })
@@ -315,6 +320,7 @@ export function TabMisDiasLibres({ supabase, barbero, barberia }) {
                 body: JSON.stringify({
                   clienteEmail: reserva.cliente_email,
                   clienteNombre: reserva.cliente_nombre,
+                  barberiaId: barbero.barberia_id,
                   barberiaNombre: barberia?.nombre || "Tu Barbería",
                   barberoAnterior: barbero.nombre,
                   barberoNuevo: nuevoBarbero.nombre,
@@ -339,8 +345,7 @@ export function TabMisDiasLibres({ supabase, barbero, barberia }) {
       ).length;
 
       let msg = "✅ Bloqueo creado";
-      if (totalReasignadas > 0)
-        msg += ` · ${totalReasignadas} reasignada(s)`;
+      if (totalReasignadas > 0) msg += ` · ${totalReasignadas} reasignada(s)`;
       if (totalCanceladas > 0) msg += ` · ${totalCanceladas} cancelada(s)`;
 
       mostrarMensaje("success", msg);
@@ -418,7 +423,9 @@ export function TabMisDiasLibres({ supabase, barbero, barberia }) {
       ) : bloqueos.length === 0 ? (
         <div className="bg-stone-900 border border-stone-700 rounded p-8 text-center">
           <CalendarOff size={48} className="mx-auto mb-3 text-stone-600" />
-          <p className="text-stone-400 mb-2">No tienes días libres programados</p>
+          <p className="text-stone-400 mb-2">
+            No tienes días libres programados
+          </p>
           <p className="text-stone-500 text-sm">
             Crea bloqueos para vacaciones, días personales o citas médicas
           </p>
@@ -438,7 +445,9 @@ export function TabMisDiasLibres({ supabase, barbero, barberia }) {
                   <p className="font-semibold">
                     {b.motivo || "Sin motivo especificado"}
                   </p>
-                  <p className="text-sm text-stone-400">{formatearBloqueo(b)}</p>
+                  <p className="text-sm text-stone-400">
+                    {formatearBloqueo(b)}
+                  </p>
                 </div>
               </div>
               <button
@@ -552,7 +561,9 @@ export function TabMisDiasLibres({ supabase, barbero, barberia }) {
                 <input
                   type="date"
                   value={form.fecha_fin}
-                  onChange={(e) => setForm({ ...form, fecha_fin: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, fecha_fin: e.target.value })
+                  }
                   min={form.fecha_inicio}
                   className="w-full bg-stone-800 border border-stone-700 rounded px-3 py-2 text-white text-sm"
                 />
@@ -581,7 +592,9 @@ export function TabMisDiasLibres({ supabase, barbero, barberia }) {
                   <input
                     type="time"
                     value={form.hora_fin}
-                    onChange={(e) => setForm({ ...form, hora_fin: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, hora_fin: e.target.value })
+                    }
                     className="w-full bg-stone-800 border border-stone-700 rounded px-3 py-2 text-white text-sm"
                   />
                 </div>
@@ -607,8 +620,9 @@ export function TabMisDiasLibres({ supabase, barbero, barberia }) {
           <div className="space-y-4">
             <div className="bg-amber-900 bg-opacity-30 border border-amber-700 rounded p-3 text-sm">
               <p className="text-amber-200">
-                Encontramos <strong>{reservasAfectadas.length}</strong> reserva(s)
-                que se cruzan con tu bloqueo. Para cada una, elige qué hacer:
+                Encontramos <strong>{reservasAfectadas.length}</strong>{" "}
+                reserva(s) que se cruzan con tu bloqueo. Para cada una, elige
+                qué hacer:
               </p>
             </div>
 
@@ -650,7 +664,9 @@ export function TabMisDiasLibres({ supabase, barbero, barberia }) {
                         <Users size={14} className="text-green-400" />
                         <span className="text-sm">Reasignar a:</span>
                         <select
-                          value={decision.barbero_id || r.barberosDisponibles[0].id}
+                          value={
+                            decision.barbero_id || r.barberosDisponibles[0].id
+                          }
                           onChange={(e) =>
                             setDecisiones({
                               ...decisiones,

@@ -155,6 +155,7 @@ export function TabMisReservas({ supabase, barbero, barberia }) {
             body: JSON.stringify({
               clienteEmail: modalCancelar.cliente_email,
               clienteNombre: modalCancelar.cliente_nombre,
+              barberiaId: barbero.barberia_id,
               barberiaNombre: barberia?.nombre || "Tu Barbería",
               barberoNombre: barbero.nombre,
               servicioNombre: modalCancelar.servicio?.nombre || "tu servicio",
@@ -240,7 +241,9 @@ export function TabMisReservas({ supabase, barbero, barberia }) {
           {reservas.length === 0 ? (
             <div className="text-center py-8">
               <Calendar size={48} className="mx-auto mb-3 text-stone-600" />
-              <p className="text-stone-400">No tienes reservas en este filtro</p>
+              <p className="text-stone-400">
+                No tienes reservas en este filtro
+              </p>
             </div>
           ) : (
             <div className="space-y-3">

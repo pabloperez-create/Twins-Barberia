@@ -249,6 +249,7 @@ export function TabAgenda({ supabase, barberiaId }) {
             body: JSON.stringify({
               clienteEmail: modalCancelar.cliente_email,
               clienteNombre: modalCancelar.cliente_nombre,
+              barberiaId: barberiaId,
               barberiaNombre: barberia?.nombre || "Tu Barbería",
               barberoNombre: modalCancelar.barbero?.nombre || "el profesional",
               servicioNombre: modalCancelar.servicio?.nombre || "tu servicio",
@@ -565,7 +566,9 @@ export function TabAgenda({ supabase, barberiaId }) {
             <div className="bg-stone-800 rounded p-3">
               <div className="flex items-center gap-2 mb-2">
                 <User size={16} className="text-amber-200" />
-                <p className="font-bold text-lg">{modalDetalles.cliente_nombre}</p>
+                <p className="font-bold text-lg">
+                  {modalDetalles.cliente_nombre}
+                </p>
               </div>
               <div className="space-y-1.5 text-sm text-stone-300">
                 {modalDetalles.cliente_telefono && (
@@ -714,9 +717,8 @@ export function TabAgenda({ supabase, barberiaId }) {
             <div className="bg-stone-800 p-3 rounded text-sm">
               <p className="font-semibold">{modalCancelar.cliente_nombre}</p>
               <p className="text-stone-400">
-                {modalCancelar.fecha} ·{" "}
-                {modalCancelar.hora_inicio?.slice(0, 5)} ·{" "}
-                {modalCancelar.servicio?.nombre}
+                {modalCancelar.fecha} · {modalCancelar.hora_inicio?.slice(0, 5)}{" "}
+                · {modalCancelar.servicio?.nombre}
               </p>
             </div>
             <div>

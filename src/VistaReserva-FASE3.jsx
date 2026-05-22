@@ -94,7 +94,12 @@ export function VistaReserva({ supabase, barberiaId }) {
     return duracionServicio + duracionAdicionales;
   };
 
-  const barberoDisponibleEnHora = (barbero, hora, reservasDelBarbero, bloqueosDelBarbero = []) => {
+  const barberoDisponibleEnHora = (
+    barbero,
+    hora,
+    reservasDelBarbero,
+    bloqueosDelBarbero = [],
+  ) => {
     const duracionTotal = calcularDuracionTotal();
     const horaInicio = new Date(`2000-01-01 ${barbero.horario_inicio}`);
     const horaFin = new Date(`2000-01-01 ${barbero.horario_fin}`);
@@ -134,7 +139,8 @@ export function VistaReserva({ supabase, barberiaId }) {
   // Helper: obtener bloqueos aplicables a un barbero en una fecha
   const obtenerBloqueosDelBarbero = (barberoId, fecha, todosLosBloqueos) => {
     return todosLosBloqueos.filter((b) => {
-      const aplicaABarbero = b.barbero_id === barberoId || b.barbero_id === null;
+      const aplicaABarbero =
+        b.barbero_id === barberoId || b.barbero_id === null;
       const enRango = fecha >= b.fecha_inicio && fecha <= b.fecha_fin;
       return aplicaABarbero && enRango;
     });
@@ -162,7 +168,9 @@ export function VistaReserva({ supabase, barberiaId }) {
       );
 
       // Si hay bloqueo de día completo, no hay horarios
-      const tieneBloqueoCompleto = bloqueosDelBarbero.some((b) => !b.hora_inicio);
+      const tieneBloqueoCompleto = bloqueosDelBarbero.some(
+        (b) => !b.hora_inicio,
+      );
       if (tieneBloqueoCompleto) {
         setHorariosBarbero([]);
         return;
@@ -458,6 +466,7 @@ export function VistaReserva({ supabase, barberiaId }) {
             body: JSON.stringify({
               clienteEmail: clienteEmail,
               clienteNombre: clienteNombre,
+              barberiaId: barberiaId,
               barberiaNombre: barberiaData?.nombre || "Tu Barbería",
               barberoNombre: barberoFinalData?.nombre || "el profesional",
               servicioNombre: servicioSeleccionado.nombre,
@@ -466,8 +475,7 @@ export function VistaReserva({ supabase, barberiaId }) {
               precio: precioTotal,
               whatsappBarberia:
                 barberiaData?.configuracion?.whatsapp || "56000000000",
-              direccionBarberia:
-                barberiaData?.configuracion?.direccion || null,
+              direccionBarberia: barberiaData?.configuracion?.direccion || null,
               reservaId: reservaId,
             }),
           });

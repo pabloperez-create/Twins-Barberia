@@ -51,7 +51,7 @@ export default async function handler(req, res) {
         .eq('id', barberiaId)
         .single();
       const features = barberia?.configuracion?.features || {};
-      mostrarWhatsApp = features.whatsapp_confirmacion === true;
+      mostrarWhatsApp = true; // Botón wa.me siempre visible, no depende de Twilio
     }
 
     const mensajeWhatsApp = `Hola ${barberiaNombre}! 👋 Confirmo mi reserva del ${fecha} a las ${hora} con ${barberoNombre}. Código: ${reservaId}`;

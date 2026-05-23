@@ -33,19 +33,43 @@ KEY: sb_publishable_8E23tN1s3wbAIqjhX-1icg_VBCYqsMO
 
 ## 💰 MODELO DE NEGOCIO
 
-```
-PLANES (precio base + $10/barbero):
-- BASE: $60  → email + multi-barberos + calendario + bloqueos
-- PLUS: $80  → + WhatsApp + Stats avanzadas + Reasignación ⭐
-- PRO:  $130 → + Bot IA + Multi-sucursal + Marketing
+### Planes (precio fijo mensual en USD):
 
-ADD-ONS (sobre BASE):
-+ WhatsApp recordatorios: $20/mes
-+ Stats avanzadas: $15/mes
-+ Bot WhatsApp IA: $40/mes
-+ Marketing automatizado: $25/mes
-+ Multi-sucursal: $30/mes
-```
+| Plan | Precio | CLP (~$950) | Incluye |
+|---|---|---|---|
+| **BASE** | $60 USD | ~$57.000 | Reservas + email + calendario + bloqueos |
+| **PLUS** | $80 USD | ~$76.000 | + Stats avanzadas + Reasignación + WhatsApp* |
+| **PRO** | $120 USD | ~$114.000 | + Bot IA + Multi-sucursal + Marketing |
+
+*WhatsApp automático = +$10.000 CLP si lo activan (incluido en PLUS)
+
+### Add-ons (sobre plan BASE):
+
+| Add-on | Costo real/mes | Cobro cliente | Tu margen |
+|---|---|---|---|
+| **WhatsApp recordatorios** | ~$3-5 USD (Twilio) | $15 USD | ~$10-12 USD |
+| **Stats avanzadas** | $0 (ya construido) | $10 USD | $10 USD |
+| **Reasignación barberos** | $0 (ya construido) | $10 USD | $10 USD |
+| **Bot IA WhatsApp** | ~$10-15 USD (Claude API + Twilio) | $40 USD | ~$25-30 USD |
+| **Multi-sucursal** | $0 (ya construido) | $25 USD | $25 USD |
+| **Marketing automatizado** | ~$5-8 USD (Resend extra) | $20 USD | ~$12-15 USD |
+
+**Regla:** PLUS siempre más barato que BASE + sus add-ons por separado → empuja upsell natural.
+
+### Costos fijos plataforma:
+
+| Servicio | Hoy | Con 10+ clientes |
+|---|---|---|
+| Vercel | $0 (Hobby) | $20 USD (Pro) |
+| Supabase | $0 (Free) | $0 (Free por largo tiempo) |
+| Resend | $0 (hasta 3.000 emails) | $20 USD (Pro, +3.000 emails) |
+| Twilio | $0 (desactivado) | Variable según uso |
+| **Total** | **$0** | **~$40-65 USD** |
+
+### Margen estimado con 10 clientes BASE:
+- Ingresos: $600 USD
+- Costos: ~$55 USD
+- **Margen neto: ~$545 USD (~$520.000 CLP)**
 
 ---
 
@@ -86,14 +110,15 @@ creada_manualmente (boolean), creada_por_usuario_id
 │   ├── send-confirmation-email.js     (auto-lee features + desglose adicionales)
 │   ├── send-reminder-emails.js        (cron diario, auto-lee features)
 │   ├── send-cancellation-email.js     (auto-lee features)
-│   └── send-reassignment-email.js     (auto-lee features)
+│   ├── send-reassignment-email.js     (auto-lee features)
+│   └── send-whatsapp.js               ⭐ NUEVO - Twilio WhatsApp (4 tipos de mensaje)
 ├── src/
-│   ├── App.jsx                        ⭐ MODIFICADO HOY (arranca en "inicio" no "login")
-│   ├── VistaInicio.jsx                ⭐ MODIFICADO HOY (landing pública sin login)
-│   ├── VistaReserva-FASE3.jsx         (con desglose adicionales en email)
+│   ├── App.jsx                        (arranca en "inicio" no "login")
+│   ├── VistaInicio.jsx                (landing pública sin login)
+│   ├── VistaReserva-FASE3.jsx         (con +569 fijo + llamada WhatsApp)
 │   ├── VistaAdmin.jsx                 (feature flags + badge plan)
 │   ├── VistaBarbero.jsx               (feature flags)
-│   ├── VistaSuperAdmin.jsx            (gestión SaaS)
+│   ├── VistaSuperAdmin.jsx            ⭐ ACTUALIZADO (crear barbería + dar de baja + buscador)
 │   ├── admin/
 │   │   ├── TabAgenda.jsx              (FullCalendar + "+ Nueva cita")
 │   │   ├── TabConfiguracion.jsx
@@ -101,7 +126,7 @@ creada_manualmente (boolean), creada_por_usuario_id
 │   │   ├── TabAdicionales.jsx
 │   │   ├── TabBarberos.jsx
 │   │   ├── TabBloqueos.jsx
-│   │   └── TabEstadisticas.jsx        (versión básica - pendiente upgrade)
+│   │   └── TabEstadisticas.jsx        ⭐ ACTUALIZADO (Recharts completo)
 │   ├── barbero/
 │   │   ├── TabMisReservas.jsx
 │   │   ├── TabMiPerfil.jsx
@@ -120,19 +145,21 @@ creada_manualmente (boolean), creada_por_usuario_id
 ### Dependencias:
 - `@supabase/supabase-js`, `lucide-react`, `resend`
 - `@fullcalendar/react`, `daygrid`, `timegrid`, `interaction`, `core`
-- ⏳ **A instalar:** `recharts` (para Stats avanzadas)
+- `recharts` ✅ instalado
+- `twilio` ✅ instalado
 
 ---
 
 ## ✅ FEATURES COMPLETADAS
 
 ### Flujo cliente (público)
+- Landing pública sin login (VistaInicio.jsx)
 - 6 pasos para reservar
-- Validaciones por paso
-- Teléfono +569 fijo (a verificar si está en modal nuevo)
+- +569 fijo en campo teléfono ✅
 - "Cualquier barbero" balanceado
 - Excluye horarios bloqueados
 - Email con desglose de adicionales
+- WhatsApp de confirmación vía Twilio (desactivado por ahora)
 
 ### Email automation (5 emails con feature flags)
 - ✉️ Confirmación (con/sin botón WhatsApp según feature)
@@ -140,171 +167,148 @@ creada_manualmente (boolean), creada_por_usuario_id
 - ✉️ Recordatorio HOY
 - ✉️ Cancelación con motivo
 - ✉️ Reasignación entre barberos
-- TODOS auto-leen features de Supabase
-- Confirmation muestra desglose de adicionales
+
+### WhatsApp (Twilio) ⭐ NUEVO
+- Endpoint `/api/send-whatsapp.js` listo
+- 4 tipos: confirmacion, recordatorio_24h, recordatorio_hoy, cancelacion
+- Auto-lee feature flag antes de enviar
+- Credenciales en Vercel env vars
+- **Estado actual: DESACTIVADO** (features `whatsapp_recordatorios` y `whatsapp_confirmacion` OFF)
+- Sandbox Twilio: `whatsapp:+14155238886`
+- Modelo elegido: Twilio solo para notificaciones automáticas. Botón wa.me en email para conversación directa cliente↔barbería (gratis)
+
+### Stats avanzadas (Recharts) ⭐ NUEVO
+- KPIs con % vs mes anterior
+- Gráfico reservas por día (30 días)
+- Gráfico ingresos por mes (6 meses)
+- Barras por barbero
+- Pie chart servicios
+- Top 5 clientes recurrentes
+- Insights mejor día/hora
+- Filtros: Este mes / Trimestre / Este año
+- Exportar CSV
 
 ### Panel Admin Alonso (7 tabs con feature flags)
-- **Agenda:** Calendario FullCalendar (Mes/Semana/Día)
-  - "+ Nueva cita" funcional ⭐
+- **Agenda:** Calendario FullCalendar (Mes/Semana/Día) + "+ Nueva cita"
 - Servicios, Adicionales, Barberos
-- Bloqueos, Estadísticas (versión básica)
+- Bloqueos, Estadísticas avanzadas ✅
 - Configuración
 
 ### Vista Barbero (4 tabs con feature flags)
 - Mis Reservas, Mi Horario, Días Libres, Mi Perfil
 
-### Super Admin
-- pablo@twinsapp.cl
-- Lista de barberías + stats globales
-- Toggle on/off de cada feature
-- Cambiar plan contratado
+### Super Admin ⭐ ACTUALIZADO
+- Lista barberías con buscador + filtro activas/inactivas/todas
+- Por defecto muestra solo activas
+- **Crear nueva barbería** desde formulario (nombre, email, password, teléfono, plan, opcionales)
+  - Features se activan automáticamente según plan
+  - Crea registro en `barberia` + usuario admin en `usuarios`
+- **Dar de baja / Reactivar** barberías (baja lógica, no elimina datos)
+- Toggle features individuales
+- Cambiar plan
+- Reset features según plan
+- Stats globales (barberías activas/inactivas, barberos, ingresos estimados)
 
 ### "+ Nueva cita" funcional
 - Modal compacto desde Agenda
-- Hora en formato 24h (selects HH:MM con 00/15/30/45)
-- Email obligatorio si checkbox marcado
-- Warning de conflictos (reservas + bloqueos)
+- Hora en formato 24h
+- Warning de conflictos
 - Admin puede forzar creación
-- Guarda creada_manualmente=true + creada_por_usuario_id
 - Email con desglose de adicionales
 
-### Bloqueos + Reasignación inteligente
-- Admin: gestión global
-- Barbero: días libres con modal 2 pasos
-- Detecta reservas afectadas, sugiere reasignar o cancelar
-
 ---
 
-## 🚨 SESIÓN ACTUAL (22 may PM) - EN PROGRESO
+## 🔑 VARIABLES DE ENTORNO
 
-### ✅ Completado en esta sesión:
-1. Frontend pasa `barberiaId` a emails (4 archivos)
-2. Endpoints email auto-leen features de Supabase
-3. "+ Nueva cita" funcional completo (modal + columnas BD)
-4. Hora 24h con selects (no más AM/PM)
-5. Email con desglose de adicionales (admin + público)
-6. Refactor `App.jsx` para que arranque en "inicio" sin login
-7. Nuevo `VistaInicio.jsx` como landing pública
-
-### 🔴 BUG ACTIVO al cerrar el chat:
-**Error en localhost:** `lucide-react no exporta 'Instagram'`
-
-**Causa:** El ícono `Instagram` no existe en la versión instalada de lucide-react.
-
-**Fix pendiente (1 minuto):**
-1. Abrir `~/Desktop/twins-barberia/src/VistaInicio.jsx`
-2. Línea 2 - quitar `Instagram` del import:
-   ```javascript
-   // DE:
-   import { Scissors, Calendar, Clock, MapPin, Instagram, LogIn } from "lucide-react";
-   // A:
-   import { Scissors, Calendar, Clock, MapPin, LogIn } from "lucide-react";
-   ```
-3. Buscar `<Instagram size={18}` y reemplazar por:
-   ```javascript
-   <span className="text-amber-200 flex-shrink-0 mt-0.5 text-lg">📷</span>
-   ```
-4. Guardar + hard refresh
-
----
-
-## ⏳ PENDIENTE INMEDIATO (próximo chat)
-
-### 🥇 PRIORIDAD 1: Arreglar bug Instagram + testear refactor login
-1. Aplicar el fix de arriba (1 min)
-2. Verificar tests:
-   - Landing pública aparece sin login
-   - "Reservar ahora" abre flujo de 6 pasos sin pedir login
-   - Login sigue funcionando para admin/barbero
-   - Sesión persistente si hay localStorage
-   - Logout vuelve al inicio público
-3. Push a producción
-
-### 🥈 PRIORIDAD 2: Bug del teléfono +569 en reserva pública
-Pablo reportó que el modal de la reserva pública NO tiene `+569` fijo.
-
-Verificar con:
-```bash
-grep -n "569\|cliente_telefono\|handleTelefono" ~/Desktop/twins-barberia/src/VistaReserva-FASE3.jsx | head -10
+### `.env.local` (local):
+```
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_KEY=...
+RESEND_API_KEY=...
+TWILIO_ACCOUNT_SID=...
+TWILIO_AUTH_TOKEN=...
+TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
 ```
 
-Si no tiene, agregar lo mismo que está en `ModalNuevaCita.jsx`:
-```javascript
-const handleTelefonoChange = (e) => {
-  const valor = e.target.value.replace(/\D/g, "").slice(0, 8);
-  setClienteTelefono(valor);
-};
-
-// En el input:
-<span>+569</span>
-<input type="tel" value={clienteTelefono} maxLength={8} ... />
-
-// Al guardar reserva:
-cliente_telefono: "569" + clienteTelefono
-```
-
-### 🥉 PRIORIDAD 3: Stats avanzadas con Recharts (~3h)
-**Esto justifica vender Plan PLUS ($80/mes)**
-
-Plan técnico:
-1. `npm install recharts`
-2. KPIs cards con % vs mes anterior
-3. Gráfico reservas por día (30 días)
-4. Gráfico ingresos por mes (6 meses)
-5. Análisis por barbero (gráfico barras)
-6. Pie chart servicios más solicitados
-7. Top 5 clientes recurrentes
-8. Mejor día/hora insights
-9. Filtros temporales (default: este mes)
-10. Exportar CSV
-
-Decisiones tomadas:
-- Solo Admin (no barberos por ahora)
-- Librería: Recharts
-
-### Después de Stats:
-- Modificaciones 2 y 3 Feature Flags (vista lista, modal simple)
-- Twilio WhatsApp
-- Self-signup
-- Mercado Pago
-- Reactivar RLS
+### Vercel (producción):
+- `VITE_SUPABASE_URL` ✅
+- `VITE_SUPABASE_KEY` ✅
+- `RESEND_API_KEY` ✅
+- `TWILIO_ACCOUNT_SID` ✅
+- `TWILIO_AUTH_TOKEN` ✅
+- `TWILIO_WHATSAPP_FROM` ✅
 
 ---
 
 ## 🤖 CRON
 ```json
-// vercel.json
-{
-  "crons": [{ "path": "/api/send-reminder-emails", "schedule": "0 13 * * *" }]
-}
+{ "crons": [{ "path": "/api/send-reminder-emails", "schedule": "0 13 * * *" }] }
 ```
-13:00 UTC = 10am Chile. Forzar manual: Vercel → Settings → Cron Jobs → Run
+13:00 UTC = 10am Chile.
 
 ---
 
-## 💻 COMANDOS ÚTILES
-```bash
-cd ~/Desktop/twins-barberia
-npm run dev
-pkill -9 -f vite
-git add . && git commit -m "msg" && git push
+## 📱 ESTRATEGIA WHATSAPP - DECISIONES TOMADAS
 
-# Verificar archivos críticos
-head -5 ~/Desktop/twins-barberia/api/send-confirmation-email.js
-# Debe tener: import { createClient } from '@supabase/supabase-js';
+### Modelo elegido: UN número tuyo (Opción A)
+- Tú tienes UN número WhatsApp Business propio
+- Todos los mensajes automáticos salen desde ese número
+- Ejemplo: *"Recordatorio de tu cita en Twins Barbería — [tu número]"*
+- Twins NO necesita número propio para notificaciones ni bot
 
-head -10 ~/Desktop/twins-barberia/src/App.jsx
-# Debe arrancar con useState("inicio") no useState("login")
+### 3 canales independientes:
+1. **Consultas cliente↔barbería** → WhatsApp Business de Alonso (gratis, su teléfono, wa.me en email)
+2. **Notificaciones automáticas** → tu número Twilio (de pago, cuando actives feature)
+3. **Bot IA** → tu número Twilio responde con personalidad de cada barbería (Plan PLUS/PRO)
 
-# Si vite no detecta cambios
-rm -rf node_modules/.vite
+### Pricing add-on WhatsApp para barberías:
+| Reservas/mes | Costo Twilio (CLP) | Lo que cobras | Tu margen |
+|---|---|---|---|
+| 50 | ~$800 | $5.000 | $4.200 |
+| 100 | ~$1.600 | $8.000 | $6.400 |
+| 200 | ~$3.200 | $12.000 | $8.800 |
+| 300 | ~$4.800 | $15.000 | $10.200 |
+| 500 | ~$8.000 | $20.000 | $12.000 |
 
-# Si queremos revertir cambios no commiteados
-git checkout src/App.jsx src/VistaInicio.jsx
+**Propuesta simple:** $10.000 CLP/mes fijo hasta 200 reservas. Ajuste si pasa de 200.
 
-# Próxima sesión - instalar recharts
-npm install recharts
-```
+### Bot IA por plan:
+- **PLUS** → bot desde TU número Twilio (más barato, menos "branded")
+- **PRO** → bot desde número PROPIO de la barbería (premium, requiere trámite Meta ~2-5 días)
+
+### Para activar número real en producción:
+1. SIM nueva dedicada (~$2.000 CLP)
+2. Registrar en Twilio como WhatsApp Business
+3. Crear plantillas aprobadas por Meta
+4. Reemplazar sandbox `+14155238886` por número real en Vercel env vars
+
+---
+
+## ⏳ PRÓXIMOS PASOS (en orden de prioridad)
+
+### 🥇 PRIORIDAD 1: Mercado Pago
+- Cobro de abono al reservar
+- El cliente paga % del servicio al reservar
+- Admin configura % de abono requerido
+- Integración con API de Mercado Pago Chile
+
+### 🥈 PRIORIDAD 2: Reactivar RLS
+- Configurar policies en Supabase
+- Cada usuario solo ve datos de su barbería
+- Crítico antes de tener clientes reales pagando
+
+### 🥉 PRIORIDAD 3: Activar WhatsApp Twilio cuando sea necesario
+- Integrar recordatorio 24h y mismo día en cron
+- Tramitar número WhatsApp Business real (cuando escale)
+- Activar feature flags en Super Admin
+
+### 4: Self-signup (cuando escale)
+- Por ahora Pablo crea barberías desde Super Admin (Opción B)
+- Self-signup cuando haya 10+ clientes
+
+### 5: Mejoras UX pendientes
+- Modificaciones Feature Flags (vista lista, modal simple)
+- Vista de reservas para cliente logueado
 
 ---
 
@@ -320,13 +324,44 @@ npm install recharts
 8. Eventos FullCalendar vista mes → `eventDisplay="block"`
 9. Feature flags con jsonb permiten escalar SaaS sin tocar código
 10. Plan + Add-ons modular = flexibilidad para negociaciones
-11. Endpoints auto-leen features de Supabase (no necesitan frontend modificar)
+11. Endpoints auto-leen features de Supabase
 12. Localhost NO ejecuta /api endpoints (solo Vercel)
 13. `<input type="time">` muestra formato del OS - usar 2 selects para forzar 24h
-14. Columnas reales pueden tener nombres distintos a lo asumido (adicionales_ids vs adicionales)
+14. Columnas reales pueden tener nombres distintos a lo asumido
 15. **Pantalla blanca en localhost = error JS en consola (Cmd+Option+J)** ⭐
 16. **lucide-react no tiene todos los íconos - verificar versión antes de importar** ⭐
-17. **Por defecto la app DEBE arrancar pública (sin login) - el login es para admin/barbero** ⭐
+17. **Por defecto la app DEBE arrancar pública (sin login)** ⭐
+18. **Componentes definidos DENTRO de otro componente = pierden foco en cada tecla** ⭐
+19. **Variables de entorno Twilio = credenciales principales, no API Keys secundarias** ⭐
+20. **Twilio sandbox requiere que el número destino se una primero enviando el código** ⭐
+
+---
+
+## 💻 COMANDOS ÚTILES
+```bash
+cd ~/Desktop/twins-barberia
+npm run dev
+pkill -9 -f vite
+git add . && git commit -m "msg" && git push
+
+# Limpiar descargas
+rm ~/Downloads/*.jsx && rm ~/Downloads/*.js
+
+# Logs Vercel
+vercel logs
+vercel logs | grep "send-whatsapp"
+
+# Variables de entorno
+vercel env ls
+vercel env add NOMBRE production
+vercel env rm NOMBRE production
+
+# Redeploy forzado
+git commit --allow-empty -m "redeploy" && git push
+
+# Si vite no detecta cambios
+rm -rf node_modules/.vite
+```
 
 ---
 
@@ -337,39 +372,41 @@ npm install recharts
 ### Sesión 3 (15 may): Refactor + Admin 7 tabs + Bloqueos + Calendario
 ### Sesión 4 (21 may): Feature Flags + Super Admin
 ### Sesión 5 (22 may AM): "+ Nueva cita" + email desglose adicionales
-### Sesión 6 (22 may PM, hoy): Frontend pasar barberiaId + Refactor landing pública
+### Sesión 6 (22 may PM): Frontend pasar barberiaId + Refactor landing pública
+### Sesión 7 (23 may): Fix Instagram + +569 fijo + Stats Recharts + Super Admin mejorado + Twilio WhatsApp
 
 ---
 
-## 📝 PARA EL NUEVO CHAT
+**Última actualización:** 2026-05-23 00:30 (hora Chile)
 
-**Empezar diciendo:**
-
-"Estoy continuando con TWINS Barbería. Hoy refactoricé App.jsx y VistaInicio.jsx para que la app arranque en una landing pública (sin login) en vez de pedir login.
-
-Pero quedó un bug pendiente: `lucide-react` no tiene el ícono `Instagram` y eso rompe localhost.
-
-PRIMERO: necesito aplicar el fix:
-1. En VistaInicio.jsx línea 2: quitar `Instagram` del import de lucide-react
-2. Reemplazar `<Instagram size={18} ... />` por `<span className=\"text-amber-200 flex-shrink-0 mt-0.5 text-lg\">📷</span>`
-
-DESPUÉS:
-1. Testear que el refactor funciona (landing aparece, reserva sin login OK)
-2. Push a producción
-3. Verificar bug del +569 en VistaReserva-FASE3.jsx
-4. Empezar Stats avanzadas con Recharts (Plan PLUS)
-
-[Pegar contenido de este documento]"
-
----
-
-**Última actualización:** 2026-05-22 15:30 (hora Chile)
 **Estado:**
-- Feature Flags ✅
-- Super Admin ✅
-- "+ Nueva cita" funcional ✅
-- Email con adicionales ✅
-- Landing pública ⏳ (bug ícono Instagram pendiente)
-- Stats avanzadas ⏳ (próxima prioridad)
+- Landing pública ✅
+- +569 fijo en reserva ✅
+- Stats avanzadas ✅
+- Super Admin crear/dar de baja/buscador ✅
+- Twilio WhatsApp ✅ (instalado, desactivado)
+- Mercado Pago ⏳
+- RLS ⏳
 
-**Próximo paso inmediato:** Fix bug Instagram + testear refactor login + push
+---
+
+## 🏷️ NOMBRE DEL SAAS: AgendaIA
+
+**Dominio elegido:** `agendaia.cl`
+**Estado:** Disponible en INAPI ✅
+
+### Pendiente (en orden):
+1. **Comprar dominio** `agendaia.cl` en NIC Chile (~$15 USD/año) → [nic.cl](https://www.nic.cl)
+2. **Registrar marca** en INAPI (~$50.000 CLP) — protege el nombre comercialmente
+3. **Conectar dominio a Vercel** — apuntar agendaia.cl al proyecto
+4. **Estructura subdominios por cliente:**
+   - `twins.agendaia.cl`
+   - `cliente2.agendaia.cl`
+   - `cliente3.agendaia.cl`
+
+### Decisiones tomadas:
+- Nombre genérico — sirve para cualquier rubro con reservas (barberías, salones, dentistas, veterinarias, etc.)
+- El "IA" en el nombre posiciona el diferencial del bot para cuando se implemente
+- `agendapp.cl` descartada — ya registrada en INAPI
+- `agendaia.com.ar` existe pero no afecta — mercado distinto
+

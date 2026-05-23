@@ -503,6 +503,30 @@ export function VistaReserva({ supabase, barberiaId }) {
         }
       }
 
+      // WhatsApp de confirmación (si tiene teléfono y feature activa)
+      if (clienteTelefono) {
+        try {
+          await fetch("/api/send-whatsapp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              clienteTelefono: "569" + clienteTelefono,
+              clienteNombre: clienteNombre,
+              barberiaId: barberiaId,
+              barberiaNombre: barberiaData?.nombre || "Tu Barbería",
+              barberoNombre: barberoFinalData?.nombre || "el profesional",
+              servicioNombre: servicioSeleccionado.nombre,
+              fecha: fechaSeleccionada,
+              hora: horaSeleccionada,
+              precio: precioTotal,
+              tipo: "confirmacion",
+            }),
+          });
+        } catch (waError) {
+          console.error("⚠️ Error enviando WhatsApp:", waError);
+        }
+      }
+
       setPaso(6);
     } catch (err) {
       setError("Error: " + err.message);

@@ -8,6 +8,7 @@ import { TabBarberos } from "./admin/TabBarberos";
 import { TabEstadisticas } from "./admin/TabEstadisticas";
 import { TabBloqueos } from "./admin/TabBloqueos";
 import { TabEncuestas } from "./admin/TabEncuestas";
+import { TabMarketing } from "./admin/TabMarketing";
 import { isFeatureEnabled, PLANES } from "./utils/features";
 
 export function VistaAdmin({ usuario, onLogout, supabase }) {
@@ -44,6 +45,9 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
     }
     if (isFeatureEnabled(barberia, "estadisticas_barberia")) {
       tabs.push({ id: "estadisticas", label: "Estadísticas" });
+    }
+    if (isFeatureEnabled(barberia, "marketing_automatizado")) {
+      tabs.push({ id: "marketing", label: "📣 Marketing" });
     }
     if (isFeatureEnabled(barberia, "encuestas_satisfaccion")) {
       tabs.push({ id: "encuestas", label: "⭐ Encuestas" });
@@ -114,6 +118,7 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
         {tab === "bloqueos" && <TabBloqueos supabase={supabase} barberiaId={usuario?.barberia_id} />}
         {tab === "estadisticas" && <TabEstadisticas supabase={supabase} barberiaId={usuario?.barberia_id} />}
         {tab === "encuestas" && <TabEncuestas supabase={supabase} barberiaId={usuario?.barberia_id} barberia={barberia} />}
+        {tab === "marketing" && <TabMarketing supabase={supabase} barberiaId={usuario?.barberia_id} barberia={barberia} />}
         {tab === "configuracion" && <TabConfiguracion supabase={supabase} barberia={barberia} onUpdate={cargarBarberia} />}
       </div>
     </div>

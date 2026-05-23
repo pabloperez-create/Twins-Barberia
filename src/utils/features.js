@@ -83,6 +83,11 @@ export const FEATURES = {
     descripcion: "Logo propio y colores en emails",
     plan_minimo: "plus",
   },
+  encuestas_satisfaccion: {
+    nombre: "Encuestas de satisfacción",
+    descripcion: "Email post-cita con calificación 1-5 estrellas",
+    plan_minimo: "plus",
+  },
 
   // Features PRO
   multi_sucursal: {
@@ -129,7 +134,7 @@ export const PLANES = {
   },
   pro: {
     nombre: "Plan Pro",
-    precio_base: 130,
+    precio_base: 120,
     precio_barbero: 10,
     color: "violet",
   },
@@ -137,51 +142,32 @@ export const PLANES = {
 
 // Add-ons individuales (sobre plan BASE)
 export const ADDONS = {
-  whatsapp_recordatorios: { precio: 20, nombre: "WhatsApp recordatorios" },
-  estadisticas_avanzadas: { precio: 15, nombre: "Stats avanzadas" },
+  whatsapp_recordatorios: { precio: 15, nombre: "WhatsApp recordatorios" },
+  estadisticas_avanzadas: { precio: 10, nombre: "Stats avanzadas" },
+  encuestas_satisfaccion: { precio: 10, nombre: "Encuestas satisfacción" },
   bot_whatsapp_ia: { precio: 40, nombre: "Bot WhatsApp IA" },
-  marketing_automatizado: { precio: 25, nombre: "Marketing" },
-  multi_sucursal: { precio: 30, nombre: "Multi-sucursal" },
+  marketing_automatizado: { precio: 20, nombre: "Marketing" },
+  multi_sucursal: { precio: 25, nombre: "Multi-sucursal" },
 };
 
-/**
- * Verifica si una feature está activada para una barbería
- * @param {Object} barberia - Objeto barbería con configuracion.features
- * @param {string} featureName - Nombre de la feature a verificar
- * @returns {boolean}
- */
 export function isFeatureEnabled(barberia, featureName) {
   if (!barberia || !barberia.configuracion) return false;
   const features = barberia.configuracion.features || {};
   return features[featureName] === true;
 }
 
-/**
- * Obtiene el plan mínimo requerido para una feature
- * @param {string} featureName
- * @returns {string} 'base' | 'plus' | 'pro'
- */
 export function getPlanMinimoFeature(featureName) {
   return FEATURES[featureName]?.plan_minimo || "pro";
 }
 
-/**
- * Obtiene el nombre legible de una feature
- */
 export function getFeatureNombre(featureName) {
   return FEATURES[featureName]?.nombre || featureName;
 }
 
-/**
- * Obtiene la descripción de una feature
- */
 export function getFeatureDescripcion(featureName) {
   return FEATURES[featureName]?.descripcion || "";
 }
 
-/**
- * Calcula precio total del plan basado en barberos
- */
 export function calcularPrecioPlan(plan, cantidadBarberos) {
   const p = PLANES[plan] || PLANES.base;
   return p.precio_base + p.precio_barbero * cantidadBarberos;

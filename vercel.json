@@ -4,5 +4,9 @@
       "path": "/api/send-reminder-emails",
       "schedule": "0 13 * * *"
     }
+  ],
+  "rewrites": [
+    { "source": "/encuesta/(.*)", "destination": "/index.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

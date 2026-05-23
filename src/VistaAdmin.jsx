@@ -7,6 +7,7 @@ import { TabAdicionales } from "./admin/TabAdicionales";
 import { TabBarberos } from "./admin/TabBarberos";
 import { TabEstadisticas } from "./admin/TabEstadisticas";
 import { TabBloqueos } from "./admin/TabBloqueos";
+import { TabEncuestas } from "./admin/TabEncuestas";
 import { isFeatureEnabled, PLANES } from "./utils/features";
 
 export function VistaAdmin({ usuario, onLogout, supabase }) {
@@ -32,25 +33,22 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
     setCargando(false);
   };
 
-  // ⭐ CONSTRUIR TABS DINÁMICAMENTE SEGÚN FEATURES
   const construirTabs = () => {
     const tabs = [];
-
     tabs.push({ id: "agenda", label: "Agenda" });
     tabs.push({ id: "servicios", label: "Servicios" });
     tabs.push({ id: "adicionales", label: "Adicionales" });
     tabs.push({ id: "barberos", label: "Barberos" });
-
     if (isFeatureEnabled(barberia, "bloqueos_horarios")) {
       tabs.push({ id: "bloqueos", label: "Bloqueos" });
     }
-
     if (isFeatureEnabled(barberia, "estadisticas_barberia")) {
       tabs.push({ id: "estadisticas", label: "Estadísticas" });
     }
-
+    if (isFeatureEnabled(barberia, "encuestas_satisfaccion")) {
+      tabs.push({ id: "encuestas", label: "⭐ Encuestas" });
+    }
     tabs.push({ id: "configuracion", label: "Configuración" });
-
     return tabs;
   };
 
@@ -77,27 +75,18 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-3xl font-bold">{barberia?.nombre || "Admin"}</h1>
-            <span
-              className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded ${
-                barberia?.plan === "pro"
-                  ? "bg-violet-900 text-violet-200"
-                  : barberia?.plan === "plus"
-                    ? "bg-amber-900 text-amber-200"
-                    : "bg-stone-700 text-stone-300"
-              }`}
-            >
+            <span className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded ${
+              barberia?.plan === "pro" ? "bg-violet-900 text-violet-200"
+              : barberia?.plan === "plus" ? "bg-amber-900 text-amber-200"
+              : "bg-stone-700 text-stone-300"
+            }`}>
               {barberia?.plan === "pro" && <Crown size={10} />}
               {planActual.nombre.toUpperCase()}
             </span>
           </div>
-          <p className="text-stone-400 text-sm">
-            {usuario?.nombre} · {usuario?.rol}
-          </p>
+          <p className="text-stone-400 text-sm">{usuario?.nombre} · {usuario?.rol}</p>
         </div>
-        <button
-          onClick={onLogout}
-          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded"
-        >
+        <button onClick={onLogout} className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded">
           <LogOut size={18} />
           Salir
         </button>
@@ -109,9 +98,7 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`pb-2 px-4 font-semibold transition whitespace-nowrap ${
-              tab === t.id
-                ? "border-b-2 border-amber-200 text-amber-200"
-                : "text-stone-400 hover:text-stone-200"
+              tab === t.id ? "border-b-2 border-amber-200 text-amber-200" : "text-stone-400 hover:text-stone-200"
             }`}
           >
             {t.label}
@@ -120,42 +107,14 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
       </div>
 
       <div className="max-w-6xl">
-        {tab === "agenda" && (
-          <TabAgenda
-            supabase={supabase}
-            barberiaId={usuario?.barberia_id}
-            usuario={usuario}
-            barberia={barberia}
-          />
-        )}
-        {tab === "servicios" && (
-          <TabServicios supabase={supabase} barberiaId={usuario?.barberia_id} />
-        )}
-        {tab === "adicionales" && (
-          <TabAdicionales
-            supabase={supabase}
-            barberiaId={usuario?.barberia_id}
-          />
-        )}
-        {tab === "barberos" && (
-          <TabBarberos supabase={supabase} barberiaId={usuario?.barberia_id} />
-        )}
-        {tab === "bloqueos" && (
-          <TabBloqueos supabase={supabase} barberiaId={usuario?.barberia_id} />
-        )}
-        {tab === "estadisticas" && (
-          <TabEstadisticas
-            supabase={supabase}
-            barberiaId={usuario?.barberia_id}
-          />
-        )}
-        {tab === "configuracion" && (
-          <TabConfiguracion
-            supabase={supabase}
-            barberia={barberia}
-            onUpdate={cargarBarberia}
-          />
-        )}
+        {tab === "agenda" && <TabAgenda supabase={supabase} barberiaId={usuario?.barberia_id} usuario={usuario} barberia={barberia} />}
+        {tab === "servicios" && <TabServicios supabase={supabase} barberiaId={usuario?.barberia_id} />}
+        {tab === "adicionales" && <TabAdicionales supabase={supabase} barberiaId={usuario?.barberia_id} />}
+        {tab === "barberos" && <TabBarberos supabase={supabase} barberiaId={usuario?.barberia_id} />}
+        {tab === "bloqueos" && <TabBloqueos supabase={supabase} barberiaId={usuario?.barberia_id} />}
+        {tab === "estadisticas" && <TabEstadisticas supabase={supabase} barberiaId={usuario?.barberia_id} />}
+        {tab === "encuestas" && <TabEncuestas supabase={supabase} barberiaId={usuario?.barberia_id} barberia={barberia} />}
+        {tab === "configuracion" && <TabConfiguracion supabase={supabase} barberia={barberia} onUpdate={cargarBarberia} />}
       </div>
     </div>
   );

@@ -397,6 +397,10 @@ export function VistaReserva({ supabase, barberiaId }) {
       setError("Completa nombre, teléfono y email");
       return false;
     }
+    if (paso === 5 && clienteTelefono.length < 8) {
+      setError("El teléfono debe tener 8 dígitos");
+      return false;
+    }
     if (paso === 5 && clienteEmail && !/\S+@\S+\.\S+/.test(clienteEmail)) {
       setError("El email no es válido");
       return false;
@@ -445,7 +449,7 @@ export function VistaReserva({ supabase, barberiaId }) {
         servicio_id: servicioSeleccionado.id,
         adicionales_ids: adicionalesSeleccionados,
         cliente_nombre: clienteNombre,
-        cliente_telefono: clienteTelefono,
+        cliente_telefono: "569" + clienteTelefono,
         cliente_email: clienteEmail || null,
         fecha: fechaSeleccionada,
         hora_inicio: horaSeleccionada,
@@ -477,7 +481,6 @@ export function VistaReserva({ supabase, barberiaId }) {
                   return ad ? { nombre: ad.nombre, precio: ad.precio } : null;
                 })
                 .filter(Boolean),
-              fecha: fechaSeleccionada,
               fecha: fechaSeleccionada,
               hora: horaSeleccionada,
               precio: precioTotal,
@@ -759,13 +762,23 @@ export function VistaReserva({ supabase, barberiaId }) {
                 <label className="block text-sm font-semibold mb-2">
                   Teléfono <span className="text-red-400">*</span>
                 </label>
-                <input
-                  type="tel"
-                  value={clienteTelefono}
-                  onChange={(e) => setClienteTelefono(e.target.value)}
-                  placeholder="+56912345678"
-                  className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-3 text-white"
-                />
+                <div className="flex items-center bg-stone-800 border border-stone-700 rounded overflow-hidden">
+                  <span className="px-3 py-3 text-stone-400 border-r border-stone-700 select-none font-mono">
+                    +569
+                  </span>
+                  <input
+                    type="tel"
+                    value={clienteTelefono}
+                    onChange={(e) =>
+                      setClienteTelefono(
+                        e.target.value.replace(/\D/g, "").slice(0, 8),
+                      )
+                    }
+                    placeholder="12345678"
+                    maxLength={8}
+                    className="flex-1 bg-transparent px-4 py-3 text-white outline-none"
+                  />
+                </div>
               </div>
 
               <div>

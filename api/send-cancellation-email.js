@@ -47,7 +47,7 @@ export default async function handler(req, res) {
         .eq('id', barberiaId)
         .single();
       const features = barberia?.configuracion?.features || {};
-      mostrarWhatsApp = features.whatsapp_recordatorios === true;
+      mostrarWhatsApp = true; // Botón wa.me siempre visible, no depende de Twilio
     }
 
     const mensajeWhatsApp = `Hola ${barberiaNombre}! Me cancelaron mi reserva del ${fecha} a las ${hora}, me gustaría reagendar.`;

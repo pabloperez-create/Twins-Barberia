@@ -58,7 +58,7 @@ export default async function handler(req, res) {
         const features = configuracion.features || {};
 
         // ⭐ Verificar si WhatsApp está habilitado para esta barbería
-        const mostrarWhatsApp = features.whatsapp_recordatorios === true;
+        const mostrarWhatsApp = true; // Botón wa.me siempre visible, no depende de Twilio
 
         const barberiaNombre = barberia.nombre || 'Tu Barbería';
         const whatsappBarberia = configuracion.whatsapp || '';

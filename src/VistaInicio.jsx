@@ -11,7 +11,7 @@ export function VistaInicio({
   const [googleReviews, setGoogleReviews] = useState(null);
   const [cargando, setCargando] = useState(true);
 
-  const PLACE_ID = "0x9662e75216689a19:0x9867184f5b47241"; // TWINS Barbería Peñaflor
+  const PLACE_ID = "ChIJGZpoFlLnYpYRQXK09YRxhgk"; // TWINS Barbería Peñaflor
 
   useEffect(() => {
     cargarBarberia();

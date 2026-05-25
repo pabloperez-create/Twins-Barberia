@@ -410,3 +410,35 @@ rm -rf node_modules/.vite
 - `agendapp.cl` descartada — ya registrada en INAPI
 - `agendaia.com.ar` existe pero no afecta — mercado distinto
 
+
+---
+
+## 📅 SESIÓN 8 (23 may) - COMPLETADO
+
+### ✅ Features completadas:
+1. **Filtro por barbero en agenda** — botones clickeables con contador de reservas
+2. **Popup agenda con scroll** — altura limitada a ~5-7 items
+3. **QR de reservas** — en TabConfiguracion, descargable como PNG
+4. **Fix botón WhatsApp en emails** — siempre visible, independiente de Twilio
+5. **Encuestas de satisfacción completas:**
+   - Email post-cita con caritas 1-5 (cron diario)
+   - Página pública `/encuesta/:id` para responder
+   - Tab admin ⭐ Encuestas con stats + distribución + toggle público/oculto
+   - Reseñas visibles en landing (configurable por admin)
+6. **Marketing email:**
+   - Tab 📣 Marketing en admin
+   - Composer con asunto, mensaje personalizable ({nombre}), promo % o monto fijo, código promo
+   - Campañas programadas por día (cron diario 11am Chile)
+   - Lista de campañas con estado programada/enviada/cancelada
+   - Stats: clientes en lista, programadas, emails enviados
+
+### ⚠️ Limitación Vercel Hobby:
+- Crons solo pueden correr 1 vez al día (no por hora)
+- Marketing corre a las 14:00 UTC (11am Chile)
+- Para crons por hora necesita Vercel Pro ($20 USD/mes)
+
+### 🔴 Pendiente mañana:
+1. **RLS** — seguridad antes de clientes reales (sesión dedicada)
+2. **Dominio agendaia.cl** — comprar en NIC Chile + conectar Vercel
+3. **Pitch comercial** — video demo + mensaje WSP
+

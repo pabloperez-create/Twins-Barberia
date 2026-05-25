@@ -27,7 +27,14 @@ const COLORES_BARBEROS = [
 
 export function TabAgenda({ supabase, barberiaId, usuario, barberia }) {
   const calendarRef = useRef(null);
-  const [vista, setVista] = useState("dayGridMonth");
+  const [esMobil, setEsMobil] = useState(typeof window !== "undefined" && window.innerWidth < 768);
+  const [vista, setVista] = useState(typeof window !== "undefined" && window.innerWidth < 768 ? "timeGridDay" : "dayGridMonth");
+
+  useEffect(() => {
+    const handleResize = () => setEsMobil(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
   const [reservas, setReservas] = useState([]);
   const [bloqueos, setBloqueos] = useState([]);
   const [barberos, setBarberos] = useState([]);
@@ -294,12 +301,14 @@ export function TabAgenda({ supabase, barberiaId, usuario, barberia }) {
         <div className="flex items-center gap-4">
           <h2 className="text-2xl font-bold">Agenda</h2>
           <div className="flex gap-1 bg-stone-900 border border-stone-700 rounded p-1">
-            <button
-              onClick={() => cambiarVista("dayGridMonth")}
-              className={`px-3 py-1 rounded text-sm font-semibold transition ${vista === "dayGridMonth" ? "bg-amber-200 text-stone-950" : "text-stone-300 hover:bg-stone-800"}`}
-            >
-              Mes
-            </button>
+            {!esMobil && (
+              <button
+                onClick={() => cambiarVista("dayGridMonth")}
+                className={`px-3 py-1 rounded text-sm font-semibold transition ${vista === "dayGridMonth" ? "bg-amber-200 text-stone-950" : "text-stone-300 hover:bg-stone-800"}`}
+              >
+                Mes
+              </button>
+            )}
             <button
               onClick={() => cambiarVista("timeGridWeek")}
               className={`px-3 py-1 rounded text-sm font-semibold transition ${vista === "timeGridWeek" ? "bg-amber-200 text-stone-950" : "text-stone-300 hover:bg-stone-800"}`}

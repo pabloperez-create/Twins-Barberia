@@ -27,8 +27,8 @@ export default async function handler(req, res) {
       barberiaNombre,
       barberoNombre,
       servicioNombre,
-      precioServicio, // ⭐ NUEVO - precio del servicio principal
-      adicionales,    // ⭐ NUEVO - array de {nombre, precio}
+      precioServicio,
+      adicionales,
       fecha,
       hora,
       precio,
@@ -42,7 +42,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Faltan campos requeridos' });
     }
 
-    // Auto-leer feature whatsapp_confirmacion
     let mostrarWhatsApp = true;
     if (barberiaId) {
       const { data: barberia } = await supabase
@@ -50,7 +49,6 @@ export default async function handler(req, res) {
         .select('configuracion')
         .eq('id', barberiaId)
         .single();
-      const features = barberia?.configuracion?.features || {};
       mostrarWhatsApp = true; // Botón wa.me siempre visible, no depende de Twilio
     }
 
@@ -65,7 +63,6 @@ export default async function handler(req, res) {
             </td>
           </tr>` : '';
 
-    // ⭐ NUEVO: Bloque con servicio principal + adicionales desglosados
     const tieneAdicionales = adicionales && Array.isArray(adicionales) && adicionales.length > 0;
     const precioServicioMostrar = precioServicio || precio;
 
@@ -183,6 +180,7 @@ export default async function handler(req, res) {
 </html>
     `;
 
+    // ── Email al cliente ──
     const { data, error } = await resend.emails.send({
       from: `${barberiaNombre} <onboarding@resend.dev>`,
       to: clienteEmail,
@@ -193,6 +191,64 @@ export default async function handler(req, res) {
     if (error) {
       console.error('Error de Resend:', error);
       return res.status(500).json({ error: error.message });
+    }
+
+    // ── Notificación interna al admin y barbero ──
+    if (barberiaId) {
+      try {
+        const { data: barberiaInfo } = await supabase
+          .from('barberia')
+          .select('email_admin')
+          .eq('id', barberiaId)
+          .single();
+
+        const { data: barberoInfo } = await supabase
+          .from('barberos')
+          .select('email')
+          .eq('barberia_id', barberiaId)
+          .eq('nombre', barberoNombre)
+          .single();
+
+        const emailNotif = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f5f5f5;">
+<table align="center" width="100%" style="max-width:500px;margin:30px auto;background:#fff;border-radius:12px;overflow:hidden;">
+<tr><td style="background:#1c1917;padding:20px;text-align:center;">
+  <h2 style="margin:0;color:#fde68a;font-size:20px;">Nueva reserva 🎉</h2>
+  <p style="margin:4px 0 0;color:#a8a29e;font-size:12px;">${barberiaNombre}</p>
+</td></tr>
+<tr><td style="padding:20px;">
+  <table width="100%" style="background:#fafaf9;border-radius:8px;">
+    <tr><td style="padding:8px 12px;"><p style="margin:0;color:#78716c;font-size:11px;text-transform:uppercase;">Cliente</p><p style="margin:3px 0 0;font-size:15px;font-weight:600;">${clienteNombre}</p></td></tr>
+    <tr><td style="padding:8px 12px;"><p style="margin:0;color:#78716c;font-size:11px;text-transform:uppercase;">Servicio</p><p style="margin:3px 0 0;font-size:15px;font-weight:600;">${servicioNombre}</p></td></tr>
+    <tr><td style="padding:8px 12px;"><p style="margin:0;color:#78716c;font-size:11px;text-transform:uppercase;">Barbero</p><p style="margin:3px 0 0;font-size:15px;font-weight:600;">${barberoNombre}</p></td></tr>
+    <tr><td style="padding:8px 12px;"><p style="margin:0;color:#78716c;font-size:11px;text-transform:uppercase;">Fecha y Hora</p><p style="margin:3px 0 0;color:#d97706;font-size:16px;font-weight:700;">${fecha} a las ${hora}</p></td></tr>
+    <tr><td style="padding:8px 12px;border-top:1px solid #e7e5e4;"><p style="margin:0;color:#78716c;font-size:11px;text-transform:uppercase;">Total</p><p style="margin:3px 0 0;font-size:16px;font-weight:700;">$${precio.toLocaleString('es-CL')}</p></td></tr>
+  </table>
+</td></tr>
+</table></body></html>`;
+
+        // Enviar al admin
+        if (barberiaInfo?.email_admin) {
+          await resend.emails.send({
+            from: `${barberiaNombre} <onboarding@resend.dev>`,
+            to: barberiaInfo.email_admin,
+            subject: `🆕 Nueva reserva: ${clienteNombre} - ${fecha} ${hora}`,
+            html: emailNotif,
+          });
+        }
+
+        // Enviar al barbero (si tiene email y es distinto al admin)
+        if (barberoInfo?.email && barberoInfo.email !== barberiaInfo?.email_admin) {
+          await resend.emails.send({
+            from: `${barberiaNombre} <onboarding@resend.dev>`,
+            to: barberoInfo.email,
+            subject: `✂️ Nueva cita asignada: ${clienteNombre} - ${fecha} ${hora}`,
+            html: emailNotif,
+          });
+        }
+      } catch (notifError) {
+        console.error('Error enviando notificacion interna:', notifError);
+      }
     }
 
     return res.status(200).json({

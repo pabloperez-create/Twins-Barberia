@@ -10,6 +10,7 @@ import { TabBloqueos } from "./admin/TabBloqueos";
 import { TabEncuestas } from "./admin/TabEncuestas";
 import { TabMarketing } from "./admin/TabMarketing";
 import { isFeatureEnabled, PLANES } from "./utils/features";
+import { BotonInstalarApp } from "./components/BotonInstalarApp";
 
 export function VistaAdmin({ usuario, onLogout, supabase }) {
   const [tab, setTab] = useState("agenda");
@@ -90,10 +91,13 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
           </div>
           <p className="text-stone-400 text-sm">{usuario?.nombre} · {usuario?.rol}</p>
         </div>
+        <div className="flex items-center gap-3">
+        <BotonInstalarApp />
         <button onClick={onLogout} className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded">
           <LogOut size={18} />
           Salir
         </button>
+        </div>
       </div>
 
       <div className="flex gap-2 mb-8 border-b border-stone-700 overflow-x-auto">

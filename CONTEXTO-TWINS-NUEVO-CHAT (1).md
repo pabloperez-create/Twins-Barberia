@@ -442,3 +442,31 @@ rm -rf node_modules/.vite
 2. **Dominio agendaia.cl** — comprar en NIC Chile + conectar Vercel
 3. **Pitch comercial** — video demo + mensaje WSP
 
+
+---
+
+## 📅 SESIÓN 9 (24-25 may) - COMPLETADO
+
+### ✅ Features completadas:
+1. **PDF planes AgendaIA** — 3 planes en CLP + add-ons con márgenes
+2. **Análisis competencia** — AgendaPro + Setmore
+3. **Mensaje pitch** — WhatsApp/Instagram con +56967402940
+4. **Agenda móvil** — Día por defecto, Semana disponible, Mes oculto en móvil
+5. **PWA** — instala como app nativa, botón solo en panel admin/barbero
+6. **Notificación email a admin y barbero** en cada reserva nueva:
+   - 🆕 Nueva reserva → admin (barberia.email_admin)
+   - ✂️ Nueva cita asignada → barbero (barberos.email, si distinto al admin)
+   - Nueva columna `email` agregada a tabla `barberos`
+
+### ⚠️ IMPORTANTE antes de RLS:
+- Emails en Supabase están en `pablo.felipee.ps@gmail.com` para demo
+- Revertir a @twins.cl antes de activar RLS:
+  - `barberia.email_admin` → `alonso@twins.cl`
+  - `barberos.email` Alonso → `alonso@twins.cl`
+  - `barberos.email` Vicente → `vicente@twins.cl`
+
+### 🔴 Pendiente próxima sesión:
+1. **RLS** — seguridad antes de clientes reales (recordar revertir emails primero)
+2. **Dominio agendaia.cl** — comprar en NIC Chile + conectar Vercel
+3. **Video demo** — grabar con Screen Studio
+

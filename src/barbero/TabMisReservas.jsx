@@ -9,6 +9,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Modal } from "../components/Modal";
+import { SelectorHora } from "../components/SelectorHora";
 
 export function TabMisReservas({ supabase, barbero, barberia }) {
   const [reservas, setReservas] = useState([]);
@@ -382,12 +383,7 @@ export function TabMisReservas({ supabase, barbero, barberia }) {
               <label className="block text-sm font-semibold mb-2">
                 Nueva hora
               </label>
-              <input
-                type="time"
-                value={nuevaHora}
-                onChange={(e) => setNuevaHora(e.target.value)}
-                className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-2 text-white"
-              />
+              <SelectorHora value={nuevaHora || "09:00"} onChange={(v) => setNuevaHora(v)} className="w-full" />
             </div>
 
             <p className="text-stone-400 text-xs">

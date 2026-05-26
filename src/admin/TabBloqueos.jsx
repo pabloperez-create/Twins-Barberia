@@ -8,6 +8,7 @@ import {
   Building,
   User,
 } from "lucide-react";
+import { SelectorHora } from "../components/SelectorHora";
 import { Modal } from "../components/Modal";
 
 export function TabBloqueos({ supabase, barberiaId }) {
@@ -389,12 +390,7 @@ export function TabBloqueos({ supabase, barberiaId }) {
                 <label className="block text-sm font-semibold mb-2">
                   Hora inicio <span className="text-red-400">*</span>
                 </label>
-                <input
-                  type="time"
-                  value={form.hora_inicio}
-                  onChange={(e) =>
-                    setForm({ ...form, hora_inicio: e.target.value })
-                  }
+                <SelectorHora value={form.hora_inicio || "09:00"} onChange={(v) => setForm({ ...form, hora_inicio: v })}
                   className="w-full bg-stone-800 border border-stone-700 rounded px-3 py-2 text-white text-sm"
                 />
               </div>
@@ -402,11 +398,7 @@ export function TabBloqueos({ supabase, barberiaId }) {
                 <label className="block text-sm font-semibold mb-2">
                   Hora fin <span className="text-red-400">*</span>
                 </label>
-                <input
-                  type="time"
-                  value={form.hora_fin}
-                  onChange={(e) => setForm({ ...form, hora_fin: e.target.value })}
-                  className="w-full bg-stone-800 border border-stone-700 rounded px-3 py-2 text-white text-sm"
+                <SelectorHora value={form.hora_fin || "10:00"} onChange={(v) => setForm({ ...form, hora_fin: v })} className="w-full"
                 />
               </div>
             </div>

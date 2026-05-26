@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Modal } from "../components/Modal";
 import { ModalNuevaCita } from "../components/ModalNuevaCita";
+import { SelectorHora } from "../components/SelectorHora";
 
 const COLORES_BARBEROS = [
   "#10b981", "#3b82f6", "#8b5cf6", "#f59e0b",
@@ -530,7 +531,7 @@ export function TabAgenda({ supabase, barberiaId, usuario, barberia }) {
             </div>
             <div>
               <label className="block text-sm font-semibold mb-2">Nueva hora</label>
-              <input type="time" value={nuevaHora} onChange={(e) => setNuevaHora(e.target.value)} className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-2 text-white" />
+              <SelectorHora value={nuevaHora || "09:00"} onChange={(v) => setNuevaHora(v)} className="w-full" />
             </div>
           </div>
         )}

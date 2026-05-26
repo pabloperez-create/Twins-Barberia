@@ -142,6 +142,11 @@ export function VistaReserva({ supabase, barberiaId }) {
       const aplicaABarbero =
         b.barbero_id === barberoId || b.barbero_id === null;
       const enRango = fecha >= b.fecha_inicio && fecha <= b.fecha_fin;
+      // Si tiene dias_semana, verificar que el día de la semana aplique
+      if (b.dias_semana && Array.isArray(b.dias_semana) && b.dias_semana.length > 0) {
+        const diaSemana = new Date(fecha + "T12:00:00").getDay();
+        if (!b.dias_semana.includes(diaSemana)) return false;
+      }
       return aplicaABarbero && enRango;
     });
   };

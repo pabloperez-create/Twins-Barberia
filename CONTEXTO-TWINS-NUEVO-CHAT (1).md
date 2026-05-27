@@ -503,3 +503,27 @@ rm -rf node_modules/.vite
 2. **Dominio agendaia.cl**
 3. **Video demo** con Screen Studio
 
+
+---
+
+## 📅 SESIÓN 11 (27 may) - COMPLETADO
+
+### ✅ Features completadas:
+1. **Email automático al reagendar** — igual que al cancelar, notifica al cliente
+2. **Seguridad endpoints API** — verificación por origen del request
+   - Archivo `api/_verify-token.js` — verifica origen o token
+   - Orígenes válidos: `twins-barberia.vercel.app` + `localhost`
+   - Variable `API_SECRET_TOKEN` en Vercel para crons
+3. **Emails revertidos** a `@twins.cl` (ficticios por ahora, Alonso los cambiará al onboardear)
+
+### 💡 Decisiones importantes:
+- **RLS/Auth:** Postergado hasta antes del segundo cliente. Requiere migrar a Supabase Auth nativo.
+- **WhatsApp Twilio:** Add-on +$10.000-15.000 CLP/mes si Alonso lo quiere. El botón wa.me del email es gratis e incluido.
+- **Supabase Auth migration:** Antes del segundo cliente — cambia login de tabla `usuarios` a `supabase.auth.signInWithPassword()`
+
+### 🔴 Pendiente próximas sesiones:
+1. **Onboardear TWINS** — poner datos reales (servicios, barberos, horarios, emails reales)
+2. **Migrar a Supabase Auth + RLS** — antes del segundo cliente
+3. **Dominio agendaia.cl** — comprar en NIC Chile + conectar Vercel
+4. **Video demo** — grabar con Screen Studio
+

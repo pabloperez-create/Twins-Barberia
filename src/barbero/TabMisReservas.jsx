@@ -386,9 +386,11 @@ export function TabMisReservas({ supabase, barbero, barberia }) {
               <SelectorHora value={nuevaHora || "09:00"} onChange={(v) => setNuevaHora(v)} className="w-full" />
             </div>
 
-            <p className="text-stone-400 text-xs">
-              💡 Avísale al cliente del cambio por WhatsApp
-            </p>
+            {modalReagendar?.cliente_email && (
+              <p className="text-amber-200 text-xs flex items-center gap-2">
+                📧 Se enviará un email automático al cliente avisándole
+              </p>
+            )}
           </div>
         )}
       </Modal>

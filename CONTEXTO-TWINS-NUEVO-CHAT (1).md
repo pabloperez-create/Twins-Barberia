@@ -470,3 +470,36 @@ rm -rf node_modules/.vite
 2. **Dominio agendaia.cl** — comprar en NIC Chile + conectar Vercel
 3. **Video demo** — grabar con Screen Studio
 
+
+---
+
+## 📅 SESIÓN 10 (26 may) - COMPLETADO
+
+### ✅ Features completadas:
+1. **Reseñas Google** con caché 24h en Supabase
+   - Endpoint `/api/get-google-reviews.js`
+   - Place ID TWINS: `ChIJGZpoFlLnYpYRQXK09YRxhgk`
+   - Solo muestra reseñas 4-5 estrellas, máximo 6
+   - Variable de entorno: `GOOGLE_PLACES_API_KEY` en Vercel y .env.local
+   - Tabla `google_reviews_cache` en Supabase
+2. **Horario por día de la semana** (TabMiHorario)
+   - Toggle por día con horario individual
+   - Botón "Aplicar a todos"
+   - Guarda en columna `horarios_semana` JSONB en tabla `barberos`
+3. **Bloqueo recurrente semanal** (TabMisDiasLibres)
+   - Nuevo tipo "Recurrente semanal" además de día completo y bloque de horas
+   - Selección de días de semana (Dom-Sáb)
+   - 1 solo registro en BD con columna `dias_semana` JSONB
+   - Fecha "Hasta" opcional — si no se pone, aplica 1 año
+   - Columna `dias_semana` JSONB agregada a tabla `bloqueos_horarios`
+4. **SelectorHora** — nuevo componente `src/components/SelectorHora.jsx`
+   - Reemplaza todos los `input type="time"` nativos del browser
+   - Dropdowns HH:MM limpios y consistentes
+   - Aplicado en: TabMisDiasLibres, TabMiHorario, TabMisReservas, TabAgenda, TabBarberos, TabBloqueos
+5. **Lógica disponibilidad** actualizada para considerar `dias_semana` en bloqueos
+
+### 🔴 Pendiente:
+1. **RLS** — ⚠️ recordar revertir emails @twins.cl antes
+2. **Dominio agendaia.cl**
+3. **Video demo** con Screen Studio
+

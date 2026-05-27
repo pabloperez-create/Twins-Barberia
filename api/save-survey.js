@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { verifyToken } from './_verify-token.js';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
@@ -7,6 +8,10 @@ const supabase = createClient(
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
+
+  if (req.method !== 'OPTIONS' && !verifyToken(req)) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });

@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
+import { verifyToken } from './_verify-token.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const supabase = createClient(

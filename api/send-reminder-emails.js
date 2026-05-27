@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
+import { verifyToken } from './_verify-token.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const supabase = createClient(
@@ -9,6 +10,10 @@ const supabase = createClient(
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
+
+  if (req.method !== 'OPTIONS' && !verifyToken(req)) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
 
   try {
     const hoy = new Date();

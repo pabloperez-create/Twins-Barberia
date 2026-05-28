@@ -502,6 +502,7 @@ export function VistaReserva({ supabase, barberiaId }) {
               clienteNombre: clienteNombre,
               barberiaId: barberiaId,
               barberiaNombre: barberiaData?.nombre || "Tu Barbería",
+              tipoNegocio: barberiaData?.tipo_negocio || "barberia",
               barberoNombre: barberoFinalData?.nombre || "el profesional",
               servicioNombre: servicioSeleccionado.nombre,
               precioServicio: servicioSeleccionado.precio,
@@ -891,7 +892,7 @@ export function VistaReserva({ supabase, barberiaId }) {
 
             <div style={{ background: T.cardBg, border: `1px solid ${T.cardBorder}`, borderRadius: 8, padding: 24 }} className="space-y-4">
               <div className="flex justify-between">
-                <span className="text-stone-400">Barbero:</span>
+                <span style={{ color: T.labelColor }}>{esSalon ? "Estilista:" : "Barbero:"}</span>
                 <span className="font-semibold">
                   {barberoAsignado?.nombre || "Asignado"}
                 </span>

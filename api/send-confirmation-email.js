@@ -37,7 +37,16 @@ export default async function handler(req, res) {
       direccionBarberia,
       reservaId,
       barberiaId,
+      tipoNegocio,
     } = req.body;
+
+    // Tema según tipo de negocio
+    const esSalon = tipoNegocio === 'salon';
+    const headerBg = esSalon ? '#fce8f0' : '#1c1917';
+    const headerColor = esSalon ? '#7a1f42' : '#fde68a';
+    const headerSubColor = esSalon ? '#b05070' : '#a8a29e';
+    const accentColor = esSalon ? '#d4638a' : '#d97706';
+    const textColor = esSalon ? '#4a1030' : '#1c1917';
 
     if (!clienteEmail || !clienteNombre || !fecha || !hora) {
       return res.status(400).json({ error: 'Faltan campos requeridos' });
@@ -128,9 +137,9 @@ export default async function handler(req, res) {
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background-color: #f5f5f5;">
   <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="100%" style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
     <tr>
-      <td style="background-color: #1c1917; padding: 40px 30px; text-align: center;">
-        <h1 style="margin: 0; color: #fde68a; font-size: 32px; font-weight: bold; letter-spacing: 1px;">${barberiaNombre}</h1>
-        <p style="margin: 8px 0 0 0; color: #a8a29e; font-size: 14px;">Sistema de Reservas</p>
+      <td style="background-color: ${headerBg}; padding: 40px 30px; text-align: center;">
+        <h1 style="margin: 0; color: ${headerColor}; font-size: 32px; font-weight: bold; letter-spacing: 1px;">${barberiaNombre}</h1>
+        <p style="margin: 8px 0 0 0; color: ${headerSubColor}; font-size: 14px;">Sistema de Reservas</p>
       </td>
     </tr>
     <tr>
@@ -159,7 +168,7 @@ export default async function handler(req, res) {
           <tr>
             <td style="padding: 12px 16px 8px 16px; border-top: 1px solid #e7e5e4;">
               <p style="margin: 0; color: #78716c; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Total</p>
-              <p style="margin: 4px 0 0 0; color: #d97706; font-size: 24px; font-weight: 700;">$${precio.toLocaleString('es-CL')}</p>
+              <p style="margin: 4px 0 0 0; color: ${accentColor}; font-size: 24px; font-weight: 700;">$${precio.toLocaleString('es-CL')}</p>
             </td>
           </tr>
         </table>

@@ -62,7 +62,7 @@ export function VistaInicio({
   const esSalon = barberia?.tipo_negocio === "salon";
 
   const T = esSalon ? {
-    pageBg: "#fce8f0",
+    pageBg: "linear-gradient(135deg, #fce8f0 0%, #fdf0f6 40%, #fce4ec 70%, #f8d7e8 100%)",
     pageText: "#4a1030",
     heroBg: "#fce8f0",
     iconBg: "rgba(212,99,138,0.12)",
@@ -122,7 +122,7 @@ export function VistaInicio({
       <span key={i} style={{ color: i < n ? T.starColor : "#555" }}>★</span>
     ));
 
-  const bgInicial = barberiaId !== "org-twins" ? "#fce8f0" : "#0c0a09";
+  const bgInicial = barberiaId !== "org-twins" ? "linear-gradient(135deg, #fce8f0 0%, #fdf0f6 40%, #fce4ec 70%, #f8d7e8 100%)" : "#0c0a09";
   const textInicial = barberiaId !== "org-twins" ? "#b08090" : "#78716c";
   if (cargando) {
     return (

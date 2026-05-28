@@ -555,3 +555,35 @@ rm -rf node_modules/.vite
 - Evitar clases Tailwind dinámicas (no funciona con purge CSS)
 - Mismo patrón debe aplicarse a VistaReserva-FASE3.jsx
 
+
+---
+
+## 📅 SESIÓN 13 (28 may) - COMPLETADO
+
+### ✅ Features completadas:
+1. **Tema rosado en flujo reserva** — VistaReserva-FASE3.jsx usa inline styles según tipo_negocio
+2. **Sin flash negro** — App.jsx, VistaInicio y VistaReserva detectan tipo antes de cargar datos
+3. **Diseño salón completo:**
+   - Ícono: `Sparkles` (lucide-react) en vez de tijeras
+   - Fuente: `Libre Caslon Display` (Google Fonts) para el título del salón
+   - Subtítulo: `Crimson Pro` italic
+   - Botón CTA: outline rosado (#d4638a) con fondo transparente
+   - Cards info: fondo #fdf2f6 (rosa muy clarito)
+   - Cargando: fondo rosa desde el inicio (sin flash negro)
+
+### 🔴 Pendiente próxima sesión:
+1. **Fondo salón más dinámico** — gradiente/difuminado con paleta de colores rosados en vez de color plano
+2. **Demo Nail Studio completa:**
+   - Agregar servicios reales (basados en Anna Nail Artist Peñaflor)
+   - Agregar 2 estilistas: Ana y Camila
+   - URL referencia servicios: https://www.fresha.com/es/a/anna-nail-artist-penaflor...
+3. **Onboardear TWINS** — datos reales
+4. **Migrar Supabase Auth + RLS** — antes del segundo cliente
+5. **Dominio agendaia.cl**
+
+### 💡 Arquitectura tema salón:
+- Objeto `T` con `useSalon: true/false` controla todo
+- `bgInicial` en carga usa `barberiaId !== "org-twins"` como heurística temporal
+- Fuente cargada con `<style>@import url(...)` dinámico dentro del JSX
+- Evitar clases Tailwind dinámicas — usar siempre inline styles
+

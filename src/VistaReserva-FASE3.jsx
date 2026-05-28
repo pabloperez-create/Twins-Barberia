@@ -611,13 +611,18 @@ export function VistaReserva({ supabase, barberiaId }) {
                   style={{ border: `2px solid ${seleccionado ? T.tagActiveBg : T.cardBorder}`, background: seleccionado ? `${T.tagActiveBg}22` : T.cardBg, borderRadius: 8, cursor: "pointer" }}
                 >
                   <div className="flex justify-between items-start">
-                    <div>
+                    <div style={{ flex: 1, marginRight: 12 }}>
                       <h3 className="font-bold text-lg">{servicio.nombre}</h3>
                       <p style={{ color: T.mutedColor, fontSize: 13, marginTop: 4 }}>
                         {servicio.duracion_minutos} minutos
                       </p>
+                      {servicio.descripcion && (
+                        <p style={{ color: T.mutedColor, fontSize: 12, marginTop: 6, fontStyle: "italic", lineHeight: 1.4 }}>
+                          {servicio.descripcion}
+                        </p>
+                      )}
                     </div>
-                    <p className="text-amber-200 font-bold">
+                    <p style={{ color: T.accent, fontWeight: 700, flexShrink: 0 }}>
                       ${servicio.precio.toLocaleString()}
                     </p>
                   </div>

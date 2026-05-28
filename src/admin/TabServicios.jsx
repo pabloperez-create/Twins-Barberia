@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Plus, Edit, Trash2, Check, AlertCircle, Scissors } from "lucide-react";
 import { Modal } from "../components/Modal";
 
+const CATEGORIAS_DEFAULT = ["General", "Destacados", "Manicura", "Pedicura", "Sistemas de uñas", "Diseños", "Rostro"];
+
 export function TabServicios({ supabase, barberiaId }) {
   const [servicios, setServicios] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -14,6 +16,7 @@ export function TabServicios({ supabase, barberiaId }) {
     precio: "",
     duracion_minutos: "",
     descripcion: "",
+    categoria: "General",
   });
 
   useEffect(() => { cargarServicios(); }, []);
@@ -25,6 +28,7 @@ export function TabServicios({ supabase, barberiaId }) {
         .from("servicios_principales")
         .select("*")
         .eq("barberia_id", barberiaId)
+        .order("categoria", { ascending: true })
         .order("precio", { ascending: true });
       if (!error) setServicios(data || []);
     } catch (err) { console.error("Error:", err); }
@@ -33,7 +37,7 @@ export function TabServicios({ supabase, barberiaId }) {
 
   const abrirCrear = () => {
     setEditando(null);
-    setForm({ nombre: "", precio: "", duracion_minutos: "", descripcion: "" });
+    setForm({ nombre: "", precio: "", duracion_minutos: "", descripcion: "", categoria: "General" });
     setModalAbierto(true);
   };
 
@@ -44,6 +48,7 @@ export function TabServicios({ supabase, barberiaId }) {
       precio: s.precio.toString(),
       duracion_minutos: s.duracion_minutos.toString(),
       descripcion: s.descripcion || "",
+      categoria: s.categoria || "General",
     });
     setModalAbierto(true);
   };
@@ -66,6 +71,7 @@ export function TabServicios({ supabase, barberiaId }) {
         precio: Number(form.precio),
         duracion_minutos: Number(form.duracion_minutos),
         descripcion: form.descripcion.trim() || null,
+        categoria: form.categoria || "General",
       };
 
       if (editando) {
@@ -97,6 +103,18 @@ export function TabServicios({ supabase, barberiaId }) {
     } catch (err) { mostrarMensaje("error", "Error: " + err.message); }
   };
 
+  // Agrupar por categoría
+  const porCategoria = servicios.reduce((acc, s) => {
+    const cat = s.categoria || "General";
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(s);
+    return acc;
+  }, {});
+
+  // Obtener categorías únicas de los servicios existentes
+  const categoriasExistentes = [...new Set(servicios.map(s => s.categoria || "General"))];
+  const todasCategorias = [...new Set([...CATEGORIAS_DEFAULT, ...categoriasExistentes])];
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -114,26 +132,37 @@ export function TabServicios({ supabase, barberiaId }) {
       )}
 
       {cargando ? <p className="text-stone-400">Cargando servicios...</p> : (
-        <div className="space-y-3">
+        <div className="space-y-6">
           {servicios.length === 0 ? (
             <div className="bg-stone-900 border border-stone-700 rounded p-8 text-center">
               <Scissors size={48} className="mx-auto mb-3 text-stone-600" />
               <p className="text-stone-400 mb-4">No hay servicios aún</p>
               <button onClick={abrirCrear} className="bg-amber-200 hover:bg-amber-100 text-stone-950 font-bold px-4 py-2 rounded">Crear primer servicio</button>
             </div>
-          ) : servicios.map((s) => (
-            <div key={s.id} className={`bg-stone-900 border border-stone-700 rounded p-4 flex flex-wrap justify-between items-start gap-3 ${!s.activo && "opacity-50"}`}>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-bold text-lg">{s.nombre}</h3>
-                  {!s.activo && <span className="text-xs bg-stone-700 text-stone-300 px-2 py-0.5 rounded">Desactivado</span>}
-                </div>
-                <p className="text-stone-400 text-sm">⏱️ {s.duracion_minutos} min · 💰 ${s.precio.toLocaleString("es-CL")}</p>
-                {s.descripcion && <p className="text-stone-500 text-xs mt-1 italic">{s.descripcion}</p>}
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => abrirEditar(s)} className="p-2 bg-stone-800 hover:bg-stone-700 rounded" title="Editar"><Edit size={16} /></button>
-                {s.activo && <button onClick={() => eliminar(s)} className="p-2 bg-red-900 hover:bg-red-800 text-red-200 rounded" title="Desactivar"><Trash2 size={16} /></button>}
+          ) : Object.entries(porCategoria).map(([categoria, items]) => (
+            <div key={categoria}>
+              <h3 className="text-sm font-bold text-amber-200 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <span className="flex-1 h-px bg-stone-700"></span>
+                {categoria}
+                <span className="flex-1 h-px bg-stone-700"></span>
+              </h3>
+              <div className="space-y-2">
+                {items.map((s) => (
+                  <div key={s.id} className={`bg-stone-900 border border-stone-700 rounded p-4 flex flex-wrap justify-between items-start gap-3 ${!s.activo && "opacity-50"}`}>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-bold text-lg">{s.nombre}</h3>
+                        {!s.activo && <span className="text-xs bg-stone-700 text-stone-300 px-2 py-0.5 rounded">Desactivado</span>}
+                      </div>
+                      <p className="text-stone-400 text-sm">⏱️ {s.duracion_minutos} min · 💰 ${s.precio.toLocaleString("es-CL")}</p>
+                      {s.descripcion && <p className="text-stone-500 text-xs mt-1 italic">{s.descripcion}</p>}
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => abrirEditar(s)} className="p-2 bg-stone-800 hover:bg-stone-700 rounded" title="Editar"><Edit size={16} /></button>
+                      {s.activo && <button onClick={() => eliminar(s)} className="p-2 bg-red-900 hover:bg-red-800 text-red-200 rounded" title="Desactivar"><Trash2 size={16} /></button>}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
@@ -158,6 +187,19 @@ export function TabServicios({ supabase, barberiaId }) {
               placeholder="Ej: Esmaltado permanente" className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-2 text-white" />
           </div>
           <div>
+            <label className="block text-sm font-semibold mb-2">Categoría</label>
+            <select value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })}
+              className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-2 text-white">
+              {todasCategorias.map(c => <option key={c} value={c}>{c}</option>)}
+              <option value="__custom">+ Nueva categoría...</option>
+            </select>
+            {form.categoria === "__custom" && (
+              <input type="text" placeholder="Nombre de la nueva categoría"
+                onChange={(e) => setForm({ ...form, categoria: e.target.value })}
+                className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-2 text-white mt-2" />
+            )}
+          </div>
+          <div>
             <label className="block text-sm font-semibold mb-2">Precio (CLP) <span className="text-red-400">*</span></label>
             <input type="number" value={form.precio} onChange={(e) => setForm({ ...form, precio: e.target.value })}
               placeholder="20000" className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-2 text-white" />
@@ -168,9 +210,7 @@ export function TabServicios({ supabase, barberiaId }) {
               placeholder="75" className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-2 text-white" />
           </div>
           <div>
-            <label className="block text-sm font-semibold mb-2">
-              Descripción <span className="text-stone-500 font-normal text-xs">(opcional)</span>
-            </label>
+            <label className="block text-sm font-semibold mb-2">Descripción <span className="text-stone-500 font-normal text-xs">(opcional)</span></label>
             <textarea value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
               placeholder="Ej: Incluye manicura combinada y esmaltado permanente con diseños simples..."
               rows={3} className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-2 text-white resize-none text-sm" />

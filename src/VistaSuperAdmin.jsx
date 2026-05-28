@@ -32,6 +32,7 @@ const FORM_INICIAL = {
   direccion: "",
   instagram: "",
   plan: "base",
+  tipo_negocio: "barberia",
 };
 
 const InputField = ({ label, campo, type = "text", placeholder, requerido, value, onChange, error }) => (
@@ -134,6 +135,7 @@ export function VistaSuperAdmin({ usuario, onLogout, supabase }) {
         nombre: form.nombre.trim(),
         email_admin: form.email_admin.trim().toLowerCase(),
         plan: form.plan,
+        tipo_negocio: form.tipo_negocio,
         estado: "activo",
         configuracion: {
           telefono: form.telefono.trim(),
@@ -561,6 +563,28 @@ export function VistaSuperAdmin({ usuario, onLogout, supabase }) {
                 <label className="block text-sm font-semibold mb-2">
                   Plan <span className="text-red-400">*</span>
                 </label>
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold mb-2">Tipo de negocio</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { key: "barberia", icon: "✂️", label: "Barbería" },
+                      { key: "salon", icon: "💅", label: "Salón de belleza" },
+                    ].map((t) => (
+                      <button
+                        key={t.key}
+                        onClick={() => setForm({ ...form, tipo_negocio: t.key })}
+                        className={`p-3 rounded border-2 text-center transition ${
+                          form.tipo_negocio === t.key
+                            ? "border-amber-200 bg-amber-200 bg-opacity-10"
+                            : "border-stone-700 hover:border-stone-600"
+                        }`}
+                      >
+                        <p className="text-lg mb-1">{t.icon}</p>
+                        <p className="font-bold text-sm">{t.label}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="grid grid-cols-3 gap-2">
                   {Object.entries(PLANES).map(([planKey, planInfo]) => (
                     <button

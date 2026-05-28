@@ -24,6 +24,7 @@ const detectarEncuesta = () => {
 };
 
 export default function App() {
+  const barberiaIdUrl = new URLSearchParams(window.location.search).get("barberiaId") || "org-twins";
   const encuestaParams = detectarEncuesta();
 
   const [vista, setVista] = useState(encuestaParams ? "encuesta" : "inicio");
@@ -114,7 +115,7 @@ export default function App() {
 
   // INICIO (público)
   if (vista === "inicio") {
-    return <VistaInicio barberiaId="org-twins" onNavigate={(v) => setVista(v)} supabase={supabase} />;
+    return <VistaInicio barberiaId={barberiaIdUrl} onNavigate={(v) => setVista(v)} supabase={supabase} />;
   }
 
   // RESERVA (público)
@@ -127,7 +128,7 @@ export default function App() {
             Volver al inicio
           </button>
         </div>
-        <VistaReserva supabase={supabase} barberiaId="org-twins" />
+        <VistaReserva supabase={supabase} barberiaId={barberiaIdUrl} />
       </div>
     );
   }

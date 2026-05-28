@@ -119,11 +119,12 @@ export default function App() {
   }
 
   // RESERVA (público)
+  const esSalonApp = barberiaIdUrl !== "org-twins";
   if (vista === "reserva") {
     return (
-      <div className="min-h-screen bg-stone-950">
-        <div className="bg-stone-900 border-b border-stone-700 p-3">
-          <button onClick={() => setVista("inicio")} className="flex items-center gap-2 text-stone-400 hover:text-amber-200 text-sm">
+      <div style={{ minHeight: "100vh", background: esSalonApp ? "#fce8f0" : "#0c0a09" }}>
+        <div style={{ background: esSalonApp ? "#fdf0f5" : "#1c1917", borderBottom: `1px solid ${esSalonApp ? "#f0c0d4" : "#44403c"}`, padding: 12 }}>
+          <button onClick={() => setVista("inicio")} style={{ display: "flex", alignItems: "center", gap: 6, color: esSalonApp ? "#b05070" : "#a8a29e", background: "none", border: "none", cursor: "pointer", fontSize: 13 }}>
             <ArrowLeft size={16} />
             Volver al inicio
           </button>

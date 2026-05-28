@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Scissors, Calendar, Clock, MapPin, LogIn } from "lucide-react";
+import { Scissors, Calendar, Clock, MapPin, LogIn, Sparkles } from "lucide-react";
 
 export function VistaInicio({
   barberiaId = "org-twins",
@@ -68,11 +68,14 @@ export function VistaInicio({
     iconBg: "rgba(212,99,138,0.12)",
     iconColor: "#d4638a",
     titleColor: "#7a1f42",
+    titleFont: "'Libre Caslon Display', serif",
     subtitleColor: "#b05070",
-    ctaBg: "#d4638a",
-    ctaBgHover: "#c45578",
-    ctaText: "#fff",
-    cardBg: "#fff",
+    subtitleStyle: "italic",
+    ctaBg: "#fce8f0",
+    ctaBgHover: "#fdf2f6",
+    ctaText: "#d4638a",
+    ctaBorder: "1.5px solid #d4638a",
+    cardBg: "#fdf2f6",
     cardBorder: "#f0c0d4",
     cardIconColor: "#d4638a",
     cardLabelColor: "#b08090",
@@ -80,6 +83,7 @@ export function VistaInicio({
     loginColor: "#b05070",
     starColor: "#d4638a",
     reviewDateColor: "#b08090",
+    useSalon: true,
     reviewTextColor: "#6d4455",
     footerColor: "#c9889e",
     tagline: "Reserva tu sesión en segundos",
@@ -107,6 +111,10 @@ export function VistaInicio({
     footerColor: "#44403c",
     tagline: "Reserva tu cita en segundos",
     waColor: "#78716c",
+    useSalon: false,
+    titleFont: "system-ui, sans-serif",
+    subtitleStyle: "normal",
+    ctaBorder: "none",
   };
 
   const renderEstrellas = (n) =>
@@ -114,16 +122,21 @@ export function VistaInicio({
       <span key={i} style={{ color: i < n ? T.starColor : "#555" }}>★</span>
     ));
 
+  const bgInicial = barberiaId !== "org-twins" ? "#fce8f0" : "#0c0a09";
+  const textInicial = barberiaId !== "org-twins" ? "#b08090" : "#78716c";
   if (cargando) {
     return (
-      <div style={{ minHeight: "100vh", background: "#0c0a09", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <p style={{ color: "#78716c" }}>Cargando...</p>
+      <div style={{ minHeight: "100vh", background: bgInicial, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <p style={{ color: textInicial }}>Cargando...</p>
       </div>
     );
   }
 
   return (
     <div style={{ minHeight: "100vh", background: T.pageBg, color: T.pageText }}>
+      {T.useSalon && (
+        <style>{`@import url('https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=Crimson+Pro:ital,wght@0,300;1,300&display=swap');`}</style>
+      )}
       {/* Login */}
       <div style={{ position: "absolute", top: 16, right: 16 }}>
         <button
@@ -140,19 +153,19 @@ export function VistaInicio({
         <div style={{ maxWidth: 600, width: "100%", textAlign: "center" }}>
           {/* Ícono */}
           <div style={{ marginBottom: 24, display: "inline-flex", alignItems: "center", justifyContent: "center", width: 80, height: 80, background: T.iconBg, borderRadius: "50%" }}>
-            <Scissors size={40} color={T.iconColor} />
+            {T.useSalon ? <Sparkles size={40} color={T.iconColor} /> : <Scissors size={40} color={T.iconColor} />}
           </div>
 
           {/* Nombre */}
-          <h1 style={{ fontSize: "clamp(2.5rem,6vw,4rem)", fontWeight: 700, marginBottom: 8, color: T.titleColor }}>
+          <h1 style={{ fontSize: "clamp(2.5rem,6vw,4rem)", fontWeight: T.useSalon ? 400 : 700, marginBottom: 8, color: T.titleColor, fontFamily: T.titleFont }}>
             {barberia?.nombre || "AgendaIA"}
           </h1>
-          <p style={{ fontSize: 18, marginBottom: 48, color: T.subtitleColor }}>{T.tagline}</p>
+          <p style={{ fontSize: 18, marginBottom: 48, color: T.subtitleColor, fontStyle: T.subtitleStyle }}>{T.tagline}</p>
 
           {/* CTA */}
           <button
             onClick={() => onNavigate("reserva")}
-            style={{ display: "inline-flex", alignItems: "center", gap: 12, background: T.ctaBg, color: T.ctaText, fontWeight: 700, fontSize: 20, padding: "20px 40px", borderRadius: 12, border: "none", cursor: "pointer", transition: "background 0.2s" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 12, background: T.ctaBg, color: T.ctaText, fontWeight: T.useSalon ? 500 : 700, fontSize: T.useSalon ? 17 : 20, padding: "16px 36px", borderRadius: 40, border: T.ctaBorder, cursor: "pointer", transition: "background 0.2s" }}
             onMouseOver={e => e.currentTarget.style.background = T.ctaBgHover}
             onMouseOut={e => e.currentTarget.style.background = T.ctaBg}
           >

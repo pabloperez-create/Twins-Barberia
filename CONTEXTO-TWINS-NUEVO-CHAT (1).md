@@ -527,3 +527,31 @@ rm -rf node_modules/.vite
 3. **Dominio agendaia.cl** — comprar en NIC Chile + conectar Vercel
 4. **Video demo** — grabar con Screen Studio
 
+
+---
+
+## 📅 SESIÓN 12 (27 may) - COMPLETADO
+
+### ✅ Features completadas:
+1. **Tipo de negocio** — campo `tipo_negocio` en tabla `barberia` (barberia | salon)
+2. **Tema dinámico por tipo** — VistaInicio usa inline styles según tipo_negocio
+   - Barbería: fondo oscuro #0c0a09, ámbar/dorado
+   - Salón: fondo rosado claro #fce8f0, rosas/fucsias
+3. **Selector tipo negocio en Super Admin** — al crear nueva barbería
+4. **Nail Studio demo** creado — ID: `org-nailstudio`, plan Plus, tipo: salon
+5. **barberiaId dinámico** — App.jsx lee `?barberiaId=` de la URL
+6. **Logs de debug** eliminados de VistaInicio (reescritura limpia)
+
+### 🔴 Pendiente mañana (PRIORITARIO):
+1. **Tema rosado en flujo de reserva** — VistaReserva-FASE3 sigue en negro cuando es salón
+2. **Panel admin/barbero rosado** — cuando el negocio es salón, el panel también debería usar tema rosado
+3. **Terminología dinámica** — "Barbero" → "Estilista", "Barbería" → "Salón" según tipo
+4. **Onboardear TWINS** — datos reales
+5. **Migrar Supabase Auth + RLS** — antes del segundo cliente
+6. **Dominio agendaia.cl**
+
+### 💡 Arquitectura tema:
+- El objeto `T` (tema) en VistaInicio.jsx tiene todos los colores como inline styles
+- Evitar clases Tailwind dinámicas (no funciona con purge CSS)
+- Mismo patrón debe aplicarse a VistaReserva-FASE3.jsx
+

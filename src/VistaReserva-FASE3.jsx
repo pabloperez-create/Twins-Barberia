@@ -539,13 +539,44 @@ export function VistaReserva({ supabase, barberiaId }) {
     setCargando(false);
   };
 
+  const esSalon = barberiaData?.tipo_negocio === "salon" || (barberiaData === null && barberiaId !== "org-twins");
+  const T = esSalon ? {
+    pageBg: "#fce8f0", pageText: "#4a1030",
+    cardBg: "#fff", cardBorder: "#f0c0d4",
+    inputBg: "#fdf0f5", inputBorder: "#f0c0d4",
+    accent: "#d4638a", accentText: "#fff",
+    stepActive: "#d4638a", stepInactive: "#f0c0d4",
+    labelColor: "#b05070", mutedColor: "#b08090",
+    btnPrimary: "#d4638a", btnPrimaryText: "#fff",
+    btnSecondary: "#fdf0f5", btnSecondaryText: "#b05070",
+    btnSecondaryBorder: "#f0c0d4",
+    successBg: "#fdf0f5", successBorder: "#f0c0d4", successText: "#7a1f42",
+    errorBg: "#fff0f3", errorBorder: "#fca5a5", errorText: "#991b1b",
+    tagBg: "#fce8f0", tagBorder: "#f0c0d4", tagText: "#7a1f42",
+    tagActiveBg: "#d4638a", tagActiveBorder: "#d4638a", tagActiveText: "#fff",
+  } : {
+    pageBg: "#0c0a09", pageText: "#fff",
+    cardBg: "#1c1917", cardBorder: "#44403c",
+    inputBg: "#1c1917", inputBorder: "#44403c",
+    accent: "#fde68a", accentText: "#0c0a09",
+    stepActive: "#fde68a", stepInactive: "#44403c",
+    labelColor: "#a8a29e", mutedColor: "#78716c",
+    btnPrimary: "#fde68a", btnPrimaryText: "#0c0a09",
+    btnSecondary: "#292524", btnSecondaryText: "#d6d3d1",
+    btnSecondaryBorder: "#44403c",
+    successBg: "#14532d", successBorder: "#166534", successText: "#bbf7d0",
+    errorBg: "#450a0a", errorBorder: "#991b1b", errorText: "#fca5a5",
+    tagBg: "#292524", tagBorder: "#44403c", tagText: "#d6d3d1",
+    tagActiveBg: "#fde68a", tagActiveBorder: "#fde68a", tagActiveText: "#0c0a09",
+  };
+
   return (
-    <div className="min-h-screen bg-stone-950 text-white p-6">
-      <div className="max-w-4xl mx-auto mb-8">
+    <div style={{ minHeight: "100vh", background: T.pageBg, color: T.pageText, padding: 24 }}>
+      <div className="max-w-4xl mx-auto mb-8" style={{ color: T.pageText }}>
         <h1 className="text-4xl font-bold mb-2">
           {barberiaData?.nombre || "Reservar Hora"}
         </h1>
-        <p className="text-stone-400">Paso {paso} de 6</p>
+        <p style={{ color: T.mutedColor }}>Paso {paso} de 6</p>
       </div>
 
       <div className="max-w-4xl mx-auto mb-8">
@@ -553,7 +584,7 @@ export function VistaReserva({ supabase, barberiaId }) {
           {[1, 2, 3, 4, 5, 6].map((p) => (
             <div
               key={p}
-              className={`h-1 flex-1 rounded ${p <= paso ? "bg-amber-200" : "bg-stone-700"}`}
+              style={{ height: 4, flex: 1, borderRadius: 4, background: p <= paso ? T.stepActive : T.stepInactive }}
             />
           ))}
         </div>
@@ -577,16 +608,12 @@ export function VistaReserva({ supabase, barberiaId }) {
                 <button
                   key={servicio.id}
                   onClick={() => setServicioSeleccionado(servicio)}
-                  className={`p-6 rounded border-2 text-left transition ${
-                    servicioSeleccionado?.id === servicio.id
-                      ? "border-amber-200 bg-amber-200 bg-opacity-10"
-                      : "border-stone-700 hover:border-stone-600"
-                  }`}
+                  style={{ border: `2px solid ${seleccionado ? T.tagActiveBg : T.cardBorder}`, background: seleccionado ? `${T.tagActiveBg}22` : T.cardBg, borderRadius: 8, cursor: "pointer" }}
                 >
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-bold text-lg">{servicio.nombre}</h3>
-                      <p className="text-stone-400 text-sm mt-1">
+                      <p style={{ color: T.mutedColor, fontSize: 13, marginTop: 4 }}>
                         {servicio.duracion_minutos} minutos
                       </p>
                     </div>
@@ -603,7 +630,7 @@ export function VistaReserva({ supabase, barberiaId }) {
         {paso === 2 && (
           <div>
             <h2 className="text-2xl font-bold mb-6">¿Servicios adicionales?</h2>
-            <p className="text-stone-400 mb-6">
+            <p style={{ color: T.mutedColor, marginBottom: 24 }}>
               Selecciona los que desees (opcional)
             </p>
             <div className="grid gap-3">
@@ -624,15 +651,11 @@ export function VistaReserva({ supabase, barberiaId }) {
                       ]);
                     }
                   }}
-                  className={`p-4 rounded border-2 text-left transition flex justify-between items-center ${
-                    adicionalesSeleccionados.includes(adicional.id)
-                      ? "border-amber-200 bg-amber-200 bg-opacity-10"
-                      : "border-stone-700 hover:border-stone-600"
-                  }`}
+                  style={{ border: `2px solid ${seleccionado ? T.tagActiveBg : T.cardBorder}`, background: seleccionado ? `${T.tagActiveBg}22` : T.cardBg, borderRadius: 8, cursor: "pointer" }}
                 >
                   <div>
                     <h3 className="font-bold">{adicional.nombre}</h3>
-                    <p className="text-stone-400 text-sm">
+                    <p style={{ color: T.mutedColor, fontSize: 13 }}>
                       {adicional.duracion_minutos} min
                     </p>
                   </div>
@@ -656,21 +679,17 @@ export function VistaReserva({ supabase, barberiaId }) {
                   setBarberoSeleccionado(CUALQUIERA);
                   setHoraSeleccionada("");
                 }}
-                className={`p-6 rounded border-2 text-left transition ${
-                  barberoSeleccionado === CUALQUIERA
-                    ? "border-amber-200 bg-amber-200 bg-opacity-10"
-                    : "border-stone-700 hover:border-stone-600"
-                }`}
+                style={{ border: `2px solid ${seleccionado ? T.tagActiveBg : T.cardBorder}`, background: seleccionado ? `${T.tagActiveBg}22` : T.cardBg, borderRadius: 8, cursor: "pointer" }}
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 bg-amber-200 bg-opacity-20 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div style={{ width: 64, height: 64, background: `${T.accent}22`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <Users size={32} className="text-amber-200" />
                   </div>
                   <div className="flex-1">
                     <h3 className="font-bold text-lg">
                       Cualquier barbero disponible
                     </h3>
-                    <p className="text-stone-400 text-sm">
+                    <p style={{ color: T.mutedColor, fontSize: 13 }}>
                       Te asignamos el que tenga mayor disponibilidad
                     </p>
                   </div>
@@ -678,9 +697,9 @@ export function VistaReserva({ supabase, barberiaId }) {
               </button>
 
               <div className="flex items-center gap-3 my-2">
-                <div className="flex-1 h-px bg-stone-700"></div>
+                <div style={{ flex: 1, height: 1, background: T.cardBorder }}></div>
                 <p className="text-stone-500 text-xs">O ELIGE UN ESPECÍFICO</p>
-                <div className="flex-1 h-px bg-stone-700"></div>
+                <div style={{ flex: 1, height: 1, background: T.cardBorder }}></div>
               </div>
 
               {barberos.map((barbero) => (
@@ -690,19 +709,15 @@ export function VistaReserva({ supabase, barberiaId }) {
                     setBarberoSeleccionado(barbero.id);
                     setHoraSeleccionada("");
                   }}
-                  className={`p-6 rounded border-2 text-left transition ${
-                    barberoSeleccionado === barbero.id
-                      ? "border-amber-200 bg-amber-200 bg-opacity-10"
-                      : "border-stone-700 hover:border-stone-600"
-                  }`}
+                  style={{ border: `2px solid ${seleccionado ? T.tagActiveBg : T.cardBorder}`, background: seleccionado ? `${T.tagActiveBg}22` : T.cardBg, borderRadius: 8, cursor: "pointer" }}
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-16 h-16 bg-stone-800 rounded-full flex items-center justify-center flex-shrink-0">
+                    <div style={{ width: 64, height: 64, background: T.inputBg, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <User size={32} className="text-amber-200" />
                     </div>
                     <div>
                       <h3 className="font-bold text-lg">{barbero.nombre}</h3>
-                      <p className="text-stone-400 text-sm">
+                      <p style={{ color: T.mutedColor, fontSize: 13 }}>
                         {barbero.especialidad || "Barbero"}
                       </p>
                     </div>
@@ -737,7 +752,7 @@ export function VistaReserva({ supabase, barberiaId }) {
                   }
                 }}
                 min={new Date().toISOString().split("T")[0]}
-                className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-3 text-white"
+                style={{ width: "100%", background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: "12px 16px", color: T.pageText, outline: "none", boxSizing: "border-box" }}
               />
             </div>
 
@@ -783,7 +798,7 @@ export function VistaReserva({ supabase, barberiaId }) {
                   value={clienteNombre}
                   onChange={(e) => setClienteNombre(e.target.value)}
                   placeholder="Tu nombre"
-                  className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-3 text-white"
+                  style={{ width: "100%", background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: "12px 16px", color: T.pageText, outline: "none", boxSizing: "border-box" }}
                 />
               </div>
 
@@ -822,7 +837,7 @@ export function VistaReserva({ supabase, barberiaId }) {
                   value={clienteEmail}
                   onChange={(e) => setClienteEmail(e.target.value)}
                   placeholder="tu@email.com"
-                  className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-3 text-white"
+                  style={{ width: "100%", background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: "12px 16px", color: T.pageText, outline: "none", boxSizing: "border-box" }}
                 />
               </div>
             </div>
@@ -838,7 +853,7 @@ export function VistaReserva({ supabase, barberiaId }) {
               <h2 className="text-3xl font-bold mb-2">¡Reserva Confirmada!</h2>
             </div>
 
-            <div className="bg-stone-900 p-6 rounded border border-stone-700 space-y-4">
+            <div style={{ background: T.cardBg, border: `1px solid ${T.cardBorder}`, borderRadius: 8, padding: 24 }} className="space-y-4">
               <div className="flex justify-between">
                 <span className="text-stone-400">Barbero:</span>
                 <span className="font-semibold">
@@ -895,7 +910,7 @@ export function VistaReserva({ supabase, barberiaId }) {
             {paso < 5 && (
               <button
                 onClick={irAlSiguiente}
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-amber-200 hover:bg-amber-100 text-stone-950 font-bold rounded"
+                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 24px", background: T.btnPrimary, color: T.btnPrimaryText, fontWeight: 700, borderRadius: 8, border: "none", cursor: "pointer" }}
               >
                 Siguiente
                 <ChevronRight size={20} />
@@ -917,7 +932,7 @@ export function VistaReserva({ supabase, barberiaId }) {
         {paso === 6 && (
           <button
             onClick={() => window.location.reload()}
-            className="w-full px-6 py-3 bg-amber-200 hover:bg-amber-100 text-stone-950 font-bold rounded mt-8"
+            style={{ width: "100%", padding: "12px 24px", background: T.btnPrimary, color: T.btnPrimaryText, fontWeight: 700, borderRadius: 8, border: "none", cursor: "pointer", marginTop: 32 }}
           >
             Hacer otra reserva
           </button>

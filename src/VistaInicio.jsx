@@ -65,6 +65,38 @@ export function VistaInicio({
 
   const config = barberia?.configuracion || {};
   const features = config.features || {};
+  const esSalon = barberia?.tipo_negocio === 'salon';
+  const tema = esSalon ? {
+    bg: 'bg-pink-50',
+    heroBg: 'bg-pink-100',
+    heroBorder: 'border border-pink-200',
+    titulo: 'text-rose-900',
+    subtitulo: 'text-rose-500',
+    icono: 'text-rose-400',
+    iconoBg: 'bg-rose-100',
+    cta: 'bg-rose-500 hover:bg-rose-400 text-white',
+    cardBg: 'bg-white border border-pink-200',
+    cardIcon: 'text-rose-400',
+    cardLabel: 'text-rose-300',
+    tagline: 'Reserva tu sesión en segundos',
+    loginColor: 'text-rose-300 hover:text-rose-500',
+    footerBg: 'bg-pink-50',
+  } : {
+    bg: 'bg-stone-950',
+    heroBg: '',
+    heroBorder: '',
+    titulo: 'text-white',
+    subtitulo: 'text-amber-200',
+    icono: 'text-amber-200',
+    iconoBg: 'bg-amber-200 bg-opacity-10',
+    cta: 'bg-amber-200 hover:bg-amber-100 text-stone-950',
+    cardBg: 'bg-stone-900 border border-stone-700',
+    cardIcon: 'text-amber-200',
+    cardLabel: 'text-stone-400',
+    tagline: 'Reserva tu cita en segundos',
+    loginColor: 'text-stone-400 hover:text-amber-200',
+    footerBg: 'bg-stone-900',
+  };
 
   const renderEstrellas = (n) =>
     Array.from({ length: 5 }, (_, i) => (
@@ -80,12 +112,12 @@ export function VistaInicio({
   }
 
   return (
-    <div className="min-h-screen bg-stone-950 text-white">
+    <div className={`min-h-screen ${esSalon ? "bg-pink-50 text-rose-950" : "bg-stone-950 text-white"}`}>
       {/* Header con login pequeño */}
       <div className="absolute top-4 right-4">
         <button
           onClick={() => onNavigate("login")}
-          className="flex items-center gap-2 text-stone-400 hover:text-amber-200 text-sm px-3 py-2 rounded transition"
+          className={`flex items-center gap-2 text-sm px-3 py-2 rounded transition ${tema.loginColor}`}
           title="Acceso para administradores y barberos"
         >
           <LogIn size={16} />
@@ -97,22 +129,20 @@ export function VistaInicio({
       <div className="min-h-screen flex flex-col items-center justify-center p-6">
         <div className="max-w-2xl w-full text-center">
           {/* Logo */}
-          <div className="mb-6 inline-flex items-center justify-center w-20 h-20 bg-amber-200 bg-opacity-10 rounded-full">
-            <Scissors size={40} className="text-amber-200" />
+          <div className={`mb-6 inline-flex items-center justify-center w-20 h-20 rounded-full ${tema.iconoBg}`}>
+            <Scissors size={40} className={tema.icono} />
           </div>
 
           {/* Nombre + Tagline */}
-          <h1 className="text-5xl md:text-6xl font-bold mb-3">
+          <h1 className={`text-5xl md:text-6xl font-bold mb-3 ${tema.titulo}`}>
             {barberia?.nombre || "TWINS Barbería"}
           </h1>
-          <p className="text-amber-200 text-lg mb-12">
-            Reserva tu cita en segundos
-          </p>
+          <p className={`text-lg mb-12 ${tema.subtitulo}`}>{tema.tagline}</p>
 
           {/* CTA principal */}
           <button
             onClick={() => onNavigate("reserva")}
-            className="group inline-flex items-center gap-3 bg-amber-200 hover:bg-amber-100 text-stone-950 font-bold text-xl px-10 py-5 rounded-lg shadow-2xl transition-all hover:scale-105"
+            className={`group inline-flex items-center gap-3 font-bold text-xl px-10 py-5 rounded-lg shadow-2xl transition-all hover:scale-105 ${tema.cta}`}
           >
             <Calendar size={24} />
             Reservar ahora

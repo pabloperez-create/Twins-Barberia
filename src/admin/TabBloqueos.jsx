@@ -82,11 +82,11 @@ export function TabBloqueos({ supabase, barberiaId }) {
   };
 
   const guardar = async () => {
-    if (!form.fecha_inicio || !form.fecha_fin) {
+    if (form.tipo !== "recurrente" && (!form.fecha_inicio || !form.fecha_fin)) {
       mostrarMensaje("error", "Selecciona las fechas");
       return;
     }
-    if (form.fecha_inicio > form.fecha_fin) {
+    if (form.fecha_inicio && form.fecha_fin && form.fecha_inicio > form.fecha_fin) {
       mostrarMensaje("error", "La fecha de inicio debe ser anterior a la de fin");
       return;
     }
@@ -117,6 +117,8 @@ export function TabBloqueos({ supabase, barberiaId }) {
         hora_fin: form.tipo === "bloque_horas" ? form.hora_fin : null,
         motivo: form.motivo.trim() || null,
         dias_semana: form.tipo === "recurrente" ? form.dias_semana : null,
+        fecha_inicio: form.fecha_inicio || new Date().toISOString().split("T")[0],
+        fecha_fin: form.fecha_fin || (form.tipo === "recurrente" ? "2099-12-31" : null),
       });
 
       if (error) throw error;

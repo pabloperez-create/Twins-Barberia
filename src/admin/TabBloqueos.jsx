@@ -397,6 +397,7 @@ export function TabBloqueos({ supabase, barberiaId }) {
             </div>
           )}
 
+          {form.tipo !== "recurrente" && (
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-semibold mb-2">
@@ -429,6 +430,7 @@ export function TabBloqueos({ supabase, barberiaId }) {
               />
             </div>
           </div>
+          )}
 
           {form.tipo === "bloque_horas" && (
             <div className="grid grid-cols-2 gap-3">

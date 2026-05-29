@@ -457,7 +457,7 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
           </div>
         ) : (
           <a
-            href={`/api/google-auth?action=authorize&barbero_id=${barbero?.id}`}
+            href={`/api/google-calendar-callback?action=authorize&barbero_id=${barbero?.id}`}
             className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-2 rounded"
           >
             Conectar Google Calendar

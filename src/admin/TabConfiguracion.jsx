@@ -113,11 +113,11 @@ export function TabConfiguracion({ supabase, barberia, onUpdate }) {
       const ext = file.name.split(".").pop();
       const fileName = `logo-${barberia.id}.${ext}`;
       const { error: uploadError } = await supabase.storage
-        .from("barberos")
+        .from("Barberos")
         .upload(fileName, file, { upsert: true });
       if (uploadError) throw uploadError;
       const { data: urlData } = supabase.storage
-        .from("barberos")
+        .from("Barberos")
         .getPublicUrl(fileName);
       await supabase
         .from("barberia")

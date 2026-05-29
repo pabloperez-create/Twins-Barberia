@@ -42,7 +42,7 @@ export function TabBloqueos({ supabase, barberiaId }) {
 
       const { data: bloqs } = await supabase
         .from("bloqueos_horarios")
-        .select("*, barbero:barbero_id(nombre)")
+        .select("*, barbero:barberos!barbero_id(nombre)")
         .eq("barberia_id", barberiaId)
         .gte("fecha_fin", hoy)
         .order("fecha_inicio", { ascending: true });

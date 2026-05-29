@@ -48,15 +48,18 @@ export default async function handler(req, res) {
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
     // Calcular hora fin
-    const [hora, min] = reserva.hora_inicio.split(':').map(Number);
-    const inicio = new Date(`${reserva.fecha}T${reserva.hora_inicio}:00`);
-    const fin = new Date(inicio.getTime() + reserva.duracion_minutos * 60000);
+    const inicio = `${reserva.fecha}T${reserva.hora_inicio}:00`;
+    const [h, m] = reserva.hora_inicio.split(':').map(Number);
+    const finMinutos = h * 60 + m + reserva.duracion_minutos;
+    const finH = String(Math.floor(finMinutos / 60)).padStart(2, '0');
+    const finM = String(finMinutos % 60).padStart(2, '0');
+    const fin = `${reserva.fecha}T${finH}:${finM}:00`;
 
     const evento = {
       summary: `${reserva.servicio} — ${reserva.cliente_nombre}`,
       description: `📱 ${reserva.cliente_telefono}\n✉️ ${reserva.cliente_email}\n💰 $${reserva.precio_final}`,
-      start: { dateTime: inicio.toISOString(), timeZone: 'America/Santiago' },
-      end: { dateTime: fin.toISOString(), timeZone: 'America/Santiago' },
+      start: { dateTime: inicio, timeZone: 'America/Santiago' },
+      end: { dateTime: fin, timeZone: 'America/Santiago' },
       reminders: {
         useDefault: false,
         overrides: [{ method: 'popup', minutes: 30 }]

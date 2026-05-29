@@ -32,7 +32,9 @@ const initHorariosSemana = (barbero) => {
 };
 
 export function TabMiHorario({ supabase, barbero, onUpdate }) {
-  const [horariosSemana, setHorariosSemana] = useState(initHorariosSemana(barbero));
+  const [horariosSemana, setHorariosSemana] = useState(
+    initHorariosSemana(barbero),
+  );
   const [intervalo, setIntervalo] = useState(barbero?.intervalo_minutos || 30);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState({ tipo: "", texto: "" });
@@ -71,8 +73,9 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
 
       const durMap = {};
       const durAddMap = {};
-      (durs || []).forEach(d => {
-        if (d.tipo === "adicional") durAddMap[d.servicio_id] = d.duracion_minutos;
+      (durs || []).forEach((d) => {
+        if (d.tipo === "adicional")
+          durAddMap[d.servicio_id] = d.duracion_minutos;
         else durMap[d.servicio_id] = d.duracion_minutos;
       });
       setDuraciones(durMap);
@@ -145,7 +148,10 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
     for (const { key, label } of DIAS) {
       const d = horariosSemana[key];
       if (d.activo && d.inicio >= d.fin) {
-        mostrarMensaje("error", `${label}: la hora de inicio debe ser menor a la de fin`);
+        mostrarMensaje(
+          "error",
+          `${label}: la hora de inicio debe ser menor a la de fin`,
+        );
         return false;
       }
     }
@@ -159,13 +165,15 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
     try {
       // Calcular horario_inicio y horario_fin generales (el rango más amplio de días activos)
       const diasActivos = DIAS.filter(({ key }) => horariosSemana[key].activo);
-      const inicioGeneral = diasActivos.reduce((min, { key }) =>
-        horariosSemana[key].inicio < min ? horariosSemana[key].inicio : min,
-        "23:59"
+      const inicioGeneral = diasActivos.reduce(
+        (min, { key }) =>
+          horariosSemana[key].inicio < min ? horariosSemana[key].inicio : min,
+        "23:59",
       );
-      const finGeneral = diasActivos.reduce((max, { key }) =>
-        horariosSemana[key].fin > max ? horariosSemana[key].fin : max,
-        "00:00"
+      const finGeneral = diasActivos.reduce(
+        (max, { key }) =>
+          horariosSemana[key].fin > max ? horariosSemana[key].fin : max,
+        "00:00",
       );
 
       const { error } = await supabase
@@ -195,12 +203,18 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
       <h2 className="text-2xl font-bold mb-6">Mi Horario</h2>
 
       {mensaje.texto && (
-        <div className={`p-4 rounded mb-6 flex items-center gap-3 ${
-          mensaje.tipo === "success"
-            ? "bg-green-900 border border-green-700 text-green-200"
-            : "bg-red-900 border border-red-700 text-red-200"
-        }`}>
-          {mensaje.tipo === "success" ? <Check size={20} /> : <AlertCircle size={20} />}
+        <div
+          className={`p-4 rounded mb-6 flex items-center gap-3 ${
+            mensaje.tipo === "success"
+              ? "bg-green-900 border border-green-700 text-green-200"
+              : "bg-red-900 border border-red-700 text-red-200"
+          }`}
+        >
+          {mensaje.tipo === "success" ? (
+            <Check size={20} />
+          ) : (
+            <AlertCircle size={20} />
+          )}
           <p>{mensaje.texto}</p>
         </div>
       )}
@@ -216,12 +230,16 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
         {/* Botón aplicar a todos */}
         {primerDiaActivo && (
           <div className="bg-stone-800 rounded p-3 mb-5 flex items-center gap-3 flex-wrap">
-            <span className="text-sm text-stone-400">Aplicar mismo horario a todos los días:</span>
+            <span className="text-sm text-stone-400">
+              Aplicar mismo horario a todos los días:
+            </span>
             <button
-              onClick={() => aplicarATodos(
-                horariosSemana[primerDiaActivo.key].inicio,
-                horariosSemana[primerDiaActivo.key].fin
-              )}
+              onClick={() =>
+                aplicarATodos(
+                  horariosSemana[primerDiaActivo.key].inicio,
+                  horariosSemana[primerDiaActivo.key].fin,
+                )
+              }
               className="text-xs px-3 py-1.5 bg-stone-700 hover:bg-stone-600 rounded text-amber-200 font-semibold"
             >
               Usar horario de {primerDiaActivo.label}
@@ -234,9 +252,14 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
           {DIAS.map(({ key, label }) => {
             const d = horariosSemana[key];
             return (
-              <div key={key} className={`rounded border transition ${
-                d.activo ? "border-stone-600 bg-stone-800" : "border-stone-700 bg-stone-900 opacity-60"
-              }`}>
+              <div
+                key={key}
+                className={`rounded border transition ${
+                  d.activo
+                    ? "border-stone-600 bg-stone-800"
+                    : "border-stone-700 bg-stone-900 opacity-60"
+                }`}
+              >
                 <div className="flex items-center gap-3 p-3">
                   {/* Toggle día */}
                   <button
@@ -245,20 +268,30 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
                       d.activo ? "bg-amber-200" : "bg-stone-600"
                     }`}
                   >
-                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${
-                      d.activo ? "left-5" : "left-0.5"
-                    }`} />
+                    <span
+                      className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${
+                        d.activo ? "left-5" : "left-0.5"
+                      }`}
+                    />
                   </button>
 
-                  <span className={`w-24 text-sm font-semibold ${d.activo ? "text-white" : "text-stone-500"}`}>
+                  <span
+                    className={`w-24 text-sm font-semibold ${d.activo ? "text-white" : "text-stone-500"}`}
+                  >
                     {label}
                   </span>
 
                   {d.activo ? (
                     <div className="flex items-center gap-2 flex-1">
-                      <SelectorHora value={d.inicio} onChange={(v) => updateHorarioDia(key, "inicio", v)} />
+                      <SelectorHora
+                        value={d.inicio}
+                        onChange={(v) => updateHorarioDia(key, "inicio", v)}
+                      />
                       <span className="text-stone-500 text-xs">a</span>
-                      <SelectorHora value={d.fin} onChange={(v) => updateHorarioDia(key, "fin", v)} />
+                      <SelectorHora
+                        value={d.fin}
+                        onChange={(v) => updateHorarioDia(key, "fin", v)}
+                      />
                       <span className="text-stone-500 text-xs w-12 text-right">
                         {(() => {
                           const h1 = new Date(`2000-01-01 ${d.inicio}`);
@@ -269,7 +302,9 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
                       </span>
                     </div>
                   ) : (
-                    <span className="text-stone-500 text-sm italic">Día libre</span>
+                    <span className="text-stone-500 text-sm italic">
+                      Día libre
+                    </span>
                   )}
                 </div>
               </div>
@@ -287,8 +322,12 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
 
         {/* Intervalo entre citas */}
         <div className="bg-stone-800 rounded p-4 mt-2">
-          <label className="block text-sm font-semibold mb-2">Intervalo entre citas</label>
-          <p className="text-stone-400 text-xs mb-3">Define cada cuántos minutos aceptas reservas nuevas</p>
+          <label className="block text-sm font-semibold mb-2">
+            Intervalo entre citas
+          </label>
+          <p className="text-stone-400 text-xs mb-3">
+            Define cada cuántos minutos aceptas reservas nuevas
+          </p>
           <div className="flex gap-2 flex-wrap">
             {[15, 30, 45, 60, 75, 90].map((min) => (
               <button
@@ -323,20 +362,28 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
             <Clock size={18} /> Mi duración por servicio
           </h3>
           <p className="text-stone-400 text-sm mb-5">
-            Define cuánto tardas tú en cada servicio. Si lo dejas en blanco se usa la duración general.
+            Define cuánto tardas tú en cada servicio. Si lo dejas en blanco se
+            usa la duración general.
           </p>
           <div className="space-y-3">
             {servicios.map((s) => (
-              <div key={s.id} className="flex items-center gap-4 bg-stone-800 rounded p-3">
+              <div
+                key={s.id}
+                className="flex items-center gap-4 bg-stone-800 rounded p-3"
+              >
                 <div className="flex-1">
                   <p className="font-semibold text-sm">{s.nombre}</p>
-                  <p className="text-stone-500 text-xs">Duración general: {s.duracion_minutos} min</p>
+                  <p className="text-stone-500 text-xs">
+                    Duración general: {s.duracion_minutos} min
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
                     value={duraciones[s.id] || ""}
-                    onChange={(e) => setDuraciones({ ...duraciones, [s.id]: e.target.value })}
+                    onChange={(e) =>
+                      setDuraciones({ ...duraciones, [s.id]: e.target.value })
+                    }
                     placeholder={s.duracion_minutos}
                     className="w-20 bg-stone-700 border border-stone-600 rounded px-3 py-1.5 text-white text-sm text-center"
                     min="5"
@@ -350,18 +397,30 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
           {/* Adicionales */}
           {adicionales.length > 0 && (
             <>
-              <p className="text-amber-200 text-xs font-bold uppercase tracking-wider mt-4 mb-2">Servicios adicionales</p>
+              <p className="text-amber-200 text-xs font-bold uppercase tracking-wider mt-4 mb-2">
+                Servicios adicionales
+              </p>
               {adicionales.map((a) => (
-                <div key={a.id} className="flex items-center gap-4 bg-stone-800 rounded p-3">
+                <div
+                  key={a.id}
+                  className="flex items-center gap-4 bg-stone-800 rounded p-3"
+                >
                   <div className="flex-1">
                     <p className="font-semibold text-sm">{a.nombre}</p>
-                    <p className="text-stone-500 text-xs">Duración general: {a.duracion_minutos} min</p>
+                    <p className="text-stone-500 text-xs">
+                      Duración general: {a.duracion_minutos} min
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
                       value={duracionesAdicionales[a.id] || ""}
-                      onChange={(e) => setDuracionesAdicionales({ ...duracionesAdicionales, [a.id]: e.target.value })}
+                      onChange={(e) =>
+                        setDuracionesAdicionales({
+                          ...duracionesAdicionales,
+                          [a.id]: e.target.value,
+                        })
+                      }
                       placeholder={a.duracion_minutos}
                       className="w-20 bg-stone-700 border border-stone-600 rounded px-3 py-1.5 text-white text-sm text-center"
                       min="5"
@@ -383,6 +442,28 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
           </button>
         </div>
       )}
+      {/* Google Calendar */}
+      <div className="bg-stone-900 border border-stone-700 rounded p-6 max-w-2xl mt-6">
+        <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
+          📅 Google Calendar
+        </h3>
+        <p className="text-stone-400 text-sm mb-4">
+          Conecta tu Google Calendar para que cada reserva aparezca
+          automáticamente.
+        </p>
+        {barbero?.google_calendar_conectado ? (
+          <div className="flex items-center gap-2 text-green-400 font-semibold">
+            <Check size={18} /> Calendario conectado
+          </div>
+        ) : (
+          <a
+            href={`/api/google-auth?action=authorize&barbero_id=${barbero?.id}`}
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-2 rounded"
+          >
+            Conectar Google Calendar
+          </a>
+        )}
+      </div>
     </div>
   );
 }

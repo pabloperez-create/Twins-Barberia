@@ -619,3 +619,70 @@ rm -rf node_modules/.vite
 6. **Supabase Auth + RLS** — antes del segundo cliente
 7. **Dominio agendaia.cl**
 
+
+---
+
+## 📅 SESIÓN 15 (28 may noche) - COMPLETADO
+
+### 🎉 HITO: Alonso aceptó ser cliente piloto de AgendaIA!
+
+### ✅ Features completadas:
+1. **Foto de barbero/estilista** — upload a Supabase Storage (bucket: barberos), columna `foto_url`
+2. **Intervalo entre citas configurable** — columna `intervalo_minutos` en barberos, selector en TabMiHorario (15, 30, 45, 60, 75, 90 min)
+3. **Duración personalizada por barbero** — tabla `duraciones_barbero` con columnas: id, barberia_id, barbero_id, servicio_id, duracion_minutos, tipo (servicio|adicional)
+   - Barbero configura su duración por servicio Y por adicional en TabMiHorario
+   - VistaReserva usa duración personal del barbero al calcular slots disponibles
+4. **Categorías en servicios** — filtro por categoría con botones en flujo reserva
+5. **Duración oculta** en flujo de reserva (servicios y adicionales) — no compromete al barbero
+6. **Terminología dinámica salón** — estilista, sesión, la que tenga mayor disponibilidad
+
+### 🗄️ Tablas nuevas/modificadas:
+- `barberos`: + foto_url TEXT, + intervalo_minutos INTEGER DEFAULT 30
+- `servicios_principales`: + categoria TEXT DEFAULT 'general', + descripcion TEXT
+- `duraciones_barbero`: nueva tabla completa
+- `duraciones_barbero`: + tipo TEXT DEFAULT 'servicio'
+
+### 🔴 Pendiente:
+1. **Onboardear TWINS** — datos reales de Alonso (servicios, barberos, horarios, emails reales)
+2. **Login page** — tema rosado para salón (muestra TWINS y negro)
+3. **Botón WhatsApp y círculo check** en email → rosado para salones
+4. **"Cualquier estilista" no se marca** como seleccionado (highlight rosado)
+5. **Supabase Auth + RLS** — antes del segundo cliente
+6. **Dominio agendaia.cl**
+
+
+---
+
+## 📋 PENDIENTES DETALLADOS PRÓXIMAS SESIONES
+
+### 1. Logo Instagram real en VistaInicio
+- Actualmente muestra emoji 📷
+- Reemplazar por SVG real del logo de Instagram con los colores correctos
+
+### 2. Bug bloqueos recurrentes en panel barbero
+- Alonso no puede crear bloqueos recurrentes para ningún barbero ni para él mismo
+- Investigar y corregir el bug
+
+### 3. Comprar dominio agendaia.cl
+- Comprar en NIC Chile (~$15 USD/año)
+- Conectar a Vercel
+- Configurar subdominios: twins.agendaia.cl, nailstudio.agendaia.cl
+
+### 4. Tab Encuestas + Google Reviews
+- Actualmente Tab Encuestas solo muestra encuestas post-cita por email
+- Evaluar mostrar reseñas de Google también en el tab (para que admin pueda monitorear y decidir cuáles mostrar en landing)
+- O mantener separado: Google Reviews solo en landing, encuestas propias en el tab
+
+### 5. Marketing recurrente "Te echamos de menos"
+- Envío automático cada X días (configurable, ej: 15-20 días) a clientes que no han reservado
+- Texto configurable: "Hace X días que no nos visitas, ¡te esperamos!"
+- Periodicidad configurable desde el panel admin
+- Requiere: cron job + lógica para detectar clientes inactivos
+
+### 6. WhatsApp recordatorios para Alonso (Twilio)
+- Alonso quiere activar WhatsApp
+- Costo Twilio: ~$3-5 USD/mes (sandbox) o ~$10-15 USD/mes (número propio)
+- Lo que falta: activar feature flag, configurar número Twilio, probar sandbox
+- Cobrar a Alonso: +$10.000-15.000 CLP/mes como add-on
+- Pendiente: decidir si usar sandbox (+14155238886) o número propio
+

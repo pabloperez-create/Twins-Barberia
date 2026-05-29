@@ -587,3 +587,35 @@ rm -rf node_modules/.vite
 - Fuente cargada con `<style>@import url(...)` dinámico dentro del JSX
 - Evitar clases Tailwind dinámicas — usar siempre inline styles
 
+
+---
+
+## 📅 SESIÓN 14 (28 may) - COMPLETADO
+
+### ✅ Features completadas:
+1. **Gradiente rosado** en fondo VistaInicio salón
+2. **Servicios con categorías** — columna `categoria` en `servicios_principales`
+   - Filtro por categoría con botones en flujo reserva
+   - Agrupación por categoría en TabServicios admin
+   - Selector de categoría al crear/editar servicio
+3. **Descripción de servicios** — campo opcional en formulario y flujo reserva
+4. **Nail Studio demo completo:**
+   - 12 servicios reales de Anna Nail Artist con categorías y descripciones
+   - 2 estilistas: Ana y Camila (IDs: usr-ana-nail, usr-camila-nail)
+5. **Terminología dinámica salón:**
+   - "¿Con quién deseas tu sesión?" en vez de corte
+   - "Cualquier estilista disponible" / "la que tenga mayor disponibilidad"
+   - "Estilista:" en confirmación
+   - Error: "Selecciona una estilista (o 'Cualquiera')"
+6. **Flujo reserva 100% paleta rosada** — inputs, botones, horas, confirmación
+7. **Email confirmación con tema rosado** para salones — header #fce8f0, título #7a1f42
+
+### 🔴 Pendiente mañana:
+1. **Botón WhatsApp y círculo check verde** en email → cambiar a rosado para salones
+2. **Precio en vista previa servicios** — cuando hay adicionales, mostrar desglose de precios
+3. **"Cualquier estilista" no se marca como seleccionado** — el highlight rosado no aparece al elegir "cualquiera"
+4. **Login page** — muestra "TWINS" y diseño negro para Nail Studio (debería ser rosado con nombre correcto)
+5. **Onboardear TWINS** — datos reales
+6. **Supabase Auth + RLS** — antes del segundo cliente
+7. **Dominio agendaia.cl**
+

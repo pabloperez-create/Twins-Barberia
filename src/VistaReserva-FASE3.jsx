@@ -243,7 +243,7 @@ export function VistaReserva({ supabase, barberiaId }) {
           horariosDisponibles.push(horaStr);
         }
 
-        hora.setMinutes(hora.getMinutes() + 15);
+        hora.setMinutes(hora.getMinutes() + (barbero.intervalo_minutos || 30));
       }
 
       setHorariosBarbero(horariosDisponibles);
@@ -323,7 +323,7 @@ export function VistaReserva({ supabase, barberiaId }) {
           horariosDisponibles.push(horaStr);
         }
 
-        hora.setMinutes(hora.getMinutes() + 15);
+        hora.setMinutes(hora.getMinutes() + 30);
       }
 
       setHorariosBarbero(horariosDisponibles);
@@ -753,13 +753,16 @@ export function VistaReserva({ supabase, barberiaId }) {
                   style={{ border: "2px solid " + (barberoSeleccionado === barbero.id) ? T.tagActiveBg : T.cardBorder, background: (barberoSeleccionado === barbero.id) ? T.tagActiveBg + "22" : T.cardBg, borderRadius: 8, cursor: "pointer" }}
                 >
                   <div className="flex items-start gap-4">
-                    <div style={{ width: 64, height: 64, background: T.inputBg, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <User size={32} color={T.accent} />
+                    <div style={{ width: 64, height: 64, background: T.inputBg, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                      {barbero.foto_url
+                        ? <img src={barbero.foto_url} alt={barbero.nombre} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : <User size={32} color={T.accent} />
+                      }
                     </div>
                     <div>
                       <h3 className="font-bold text-lg">{barbero.nombre}</h3>
                       <p style={{ color: T.mutedColor, fontSize: 13 }}>
-                        {barbero.especialidad || "Barbero"}
+                        {barbero.especialidad || (esSalon ? "Estilista" : "Barbero")}
                       </p>
                     </div>
                   </div>

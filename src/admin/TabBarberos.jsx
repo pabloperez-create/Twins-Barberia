@@ -7,6 +7,7 @@ import {
   AlertCircle,
   User,
   Clock,
+  Upload,
 } from "lucide-react";
 import { SelectorHora } from "../components/SelectorHora";
 import { Modal } from "../components/Modal";
@@ -26,11 +27,28 @@ export function TabBarberos({ supabase, barberiaId }) {
     // Solo para crear nuevo
     email: "",
     password: "",
+    foto_url: "",
   });
 
   useEffect(() => {
     cargarBarberos();
   }, []);
+
+  const subirFoto = async (file, barberoId) => {
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${barberiaId}/${barberoId || "nuevo"}-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("barberos").upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data } = supabase.storage.from("barberos").getPublicUrl(path);
+      return data.publicUrl;
+    } catch (err) {
+      console.error("Error subiendo foto:", err);
+      return null;
+    }
+  };
+
+
 
   const cargarBarberos = async () => {
     setCargando(true);
@@ -274,8 +292,8 @@ export function TabBarberos({ supabase, barberiaId }) {
                 }`}
               >
                 <div className="flex items-center gap-4 flex-1">
-                  <div className="w-12 h-12 bg-stone-800 rounded-full flex items-center justify-center flex-shrink-0">
-                    <User size={24} className="text-amber-200" />
+                  <div className="w-12 h-12 bg-stone-800 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {b.foto_url ? <img src={b.foto_url} alt={b.nombre} className="w-full h-full object-cover" /> : <User size={24} className="text-amber-200" />}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
@@ -345,6 +363,36 @@ export function TabBarberos({ supabase, barberiaId }) {
         }
       >
         <div className="space-y-4">
+          {/* Foto del barbero */}
+          <div>
+            <label className="block text-sm font-semibold mb-2">
+              Foto <span className="text-stone-400 text-xs font-normal">(opcional)</span>
+            </label>
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-stone-700 flex items-center justify-center flex-shrink-0">
+                {(form.fotoPreview || editando?.foto_url) ? (
+                  <img src={form.fotoPreview || editando?.foto_url} alt="foto" className="w-full h-full object-cover" />
+                ) : (
+                  <User size={28} className="text-stone-400" />
+                )}
+              </div>
+              <label className="flex items-center gap-2 px-4 py-2 bg-stone-700 hover:bg-stone-600 rounded cursor-pointer text-sm">
+                <Upload size={16} />
+                {form.fotoPreview ? "Cambiar foto" : "Subir foto"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      setForm({ ...form, fotoFile: file, fotoPreview: URL.createObjectURL(file) });
+                    }
+                  }}
+                />
+              </label>
+            </div>
+          </div>
           {/* Datos del barbero */}
           <div>
             <label className="block text-sm font-semibold mb-2">

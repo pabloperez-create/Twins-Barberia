@@ -33,6 +33,7 @@ const initHorariosSemana = (barbero) => {
 
 export function TabMiHorario({ supabase, barbero, onUpdate }) {
   const [horariosSemana, setHorariosSemana] = useState(initHorariosSemana(barbero));
+  const [intervalo, setIntervalo] = useState(barbero?.intervalo_minutos || 30);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState({ tipo: "", texto: "" });
 
@@ -96,6 +97,7 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
           horarios_semana: horariosSemana,
           horario_inicio: inicioGeneral,
           horario_fin: finGeneral,
+          intervalo_minutos: intervalo,
         })
         .eq("id", barbero.id);
 
@@ -204,6 +206,27 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
           {diasActivos.length === 0
             ? "Ninguno seleccionado"
             : diasActivos.map(({ label }) => label).join(", ")}
+        </div>
+
+        {/* Intervalo entre citas */}
+        <div className="bg-stone-800 rounded p-4 mt-2">
+          <label className="block text-sm font-semibold mb-2">Intervalo entre citas</label>
+          <p className="text-stone-400 text-xs mb-3">Define cada cuántos minutos aceptas reservas nuevas</p>
+          <div className="flex gap-2 flex-wrap">
+            {[15, 20, 30, 45, 60, 90].map((min) => (
+              <button
+                key={min}
+                onClick={() => setIntervalo(min)}
+                className={`px-4 py-2 rounded text-sm font-semibold transition ${
+                  intervalo === min
+                    ? "bg-amber-200 text-stone-950"
+                    : "bg-stone-700 text-stone-300 hover:bg-stone-600"
+                }`}
+              >
+                {min} min
+              </button>
+            ))}
+          </div>
         </div>
 
         <button

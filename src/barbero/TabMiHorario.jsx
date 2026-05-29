@@ -37,7 +37,9 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState({ tipo: "", texto: "" });
   const [servicios, setServicios] = useState([]);
+  const [adicionales, setAdicionales] = useState([]);
   const [duraciones, setDuraciones] = useState({}); // { servicio_id: minutos }
+  const [duracionesAdicionales, setDuracionesAdicionales] = useState({}); // { adicional_id: minutos }
   const [guardandoDuraciones, setGuardandoDuraciones] = useState(false);
 
   useEffect(() => {
@@ -54,14 +56,27 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
         .order("nombre");
       setServicios(svcs || []);
 
+      const { data: adds } = await supabase
+        .from("servicios_adicionales")
+        .select("id, nombre, duracion_minutos")
+        .eq("barberia_id", barbero.barberia_id)
+        .eq("activo", true)
+        .order("nombre");
+      setAdicionales(adds || []);
+
       const { data: durs } = await supabase
         .from("duraciones_barbero")
-        .select("servicio_id, duracion_minutos")
+        .select("servicio_id, duracion_minutos, tipo")
         .eq("barbero_id", barbero.id);
 
       const durMap = {};
-      (durs || []).forEach(d => { durMap[d.servicio_id] = d.duracion_minutos; });
+      const durAddMap = {};
+      (durs || []).forEach(d => {
+        if (d.tipo === "adicional") durAddMap[d.servicio_id] = d.duracion_minutos;
+        else durMap[d.servicio_id] = d.duracion_minutos;
+      });
       setDuraciones(durMap);
+      setDuracionesAdicionales(durAddMap);
     } catch (err) {
       console.error("Error cargando servicios:", err);
     }
@@ -78,6 +93,18 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
           barbero_id: barbero.id,
           servicio_id: servicioId,
           duracion_minutos: Number(mins),
+          tipo: "servicio",
+        });
+      }
+      for (const [adicionalId, mins] of Object.entries(duracionesAdicionales)) {
+        if (!mins) continue;
+        await supabase.from("duraciones_barbero").upsert({
+          id: `dur-add-${barbero.id}-${adicionalId}`,
+          barberia_id: barbero.barberia_id,
+          barbero_id: barbero.id,
+          servicio_id: adicionalId,
+          duracion_minutos: Number(mins),
+          tipo: "adicional",
         });
       }
       mostrarMensaje("success", "✅ Duraciones guardadas");
@@ -320,6 +347,32 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
               </div>
             ))}
           </div>
+          {/* Adicionales */}
+          {adicionales.length > 0 && (
+            <>
+              <p className="text-amber-200 text-xs font-bold uppercase tracking-wider mt-4 mb-2">Servicios adicionales</p>
+              {adicionales.map((a) => (
+                <div key={a.id} className="flex items-center gap-4 bg-stone-800 rounded p-3">
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm">{a.nombre}</p>
+                    <p className="text-stone-500 text-xs">Duración general: {a.duracion_minutos} min</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={duracionesAdicionales[a.id] || ""}
+                      onChange={(e) => setDuracionesAdicionales({ ...duracionesAdicionales, [a.id]: e.target.value })}
+                      placeholder={a.duracion_minutos}
+                      className="w-20 bg-stone-700 border border-stone-600 rounded px-3 py-1.5 text-white text-sm text-center"
+                      min="5"
+                      max="480"
+                    />
+                    <span className="text-stone-400 text-sm">min</span>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
           <button
             onClick={guardarDuraciones}
             disabled={guardandoDuraciones}

@@ -115,7 +115,7 @@ export function VistaReserva({ supabase, barberiaId }) {
     try {
       const { data } = await supabase
         .from("duraciones_barbero")
-        .select("servicio_id, duracion_minutos")
+        .select("servicio_id, duracion_minutos, tipo")
         .eq("barbero_id", barberoId);
       const map = {};
       (data || []).forEach(d => { map[d.servicio_id] = d.duracion_minutos; });
@@ -129,8 +129,11 @@ export function VistaReserva({ supabase, barberiaId }) {
       ? duracionesBarbero[servicioId]
       : (servicioSeleccionado?.duracion_minutos || 30);
     const duracionAdicionales = adicionalesSeleccionados.reduce(
-      (sum, id) =>
-        sum + (adicionales.find((a) => a.id === id)?.duracion_minutos || 0),
+      (sum, id) => {
+        const durPersonal = duracionesBarbero[id];
+        const durGeneral = adicionales.find((a) => a.id === id)?.duracion_minutos || 0;
+        return sum + (durPersonal || durGeneral);
+      },
       0,
     );
     return duracionServicio + duracionAdicionales;
@@ -665,9 +668,6 @@ export function VistaReserva({ supabase, barberiaId }) {
                     <div className="flex justify-between items-start">
                       <div style={{ flex: 1, marginRight: 12 }}>
                         <h3 className="font-bold text-lg">{servicio.nombre}</h3>
-                        <p style={{ color: T.mutedColor, fontSize: 13, marginTop: 4 }}>
-                          {servicio.duracion_minutos} minutos
-                        </p>
                         {servicio.descripcion && (
                           <p style={{ color: T.mutedColor, fontSize: 12, marginTop: 6, fontStyle: "italic", lineHeight: 1.4 }}>
                             {servicio.descripcion}
@@ -713,9 +713,6 @@ export function VistaReserva({ supabase, barberiaId }) {
                 >
                   <div>
                     <h3 className="font-bold">{adicional.nombre}</h3>
-                    <p style={{ color: T.mutedColor, fontSize: 13 }}>
-                      {adicional.duracion_minutos} min
-                    </p>
                   </div>
                   <p style={{ color: T.accent, fontWeight: 700 }}>
                     +${adicional.precio.toLocaleString()}

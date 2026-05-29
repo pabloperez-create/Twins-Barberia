@@ -40,6 +40,7 @@ export function VistaReserva({ supabase, barberiaId }) {
 
   const [servicioSeleccionado, setServicioSeleccionado] = useState(null);
   const [categoriaActiva, setCategoriaActiva] = useState("todas");
+  const [duracionesBarbero, setDuracionesBarbero] = useState({});
   const [adicionalesSeleccionados, setAdicionalesSeleccionados] = useState([]);
   const [barberoSeleccionado, setBarberoSeleccionado] = useState(null);
   const [barberoAsignado, setBarberoAsignado] = useState(null);
@@ -109,8 +110,24 @@ export function VistaReserva({ supabase, barberiaId }) {
     }
   };
 
+  const cargarDuracionesBarbero = async (barberoId) => {
+    if (!barberoId || barberoId === "cualquiera") { setDuracionesBarbero({}); return; }
+    try {
+      const { data } = await supabase
+        .from("duraciones_barbero")
+        .select("servicio_id, duracion_minutos")
+        .eq("barbero_id", barberoId);
+      const map = {};
+      (data || []).forEach(d => { map[d.servicio_id] = d.duracion_minutos; });
+      setDuracionesBarbero(map);
+    } catch (err) { console.error("Error cargando duraciones:", err); }
+  };
+
   const calcularDuracionTotal = () => {
-    const duracionServicio = servicioSeleccionado?.duracion_minutos || 30;
+    const servicioId = servicioSeleccionado?.id;
+    const duracionServicio = (servicioId && duracionesBarbero[servicioId])
+      ? duracionesBarbero[servicioId]
+      : (servicioSeleccionado?.duracion_minutos || 30);
     const duracionAdicionales = adicionalesSeleccionados.reduce(
       (sum, id) =>
         sum + (adicionales.find((a) => a.id === id)?.duracion_minutos || 0),
@@ -717,7 +734,7 @@ export function VistaReserva({ supabase, barberiaId }) {
             <div className="grid gap-4">
               <button
                 onClick={() => {
-                  setBarberoSeleccionado(CUALQUIERA);
+                  setBarberoSeleccionado(CUALQUIERA); cargarDuracionesBarbero(null);
                   setHoraSeleccionada("");
                 }}
                 style={{ border: "2px solid " + (barberoSeleccionado?.id === "cualquiera") ? T.tagActiveBg : T.cardBorder, background: (barberoSeleccionado?.id === "cualquiera") ? T.tagActiveBg + "22" : T.cardBg, borderRadius: 8, cursor: "pointer" }}
@@ -747,7 +764,7 @@ export function VistaReserva({ supabase, barberiaId }) {
                 <button
                   key={barbero.id}
                   onClick={() => {
-                    setBarberoSeleccionado(barbero.id);
+                    setBarberoSeleccionado(barbero.id); cargarDuracionesBarbero(barbero.id);
                     setHoraSeleccionada("");
                   }}
                   style={{ border: "2px solid " + (barberoSeleccionado === barbero.id) ? T.tagActiveBg : T.cardBorder, background: (barberoSeleccionado === barbero.id) ? T.tagActiveBg + "22" : T.cardBg, borderRadius: 8, cursor: "pointer" }}

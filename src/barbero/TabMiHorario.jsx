@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Save, Check, AlertCircle, Clock } from "lucide-react";
 import { SelectorHora } from "../components/SelectorHora";
 
@@ -36,6 +36,56 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
   const [intervalo, setIntervalo] = useState(barbero?.intervalo_minutos || 30);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState({ tipo: "", texto: "" });
+  const [servicios, setServicios] = useState([]);
+  const [duraciones, setDuraciones] = useState({}); // { servicio_id: minutos }
+  const [guardandoDuraciones, setGuardandoDuraciones] = useState(false);
+
+  useEffect(() => {
+    cargarServiciosYDuraciones();
+  }, []);
+
+  const cargarServiciosYDuraciones = async () => {
+    try {
+      const { data: svcs } = await supabase
+        .from("servicios_principales")
+        .select("id, nombre, duracion_minutos")
+        .eq("barberia_id", barbero.barberia_id)
+        .eq("activo", true)
+        .order("nombre");
+      setServicios(svcs || []);
+
+      const { data: durs } = await supabase
+        .from("duraciones_barbero")
+        .select("servicio_id, duracion_minutos")
+        .eq("barbero_id", barbero.id);
+
+      const durMap = {};
+      (durs || []).forEach(d => { durMap[d.servicio_id] = d.duracion_minutos; });
+      setDuraciones(durMap);
+    } catch (err) {
+      console.error("Error cargando servicios:", err);
+    }
+  };
+
+  const guardarDuraciones = async () => {
+    setGuardandoDuraciones(true);
+    try {
+      for (const [servicioId, mins] of Object.entries(duraciones)) {
+        if (!mins) continue;
+        await supabase.from("duraciones_barbero").upsert({
+          id: `dur-${barbero.id}-${servicioId}`,
+          barberia_id: barbero.barberia_id,
+          barbero_id: barbero.id,
+          servicio_id: servicioId,
+          duracion_minutos: Number(mins),
+        });
+      }
+      mostrarMensaje("success", "✅ Duraciones guardadas");
+    } catch (err) {
+      mostrarMensaje("error", "Error: " + err.message);
+    }
+    setGuardandoDuraciones(false);
+  };
 
   const mostrarMensaje = (tipo, texto) => {
     setMensaje({ tipo, texto });
@@ -213,7 +263,7 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
           <label className="block text-sm font-semibold mb-2">Intervalo entre citas</label>
           <p className="text-stone-400 text-xs mb-3">Define cada cuántos minutos aceptas reservas nuevas</p>
           <div className="flex gap-2 flex-wrap">
-            {[15, 20, 30, 45, 60, 90].map((min) => (
+            {[15, 30, 45, 60, 75, 90].map((min) => (
               <button
                 key={min}
                 onClick={() => setIntervalo(min)}
@@ -238,6 +288,48 @@ export function TabMiHorario({ supabase, barbero, onUpdate }) {
           {guardando ? "Guardando..." : "Guardar horario"}
         </button>
       </div>
+
+      {/* Duraciones por servicio */}
+      {servicios.length > 0 && (
+        <div className="bg-stone-900 border border-stone-700 rounded p-6 max-w-2xl mt-6">
+          <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
+            <Clock size={18} /> Mi duración por servicio
+          </h3>
+          <p className="text-stone-400 text-sm mb-5">
+            Define cuánto tardas tú en cada servicio. Si lo dejas en blanco se usa la duración general.
+          </p>
+          <div className="space-y-3">
+            {servicios.map((s) => (
+              <div key={s.id} className="flex items-center gap-4 bg-stone-800 rounded p-3">
+                <div className="flex-1">
+                  <p className="font-semibold text-sm">{s.nombre}</p>
+                  <p className="text-stone-500 text-xs">Duración general: {s.duracion_minutos} min</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={duraciones[s.id] || ""}
+                    onChange={(e) => setDuraciones({ ...duraciones, [s.id]: e.target.value })}
+                    placeholder={s.duracion_minutos}
+                    className="w-20 bg-stone-700 border border-stone-600 rounded px-3 py-1.5 text-white text-sm text-center"
+                    min="5"
+                    max="480"
+                  />
+                  <span className="text-stone-400 text-sm">min</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={guardarDuraciones}
+            disabled={guardandoDuraciones}
+            className="mt-4 flex items-center gap-2 bg-amber-200 hover:bg-amber-100 text-stone-950 font-bold px-5 py-2 rounded disabled:opacity-50"
+          >
+            <Save size={16} />
+            {guardandoDuraciones ? "Guardando..." : "Guardar duraciones"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

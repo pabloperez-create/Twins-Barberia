@@ -27,6 +27,7 @@ export function TabBloqueos({ supabase, barberiaId }) {
     hora_inicio: "",
     hora_fin: "",
     motivo: "",
+    dias_semana: [],
   });
   const [procesando, setProcesando] = useState(false);
 
@@ -75,6 +76,7 @@ export function TabBloqueos({ supabase, barberiaId }) {
       hora_inicio: "",
       hora_fin: "",
       motivo: "",
+    dias_semana: [],
     });
     setModalAbierto(true);
   };
@@ -98,6 +100,10 @@ export function TabBloqueos({ supabase, barberiaId }) {
         return;
       }
     }
+    if (form.tipo === "recurrente" && form.dias_semana.length === 0) {
+      mostrarMensaje("error", "Selecciona al menos un día de la semana");
+      return;
+    }
 
     setProcesando(true);
     try {
@@ -110,6 +116,7 @@ export function TabBloqueos({ supabase, barberiaId }) {
         hora_inicio: form.tipo === "bloque_horas" ? form.hora_inicio : null,
         hora_fin: form.tipo === "bloque_horas" ? form.hora_fin : null,
         motivo: form.motivo.trim() || null,
+        dias_semana: form.tipo === "recurrente" ? form.dias_semana : null,
       });
 
       if (error) throw error;
@@ -325,7 +332,7 @@ export function TabBloqueos({ supabase, barberiaId }) {
 
           <div>
             <label className="block text-sm font-semibold mb-2">Tipo</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setForm({ ...form, tipo: "dia_completo" })}
@@ -348,8 +355,57 @@ export function TabBloqueos({ supabase, barberiaId }) {
               >
                 ⏰ Horas
               </button>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, tipo: "recurrente" })}
+                className={`p-3 rounded border-2 text-sm ${
+                  form.tipo === "recurrente"
+                    ? "border-amber-200 bg-amber-200 bg-opacity-10"
+                    : "border-stone-700"
+                }`}
+              >
+                🔁 Recurrente
+              </button>
             </div>
           </div>
+          {form.tipo === "recurrente" && (
+            <div>
+              <label className="block text-sm font-semibold mb-2">Días de la semana</label>
+              <div className="flex gap-2 flex-wrap">
+                {[["L",1],["M",2],["X",3],["J",4],["V",5],["S",6],["D",0]].map(([label, val]) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setForm({
+                      ...form,
+                      dias_semana: form.dias_semana.includes(val)
+                        ? form.dias_semana.filter(d => d !== val)
+                        : [...form.dias_semana, val]
+                    })}
+                    className={`w-9 h-9 rounded-full text-sm font-bold border-2 ${
+                        form.dias_semana.includes(val)
+                        ? "border-amber-200 bg-amber-200 text-stone-950"
+                        : "border-stone-600 text-stone-400"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+                    className={`w-9 h-9 rounded-full text-sm font-bold border-2 ${
+                        form.dias_semana.includes(val)
+                        ? "border-amber-200 bg-amber-200 text-stone-950"
+                        : "border-stone-600 text-stone-400"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>

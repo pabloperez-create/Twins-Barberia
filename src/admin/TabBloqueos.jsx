@@ -42,7 +42,7 @@ export function TabBloqueos({ supabase, barberiaId }) {
 
       const { data: bloqs } = await supabase
         .from("bloqueos_horarios")
-        .select("*, barbero:barberos!barbero_id(nombre)")
+        .select("*")
         .eq("barberia_id", barberiaId)
         .gte("fecha_fin", hoy)
         .order("fecha_inicio", { ascending: true });
@@ -271,7 +271,7 @@ export function TabBloqueos({ supabase, barberiaId }) {
                 </div>
                 <div>
                   <p className="font-semibold">
-                    {b.barbero_id ? b.barbero?.nombre : "🏪 Toda la barbería"}
+                    {b.barbero_id ? (barberos.find(br => br.id === b.barbero_id)?.nombre || b.barbero_id) : "🏪 Toda la barbería"}
                     <span className="text-stone-400 font-normal ml-2">
                       · {b.motivo || "Sin motivo"}
                     </span>

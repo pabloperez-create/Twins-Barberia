@@ -394,18 +394,6 @@ export function TabBloqueos({ supabase, barberiaId }) {
               </div>
             </div>
           )}
-                    className={`w-9 h-9 rounded-full text-sm font-bold border-2 ${
-                        form.dias_semana.includes(val)
-                        ? "border-amber-200 bg-amber-200 text-stone-950"
-                        : "border-stone-600 text-stone-400"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>

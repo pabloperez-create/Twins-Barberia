@@ -686,3 +686,56 @@ rm -rf node_modules/.vite
 - Cobrar a Alonso: +$10.000-15.000 CLP/mes como add-on
 - Pendiente: decidir si usar sandbox (+14155238886) o número propio
 
+
+
+---
+
+## 📅 SESIÓN 16 (29 may) - COMPLETADO
+
+### ✅ Features completadas:
+1. **Google Calendar integrado** — OAuth completo, eventos se crean automáticamente al confirmar reserva
+   - Endpoint `/api/google-calendar-callback.js` — flujo OAuth con Google
+   - Endpoint `/api/google-calendar.js` — crea eventos en calendario del barbero
+   - Botón "Conectar Google Calendar" en TabMiHorario (panel barbero)
+   - Columnas nuevas en `barberos`: `google_access_token`, `google_refresh_token`, `google_calendar_conectado`
+   - Fix timezone Chile (America/Santiago) — strings directos sin conversión UTC
+   - Token refresh automático cuando expira
+   - Si barbero no tiene calendario conectado, simplemente no falla
+2. **Dominio reservaia.cl** — comprado en NIC Chile (agendaia.cl estaba tomado), nameservers Vercel configurados (`ns1.vercel-dns.com` / `ns2.vercel-dns.com`), agregado en Vercel apuntando a Production ⏳ propagando DNS
+3. **Logo Instagram SVG real** — degradado naranja/rosa reemplaza emoji 📷 en VistaInicio
+4. **Logo de la barbería** — columna `logo_url` en tabla `barberia`, upload desde TabConfiguracion (bucket Barberos), se muestra en VistaInicio reemplazando ícono de tijeras/sparkles
+5. **Bloqueos recurrentes en panel admin** (TabBloqueos):
+   - Botón 🔁 Recurrente agregado al modal
+   - Selector días L/M/X/J/V/S/D
+   - Campos de fecha se ocultan en modo recurrente
+   - `fecha_fin = 2099-12-31` para bloqueo indefinido
+   - Validación: requiere al menos 1 día seleccionado
+6. **Fix query bloqueos** — eliminado join `barbero:barbero_id(nombre)` que fallaba con `barbero_id NULL`, nombre del barbero se busca en array local de barberos
+
+### 🗄️ Tablas nuevas/modificadas:
+- `barberos`: + `google_access_token` TEXT, + `google_refresh_token` TEXT, + `google_calendar_conectado` BOOLEAN DEFAULT FALSE
+- `barberia`: + `logo_url` TEXT
+- Storage bucket `Barberos`: policies INSERT/SELECT/UPDATE para public agregadas
+
+### 🔑 Variables de entorno agregadas (Vercel + .env.local):
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_REDIRECT_URI` = `https://twins-barberia.vercel.app/api/google-calendar-callback`
+- `SUPABASE_SERVICE_KEY`
+
+### 💡 Decisiones importantes:
+- **Dominio:** `agendaia.cl` estaba tomado → se eligió `reservaia.cl`
+- **Google Calendar:** callback en `/api/google-calendar-callback` (no `/api/google-auth`) para coincidir con URIs ya configuradas en Google Cloud Console
+- **Bloqueos recurrentes:** fecha indefinida = `2099-12-31` (más simple que NULL)
+- **Google Cloud:** app en modo "Prueba" con `Pablo.Felipee.Ps@gmail.com` como usuario de prueba
+
+### 🔴 Pendientes próximas sesiones:
+1. **Onboardear TWINS** — datos reales de Alonso (servicios, barberos, horarios, emails reales)
+2. **Migrar Supabase Auth + RLS** — antes del segundo cliente
+3. **Dominio reservaia.cl** — verificar propagación DNS
+4. **Login page tema rosado** para salón (muestra TWINS y negro para Nail Studio)
+5. **"Cualquier estilista" no se marca** como seleccionado (highlight rosado)
+6. **Botón WhatsApp y círculo check** en email → rosado para salones
+7. **Tab Encuestas + Google Reviews** — mejoras pendientes
+8. **Marketing "Te echamos de menos"** — cron automático para clientes inactivos
+9. **WhatsApp Twilio** para Alonso (add-on +$10.000-15.000 CLP/mes)

@@ -7,10 +7,20 @@
     {
       "path": "/api/send-marketing",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/send-inactive-clients",
+      "schedule": "0 15 * * *"
     }
   ],
   "rewrites": [
-    { "source": "/encuesta/(.*)", "destination": "/index.html" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/encuesta/(.*)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }

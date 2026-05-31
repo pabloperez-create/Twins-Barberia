@@ -9,6 +9,14 @@ export function TabMarketing({ supabase, barberiaId, barberia }) {
   const [cargando, setCargando] = useState(true);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const [configInactivos, setConfigInactivos] = useState({
+    activo: false,
+    dias_inactividad: 15,
+    frecuencia_reenvio: 30,
+    asunto: "¡Te echamos de menos!",
+    mensaje: "Hola {nombre}, hace {dias} días que no nos visitas. ¡Te esperamos con los brazos abiertos!",
+  });
+  const [guardandoInactivos, setGuardandoInactivos] = useState(false);
   const [mensaje, setMensaje] = useState({ tipo: "", texto: "" });
 
   const [form, setForm] = useState({
@@ -28,6 +36,9 @@ export function TabMarketing({ supabase, barberiaId, barberia }) {
   const cargarDatos = async () => {
     setCargando(true);
     try {
+      // Config inactivos
+      const configGuardada = barberia?.configuracion?.marketing_inactivos;
+      if (configGuardada) setConfigInactivos(prev => ({ ...prev, ...configGuardada }));
       // Campañas
       const { data: camps } = await supabase
         .from("campanas_marketing")
@@ -110,6 +121,19 @@ export function TabMarketing({ supabase, barberiaId, barberia }) {
     }
   };
 
+  const guardarConfigInactivos = async () => {
+    setGuardandoInactivos(true);
+    try {
+      await supabase.from("barberia").update({
+        configuracion: { ...barberia.configuracion, marketing_inactivos: configInactivos }
+      }).eq("id", barberiaId);
+      setMensaje({ tipo: "success", texto: "✅ Configuración guardada" });
+    } catch (err) {
+      setMensaje({ tipo: "error", texto: "Error: " + err.message });
+    }
+    setGuardandoInactivos(false);
+    setTimeout(() => setMensaje({ tipo: "", texto: "" }), 3000);
+  };
   if (!isFeatureEnabled(barberia, "marketing_automatizado")) {
     return <FeatureBloqueada nombre="Marketing automatizado" planRequerido="plus" />;
   }
@@ -336,6 +360,71 @@ export function TabMarketing({ supabase, barberiaId, barberia }) {
           </div>
         </div>
       )}
+      {/* Te echamos de menos */}
+      <div className="bg-stone-900 border border-stone-700 rounded p-6 mt-8">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-bold flex items-center gap-2">💌 Te echamos de menos</h3>
+            <p className="text-stone-400 text-sm mt-1">Envía un email automático a clientes inactivos</p>
+          </div>
+          <button
+            onClick={() => setConfigInactivos({ ...configInactivos, activo: !configInactivos.activo })}
+            className={`px-4 py-2 rounded font-bold text-sm ${configInactivos.activo ? "bg-green-700 text-white" : "bg-stone-700 text-stone-300"}`}
+          >
+            {configInactivos.activo ? "✅ Activo" : "⏸ Inactivo"}
+          </button>
+        </div>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold mb-2">Días sin reservar</label>
+              <select
+                value={configInactivos.dias_inactividad}
+                onChange={(e) => setConfigInactivos({ ...configInactivos, dias_inactividad: Number(e.target.value) })}
+                className="w-full bg-stone-800 border border-stone-700 rounded px-3 py-2 text-white text-sm"
+              >
+                {[5,10,15,20,25,30].map(d => <option key={d} value={d}>{d} días</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-2">Reenviar cada</label>
+              <select
+                value={configInactivos.frecuencia_reenvio}
+                onChange={(e) => setConfigInactivos({ ...configInactivos, frecuencia_reenvio: Number(e.target.value) })}
+                className="w-full bg-stone-800 border border-stone-700 rounded px-3 py-2 text-white text-sm"
+              >
+                {[7,14,21,30,60].map(d => <option key={d} value={d}>Cada {d} días</option>)}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold mb-2">Asunto del email</label>
+            <input
+              type="text"
+              value={configInactivos.asunto}
+              onChange={(e) => setConfigInactivos({ ...configInactivos, asunto: e.target.value })}
+              className="w-full bg-stone-800 border border-stone-700 rounded px-3 py-2 text-white text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold mb-2">Mensaje <span className="text-stone-500 font-normal">(usa {"{nombre}"} y {"{dias}"})</span></label>
+            <textarea
+              value={configInactivos.mensaje}
+              onChange={(e) => setConfigInactivos({ ...configInactivos, mensaje: e.target.value })}
+              rows={3}
+              className="w-full bg-stone-800 border border-stone-700 rounded px-3 py-2 text-white text-sm"
+            />
+          </div>
+          <button
+            onClick={guardarConfigInactivos}
+            disabled={guardandoInactivos}
+            className="flex items-center gap-2 bg-amber-200 hover:bg-amber-100 text-stone-950 font-bold px-5 py-2 rounded disabled:opacity-50"
+          >
+            <Send size={16} />
+            {guardandoInactivos ? "Guardando..." : "Guardar configuración"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

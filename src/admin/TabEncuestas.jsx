@@ -17,9 +17,11 @@ export function TabEncuestas({ supabase, barberiaId, barberia }) {
   const cargarGoogleReviews = async () => {
     setCargandoGoogle(true);
     try {
-      const res = await fetch(`/api/get-google-reviews?barberiaId=${barberiaId}`);
+      const placeId = barberia?.configuracion?.google_place_id;
+      if (!placeId) { setCargandoGoogle(false); return; }
+      const res = await fetch(`/api/get-google-reviews?barberiaId=${barberiaId}&placeId=${placeId}`);
       const data = await res.json();
-      setGoogleReviews(data.reviews || []);
+      setGoogleReviews(data.reseñas?.reviews || []);
     } catch (err) {
       console.error("Error cargando Google Reviews:", err);
     }
@@ -250,22 +252,22 @@ export function TabEncuestas({ supabase, barberiaId, barberia }) {
           <div className="space-y-3">
             {googleReviews.map((r, i) => (
               <div key={i} className="bg-stone-900 border border-stone-700 rounded p-4 flex gap-3">
-                {r.profile_photo_url ? (
-                  <img src={r.profile_photo_url} alt={r.author_name} className="w-9 h-9 rounded-full flex-shrink-0" />
+                {r.foto ? (
+                  <img src={r.foto} alt={r.autor} className="w-9 h-9 rounded-full flex-shrink-0" />
                 ) : (
                   <div className="w-9 h-9 rounded-full bg-stone-700 flex items-center justify-center flex-shrink-0 text-sm font-bold">
-                    {r.author_name?.[0] || "?"}
+                    {r.autor?.[0] || "?"}
                   </div>
                 )}
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-sm">{r.author_name}</span>
-                    <span className="text-stone-500 text-xs">· {r.relative_time_description}</span>
+                    <span className="font-semibold text-sm">{r.autor}</span>
+                    <span className="text-stone-500 text-xs">· {r.fecha}</span>
                   </div>
                   <div className="flex items-center gap-1 mb-1">
                     {"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}
                   </div>
-                  {r.text && <p className="text-stone-300 text-sm">{r.text}</p>}
+                  {r.texto && <p className="text-stone-300 text-sm">{r.texto}</p>}
                 </div>
               </div>
             ))}

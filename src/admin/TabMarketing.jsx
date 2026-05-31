@@ -385,6 +385,7 @@ export function TabMarketing({ supabase, barberiaId, barberia }) {
               >
                 {[5,10,15,20,25,30].map(d => <option key={d} value={d}>{d} días</option>)}
               </select>
+              <p className="text-stone-500 text-xs mt-1">El email se envía cuando un cliente lleva este tiempo sin reservar</p>
             </div>
             <div>
               <label className="block text-sm font-semibold mb-2">Reenviar cada</label>
@@ -395,6 +396,7 @@ export function TabMarketing({ supabase, barberiaId, barberia }) {
               >
                 {[7,14,21,30,60].map(d => <option key={d} value={d}>Cada {d} días</option>)}
               </select>
+              <p className="text-stone-500 text-xs mt-1">Si no vuelve a reservar, se le envía otro recordatorio cada estos días</p>
             </div>
           </div>
           <div>

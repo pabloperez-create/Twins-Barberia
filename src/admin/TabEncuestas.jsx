@@ -11,17 +11,39 @@ export function TabEncuestas({ supabase, barberiaId, barberia }) {
 
   useEffect(() => {
     cargarEncuestas();
-    cargarGoogleReviews();
   }, []);
 
-  const cargarGoogleReviews = async () => {
+  const cargarGoogleReviews = async (encuestasData) => {
     setCargandoGoogle(true);
     try {
       const placeId = barberia?.configuracion?.google_place_id;
       if (!placeId) { setCargandoGoogle(false); return; }
       const res = await fetch(`/api/get-google-reviews?barberiaId=${barberiaId}&placeId=${placeId}`);
       const data = await res.json();
-      setGoogleReviews(data.reseñas?.reviews || []);
+      const reviews = data.reseñas?.reviews || [];
+      setGoogleReviews(reviews);
+      // Recalcular stats combinadas
+      if (reviews.length > 0 && encuestasData) {
+        const respondidas = encuestasData.filter((e) => e.estrellas);
+        const todasEstrellas = [
+          ...respondidas.map(e => e.estrellas),
+          ...reviews.map(r => r.estrellas)
+        ];
+        const promedioCombinado = todasEstrellas.length > 0
+          ? (todasEstrellas.reduce((s, n) => s + n, 0) / todasEstrellas.length).toFixed(1)
+          : 0;
+        const distribucionCombinada = [1, 2, 3, 4, 5].map((n) => ({
+          estrellas: n,
+          count: todasEstrellas.filter((e) => e === n).length,
+        }));
+        setStats(prev => ({
+          ...prev,
+          promedio: promedioCombinado,
+          distribucion: distribucionCombinada,
+          respondidas: respondidas.length + reviews.length,
+          googleCount: reviews.length,
+        }));
+      }
     } catch (err) {
       console.error("Error cargando Google Reviews:", err);
     }
@@ -50,6 +72,7 @@ export function TabEncuestas({ supabase, barberiaId, barberia }) {
         count: respondidas.filter((e) => e.estrellas === n).length,
       }));
 
+      cargarGoogleReviews(enc);
       setStats({
         total: enc.length,
         respondidas: respondidas.length,

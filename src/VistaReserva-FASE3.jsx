@@ -59,17 +59,20 @@ export function VistaReserva({ supabase, barberiaId }) {
       const { data: srvs } = await supabase
         .from("servicios_principales")
         .select("*")
-        .eq("barberia_id", barberiaId);
+        .eq("barberia_id", barberiaId)
+        .eq("activo", true);
 
       const { data: ads } = await supabase
         .from("servicios_adicionales")
         .select("*")
-        .eq("barberia_id", barberiaId);
+        .eq("barberia_id", barberiaId)
+        .eq("activo", true);
 
       const { data: brbs } = await supabase
         .from("barberos")
         .select("*")
-        .eq("barberia_id", barberiaId);
+        .eq("barberia_id", barberiaId)
+        .eq("activo", true);
 
       console.log("Servicios cargados:", srvs);
       console.log("Adicionales cargados:", ads);
@@ -555,7 +558,6 @@ export function VistaReserva({ supabase, barberiaId }) {
                     <div>
                       <h3 className="font-bold text-lg">{servicio.nombre}</h3>
                       <p className="text-stone-400 text-sm mt-1">
-                        {servicio.duracion_minutos} minutos
                       </p>
                     </div>
                     <p className="text-amber-200 font-bold">
@@ -601,7 +603,6 @@ export function VistaReserva({ supabase, barberiaId }) {
                   <div>
                     <h3 className="font-bold">{adicional.nombre}</h3>
                     <p className="text-stone-400 text-sm">
-                      {adicional.duracion_minutos} min
                     </p>
                   </div>
                   <p className="text-amber-200">

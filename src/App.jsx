@@ -32,6 +32,11 @@ export default function App() {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
   const [verificandoSesion, setVerificandoSesion] = useState(!encuestaParams);
+  const [barberiaData, setBarberiaData] = useState(null);
+  useEffect(() => {
+    supabase.from("barberia").select("*").eq("id", barberiaIdUrl).single()
+      .then(({ data }) => { if (data) setBarberiaData(data); });
+  }, [barberiaIdUrl]);
 
   const handleLogin = async (email, password) => {
     setCargando(true);
@@ -136,7 +141,7 @@ export default function App() {
 
   // LOGIN
   if (vista === "login") {
-    return <VistaLogin onLogin={handleLogin} cargando={cargando} error={error} onBack={() => setVista("inicio")} />;
+    return <VistaLogin onLogin={handleLogin} cargando={cargando} error={error} onBack={() => setVista("inicio")} barberiaData={barberiaData} />;
   }
 
   // ADMIN
@@ -157,7 +162,21 @@ export default function App() {
   return <div className="text-white p-4">Cargando...</div>;
 }
 
-function VistaLogin({ onLogin, cargando, error, onBack }) {
+function VistaLogin({ onLogin, cargando, error, onBack, barberiaData }) {
+  const esSalon = barberiaData?.tipo_negocio === "salon";
+  const T = esSalon ? {
+    bg: "#fce8f0", cardBg: "#fff", cardBorder: "#f0c0d4",
+    text: "#4a1030", inputBg: "#fdf0f5", inputBorder: "#f0c0d4",
+    accent: "#d4638a", accentText: "#fff", labelColor: "#b05070",
+    btnBg: "#d4638a", btnText: "#fff", mutedText: "#b08090",
+    backColor: "#b05070"
+  } : {
+    bg: "#0c0a09", cardBg: "#1c1917", cardBorder: "#44403c",
+    text: "#fff", inputBg: "#292524", inputBorder: "#44403c",
+    accent: "#fde68a", accentText: "#1c1917", labelColor: "#d6d3d1",
+    btnBg: "#fde68a", btnText: "#1c1917", mutedText: "#78716c",
+    backColor: "#a8a29e"
+  };
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -167,32 +186,37 @@ function VistaLogin({ onLogin, cargando, error, onBack }) {
   };
 
   return (
-    <div className="min-h-screen bg-stone-950 text-white flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <button onClick={onBack} className="flex items-center gap-2 text-stone-400 hover:text-amber-200 text-sm mb-6 mx-auto">
+    <div style={{ minHeight: "100vh", background: T.bg, color: T.text, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ width: "100%", maxWidth: 420 }}>
+        <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 6, color: T.backColor, background: "none", border: "none", cursor: "pointer", fontSize: 13, marginBottom: 24 }}>
           <ArrowLeft size={16} />
           Volver al inicio
         </button>
-        <div className="text-center mb-8">
-          <Scissors size={48} className="mx-auto mb-4 text-amber-200" />
-          <h1 className="text-4xl font-bold">TWINS</h1>
-          <p className="text-amber-200 mt-2">Acceso administrativo</p>
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          {barberiaData?.logo_url
+            ? <img src={barberiaData.logo_url} alt={barberiaData.nombre} style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", margin: "0 auto 16px" }} />
+            : esSalon
+              ? <div style={{ fontSize: 48, marginBottom: 16 }}>✨</div>
+              : <Scissors size={48} style={{ margin: "0 auto 16px", color: T.accent }} />
+          }
+          <h1 style={{ fontSize: 32, fontWeight: 700, margin: 0 }}>{barberiaData?.nombre || "AgendaIA"}</h1>
+          <p style={{ color: T.accent, marginTop: 8 }}>Acceso administrativo</p>
         </div>
-        <form onSubmit={handleSubmit} className="bg-stone-900 p-8 rounded border border-stone-700">
-          <div className="mb-4">
-            <label className="block text-sm mb-2">Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-2 text-white" placeholder="tu@email.com" autoFocus />
+        <div style={{ background: T.cardBg, border: `1px solid ${T.cardBorder}`, borderRadius: 12, padding: 32 }}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: T.labelColor }}>Email</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={{ width: "100%", background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: "8px 12px", color: T.text, boxSizing: "border-box" }} placeholder="tu@email.com" autoFocus />
           </div>
-          <div className="mb-6">
-            <label className="block text-sm mb-2">Contraseña</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-2 text-white" placeholder="••••••••" />
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: T.labelColor }}>Contraseña</label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: "100%", background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: "8px 12px", color: T.text, boxSizing: "border-box" }} placeholder="••••••••" />
           </div>
-          {error && <div className="text-red-400 text-sm mb-4">{error}</div>}
-          <button type="submit" disabled={cargando} className="w-full bg-amber-200 text-stone-950 font-bold py-2 rounded hover:bg-amber-100 disabled:opacity-50">
+          {error && <div style={{ color: "#f87171", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+          <button type="button" onClick={handleSubmit} disabled={cargando} style={{ width: "100%", background: T.btnBg, color: T.btnText, fontWeight: 700, padding: "10px 0", borderRadius: 8, border: "none", cursor: "pointer", opacity: cargando ? 0.5 : 1 }}>
             {cargando ? "Cargando..." : "Ingresar"}
           </button>
-        </form>
-        <div className="mt-6 text-center text-stone-500 text-xs">
+        </div>
+        <div style={{ marginTop: 24, textAlign: "center", color: T.mutedText, fontSize: 12 }}>
           <p>¿Eres cliente? Usa el botón "Reservar ahora"</p>
         </div>
       </div>

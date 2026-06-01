@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Plus, Edit, Trash2, Check, AlertCircle, User, Clock, Upload } from "lucide-react";
 import { SelectorHora } from "../components/SelectorHora";
 import { Modal } from "../components/Modal";
@@ -13,7 +13,8 @@ export function TabBarberos({ supabase, barberiaId, tema: t }) {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [editando, setEditando] = useState(null);
   const [mensaje, setMensaje] = useState({ tipo: "", texto: "" });
-  const [form, setForm] = useState({ nombre: "", especialidad: "", horario_inicio: "10:00", horario_fin: "20:00", email: "", password: "", foto_url: "" });
+  const [form, setForm] = useState({ nombre: "", especialidad: "", horario_inicio: "10:00", horario_fin: "20:00", email: "", password: "", fotoPreview: "" });
+  const fotoFileRef = useRef(null); // ⭐ useRef para no perder el File object
 
   useEffect(() => { cargarBarberos(); }, []);
 
@@ -37,9 +38,25 @@ export function TabBarberos({ supabase, barberiaId, tema: t }) {
     setCargando(false);
   };
 
-  const abrirCrear = () => { setEditando(null); setForm({ nombre: "", especialidad: "", horario_inicio: "10:00", horario_fin: "20:00", email: "", password: "" }); setModalAbierto(true); };
-  const abrirEditar = (b) => { setEditando(b); setForm({ nombre: b.nombre, especialidad: b.especialidad || "", horario_inicio: b.horario_inicio || "10:00", horario_fin: b.horario_fin || "20:00", email: b.usuario?.email || "", password: "" }); setModalAbierto(true); };
-  const cerrarModal = () => { setModalAbierto(false); setEditando(null); };
+  const abrirCrear = () => {
+    setEditando(null);
+    fotoFileRef.current = null;
+    setForm({ nombre: "", especialidad: "", horario_inicio: "10:00", horario_fin: "20:00", email: "", password: "", fotoPreview: "" });
+    setModalAbierto(true);
+  };
+
+  const abrirEditar = (b) => {
+    setEditando(b);
+    fotoFileRef.current = null;
+    setForm({ nombre: b.nombre, especialidad: b.especialidad || "", horario_inicio: b.horario_inicio || "10:00", horario_fin: b.horario_fin || "20:00", email: b.usuario?.email || "", password: "", fotoPreview: "" });
+    setModalAbierto(true);
+  };
+
+  const cerrarModal = () => {
+    setModalAbierto(false);
+    setEditando(null);
+    fotoFileRef.current = null;
+  };
 
   const mostrarMensaje = (tipo, texto) => {
     setMensaje({ tipo, texto });
@@ -56,7 +73,12 @@ export function TabBarberos({ supabase, barberiaId, tema: t }) {
     }
     try {
       if (editando) {
-        const { error } = await supabase.from("barberos").update({ nombre: form.nombre.trim(), especialidad: form.especialidad.trim() || null, horario_inicio: form.horario_inicio, horario_fin: form.horario_fin }).eq("id", editando.id);
+        let foto_url = editando.foto_url || null;
+        if (fotoFileRef.current) {
+          const url = await subirFoto(fotoFileRef.current, editando.id);
+          if (url) foto_url = url;
+        }
+        const { error } = await supabase.from("barberos").update({ nombre: form.nombre.trim(), especialidad: form.especialidad.trim() || null, horario_inicio: form.horario_inicio, horario_fin: form.horario_fin, foto_url }).eq("id", editando.id);
         if (error) throw error;
         if (editando.usuario_id) await supabase.from("usuarios").update({ nombre: form.nombre.trim() }).eq("id", editando.usuario_id);
         mostrarMensaje("success", `✅ ${labelPro} actualizado`);
@@ -69,7 +91,12 @@ export function TabBarberos({ supabase, barberiaId, tema: t }) {
         if (existente) { mostrarMensaje("error", "Este email ya está registrado"); return; }
         const { error: errorUsuario } = await supabase.from("usuarios").insert({ id: usuarioId, barberia_id: barberiaId, nombre: form.nombre.trim(), email: form.email.trim().toLowerCase(), password_hash: form.password, rol: "barbero" });
         if (errorUsuario) throw errorUsuario;
-        const { error: errorBarbero } = await supabase.from("barberos").insert({ id: barberoId, barberia_id: barberiaId, usuario_id: usuarioId, nombre: form.nombre.trim(), especialidad: form.especialidad.trim() || null, horario_inicio: form.horario_inicio, horario_fin: form.horario_fin, activo: true });
+        let foto_url = null;
+        if (fotoFileRef.current) {
+          const url = await subirFoto(fotoFileRef.current, barberoId);
+          if (url) foto_url = url;
+        }
+        const { error: errorBarbero } = await supabase.from("barberos").insert({ id: barberoId, barberia_id: barberiaId, usuario_id: usuarioId, nombre: form.nombre.trim(), especialidad: form.especialidad.trim() || null, horario_inicio: form.horario_inicio, horario_fin: form.horario_fin, foto_url, activo: true });
         if (errorBarbero) { await supabase.from("usuarios").delete().eq("id", usuarioId); throw errorBarbero; }
         mostrarMensaje("success", `✅ ${labelPro} "${form.nombre}" creado. Login: ${form.email}`);
       }
@@ -159,26 +186,32 @@ export function TabBarberos({ supabase, barberiaId, tema: t }) {
               <label className={`flex items-center gap-2 px-4 py-2 ${t.bgMuted} ${t.bgHover} border ${t.border} rounded cursor-pointer text-sm`}>
                 <Upload size={16} />
                 {form.fotoPreview ? "Cambiar foto" : "Subir foto"}
-                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files[0]; if (file) setForm({ ...form, fotoFile: file, fotoPreview: URL.createObjectURL(file) }); }} />
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    fotoFileRef.current = file;
+                    setForm(prev => ({ ...prev, fotoPreview: URL.createObjectURL(file) }));
+                  }
+                }} />
               </label>
             </div>
           </div>
           <div>
             <label className="block text-sm font-semibold mb-2">Nombre <span className="text-red-400">*</span></label>
-            <input type="text" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder={esSalon ? "Ej: Ana" : "Ej: Vicente"} className={`w-full ${t.bgInput} border ${t.borderInput} rounded px-4 py-2 ${t.texto}`} />
+            <input type="text" value={form.nombre} onChange={(e) => setForm(prev => ({ ...prev, nombre: e.target.value }))} placeholder={esSalon ? "Ej: Ana" : "Ej: Vicente"} className={`w-full ${t.bgInput} border ${t.borderInput} rounded px-4 py-2 ${t.texto}`} />
           </div>
           <div>
             <label className="block text-sm font-semibold mb-2">Especialidad <span className={`${t.textoMuted} text-xs font-normal`}>(opcional)</span></label>
-            <input type="text" value={form.especialidad} onChange={(e) => setForm({ ...form, especialidad: e.target.value })} placeholder={esSalon ? "Ej: Esmaltado permanente" : "Ej: Cortes clásicos"} className={`w-full ${t.bgInput} border ${t.borderInput} rounded px-4 py-2 ${t.texto}`} />
+            <input type="text" value={form.especialidad} onChange={(e) => setForm(prev => ({ ...prev, especialidad: e.target.value }))} placeholder={esSalon ? "Ej: Esmaltado permanente" : "Ej: Cortes clásicos"} className={`w-full ${t.bgInput} border ${t.borderInput} rounded px-4 py-2 ${t.texto}`} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-semibold mb-2">Inicio jornada <span className="text-red-400">*</span></label>
-              <SelectorHora value={form.horario_inicio || "09:00"} onChange={(v) => setForm({ ...form, horario_inicio: v })} className={`w-full ${t.bgInput} border ${t.borderInput} rounded px-4 py-2 ${t.texto}`} />
+              <SelectorHora value={form.horario_inicio || "09:00"} onChange={(v) => setForm(prev => ({ ...prev, horario_inicio: v }))} className={`w-full ${t.bgInput} border ${t.borderInput} rounded px-4 py-2 ${t.texto}`} />
             </div>
             <div>
               <label className="block text-sm font-semibold mb-2">Fin jornada <span className="text-red-400">*</span></label>
-              <SelectorHora value={form.horario_fin || "19:00"} onChange={(v) => setForm({ ...form, horario_fin: v })} className={`w-full ${t.bgInput} border ${t.borderInput} rounded px-4 py-2 ${t.texto}`} />
+              <SelectorHora value={form.horario_fin || "19:00"} onChange={(v) => setForm(prev => ({ ...prev, horario_fin: v }))} className={`w-full ${t.bgInput} border ${t.borderInput} rounded px-4 py-2 ${t.texto}`} />
             </div>
           </div>
           {!editando && (
@@ -188,11 +221,11 @@ export function TabBarberos({ supabase, barberiaId, tema: t }) {
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm font-semibold mb-2">Email para login <span className="text-red-400">*</span></label>
-                  <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder={esSalon ? "ana@salon.cl" : "vicente@twins.cl"} className={`w-full ${t.bgInput} border ${t.borderInput} rounded px-4 py-2 ${t.texto}`} />
+                  <input type="email" value={form.email} onChange={(e) => setForm(prev => ({ ...prev, email: e.target.value }))} placeholder={esSalon ? "ana@salon.cl" : "vicente@twins.cl"} className={`w-full ${t.bgInput} border ${t.borderInput} rounded px-4 py-2 ${t.texto}`} />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold mb-2">Contraseña <span className="text-red-400">*</span></label>
-                  <input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Mínimo 6 caracteres" className={`w-full ${t.bgInput} border ${t.borderInput} rounded px-4 py-2 ${t.texto}`} />
+                  <input type="text" value={form.password} onChange={(e) => setForm(prev => ({ ...prev, password: e.target.value }))} placeholder="Mínimo 6 caracteres" className={`w-full ${t.bgInput} border ${t.borderInput} rounded px-4 py-2 ${t.texto}`} />
                   <p className={`${t.textoMuted} text-xs mt-1`}>💡 Comunícale su contraseña por privado</p>
                 </div>
               </div>

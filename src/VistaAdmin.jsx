@@ -9,6 +9,9 @@ import { TabEstadisticas } from "./admin/TabEstadisticas";
 import { TabBloqueos } from "./admin/TabBloqueos";
 import { TabEncuestas } from "./admin/TabEncuestas";
 import { TabMarketing } from "./admin/TabMarketing";
+import { TabMiHorario } from "./barbero/TabMiHorario";
+import { TabMiPerfil } from "./barbero/TabMiPerfil";
+import { TabMisDiasLibres } from "./barbero/TabMisDiasLibres";
 import { isFeatureEnabled, PLANES } from "./utils/features";
 import { getTema } from "./utils/tema";
 import { BotonInstalarApp } from "./components/BotonInstalarApp";
@@ -16,22 +19,31 @@ import { BotonInstalarApp } from "./components/BotonInstalarApp";
 export function VistaAdmin({ usuario, onLogout, supabase }) {
   const [tab, setTab] = useState("agenda");
   const [barberia, setBarberia] = useState(null);
+  const [barberoAdmin, setBarberoAdmin] = useState(null); // ⭐ perfil barbero del admin
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
-    cargarBarberia();
+    cargarDatos();
   }, []);
 
-  const cargarBarberia = async () => {
+  const cargarDatos = async () => {
     try {
-      const { data } = await supabase
+      const { data: barberiaData } = await supabase
         .from("barberia")
         .select("*")
         .eq("id", usuario?.barberia_id)
         .single();
-      setBarberia(data);
+      setBarberia(barberiaData);
+
+      // ⭐ Cargar perfil de barbero vinculado al admin (si existe)
+      const { data: barberoData } = await supabase
+        .from("barberos")
+        .select("*")
+        .eq("usuario_id", usuario?.id)
+        .maybeSingle();
+      setBarberoAdmin(barberoData || null);
     } catch (err) {
-      console.error("Error cargando barbería:", err);
+      console.error("Error cargando datos:", err);
     }
     setCargando(false);
   };
@@ -55,6 +67,16 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
       tabs.push({ id: "encuestas", label: "⭐ Encuestas" });
     }
     tabs.push({ id: "configuracion", label: "Configuración" });
+
+    // ⭐ Tabs personales si el admin también es barbero
+    if (barberoAdmin) {
+      tabs.push({ id: "mi_horario", label: "✂️ Mi Horario" });
+      if (isFeatureEnabled(barberia, "bloqueos_horarios")) {
+        tabs.push({ id: "mis_dias_libres", label: "✂️ Mis Días Libres" });
+      }
+      tabs.push({ id: "mi_perfil", label: "✂️ Mi Perfil" });
+    }
+
     return tabs;
   };
 
@@ -126,7 +148,12 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
         {tab === "estadisticas" && <TabEstadisticas supabase={supabase} barberiaId={usuario?.barberia_id} tema={t} />}
         {tab === "encuestas" && <TabEncuestas supabase={supabase} barberiaId={usuario?.barberia_id} barberia={barberia} tema={t} />}
         {tab === "marketing" && <TabMarketing supabase={supabase} barberiaId={usuario?.barberia_id} barberia={barberia} tema={t} />}
-        {tab === "configuracion" && <TabConfiguracion supabase={supabase} barberia={barberia} onUpdate={cargarBarberia} tema={t} />}
+        {tab === "configuracion" && <TabConfiguracion supabase={supabase} barberia={barberia} onUpdate={cargarDatos} tema={t} />}
+
+        {/* ⭐ Tabs personales del admin-barbero */}
+        {tab === "mi_horario" && barberoAdmin && <TabMiHorario supabase={supabase} barbero={barberoAdmin} onUpdate={cargarDatos} tema={t} />}
+        {tab === "mis_dias_libres" && barberoAdmin && <TabMisDiasLibres supabase={supabase} barbero={barberoAdmin} barberia={barberia} tema={t} />}
+        {tab === "mi_perfil" && barberoAdmin && <TabMiPerfil supabase={supabase} barbero={barberoAdmin} usuario={usuario} onUpdate={cargarDatos} tema={t} />}
       </div>
     </div>
   );

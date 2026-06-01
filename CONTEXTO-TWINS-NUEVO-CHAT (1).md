@@ -739,3 +739,43 @@ rm -rf node_modules/.vite
 7. **Tab Encuestas + Google Reviews** — mejoras pendientes
 8. **Marketing "Te echamos de menos"** — cron automático para clientes inactivos
 9. **WhatsApp Twilio** para Alonso (add-on +$10.000-15.000 CLP/mes)
+
+
+---
+
+## 📅 SESIÓN 17 (31 may) - COMPLETADO
+
+### ✅ Features completadas:
+1. **Google Reviews en TabEncuestas** — sección separada con logo Google SVG, stats combinadas (encuestas propias + Google Reviews)
+   - `google_place_id` guardado en `barberia.configuracion` para org-twins: `ChIJGZpoFlLnYpYRQXK09YRxhgk`
+   - Endpoint `get-google-reviews` sin verifyToken (era público, no necesitaba protección)
+   - Stats de promedio y distribución incluyen reseñas de Google
+   - Limitación: Google Places API gratuita solo devuelve 5 reseñas → se mantiene filtro 4-5 estrellas
+2. **Marketing "Te echamos de menos"** — sección en TabMarketing
+   - Config guardada en `barberia.configuracion.marketing_inactivos`
+   - Campos: activo (toggle), días_inactividad (5/10/15/20/25/30), frecuencia_reenvio (7/14/21/30/60 días), asunto, mensaje con {nombre} y {dias}
+   - Textos explicativos bajo cada selector
+   - Endpoint `/api/send-inactive-clients.js` — revisa clientes inactivos y envía email personalizado
+   - Cron: `0 13 * * *` (10am Chile, mismo que recordatorios)
+3. **Login page tema dinámico** — rosado para salón, negro/dorado para barbería
+   - `barberiaData` cargado en App.jsx con useEffect
+   - Muestra logo de la barbería si existe, sino ícono según tipo
+   - Nombre dinámico de la barbería en vez de "TWINS" hardcodeado
+4. **"Cualquier estilista" se marca correctamente** — fix comparación `barberoSeleccionado === CUALQUIERA` (antes comparaba `.id` que no existía)
+5. **Email confirmación colores dinámicos** — círculo check y botón WhatsApp rosados para salones
+   - `checkColor`: rosado para salón, verde para barbería
+   - `whatsappBg`: rosado para salón, verde para barbería
+   - `whatsappEmoji`: 💗 para salón, 💚 para barbería
+
+### 👤 Usuario Nail Studio:
+- **Email:** `admin@nailstudio.cl`
+- **Password:** `nailstudio2026`
+- **Rol:** admin
+- **Panel actualmente:** negro/amarillo (pendiente cambiar a rosado)
+
+### 🔴 Pendientes próximas sesiones:
+1. **Tema rosado panel admin/barbero completo** — VistaAdmin, VistaBarbero y todos los tabs cuando es salón (trabajo grande, sesión dedicada)
+2. **Onboardear TWINS** — datos reales de Alonso
+3. **Migrar Supabase Auth + RLS** — antes del segundo cliente
+4. **Dominio reservaia.cl** — verificar propagación DNS
+5. **WhatsApp Twilio** para Alonso (add-on)

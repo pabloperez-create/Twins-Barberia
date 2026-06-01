@@ -5,6 +5,7 @@ import { TabMiPerfil } from "./barbero/TabMiPerfil";
 import { TabMiHorario } from "./barbero/TabMiHorario";
 import { TabMisDiasLibres } from "./barbero/TabMisDiasLibres";
 import { isFeatureEnabled } from "./utils/features";
+import { getTema } from "./utils/tema";
 import { BotonInstalarApp } from "./components/BotonInstalarApp";
 
 export function VistaBarbero({ usuario, onLogout, supabase }) {
@@ -41,37 +42,30 @@ export function VistaBarbero({ usuario, onLogout, supabase }) {
     setCargando(false);
   };
 
-  // ⭐ CONSTRUIR TABS SEGÚN FEATURES
+  const t = getTema(barberia);
+
   const construirTabs = () => {
     const tabs = [];
-
-    // Siempre disponibles (base del rol barbero)
     tabs.push({ id: "reservas", label: "Mis Reservas" });
     tabs.push({ id: "horario", label: "Mi Horario" });
-
-    // Días Libres - solo si feature bloqueos_horarios está activa
     if (isFeatureEnabled(barberia, "bloqueos_horarios")) {
       tabs.push({ id: "dias_libres", label: "Días Libres" });
     }
-
-    // Mi Perfil - siempre disponible
     tabs.push({ id: "perfil", label: "Mi Perfil" });
-
     return tabs;
   };
 
   const tabs = construirTabs();
 
-  // Si el tab actual se desactivó, volver al primero
   useEffect(() => {
-    if (barberia && !tabs.find((t) => t.id === tab)) {
+    if (barberia && !tabs.find((t_) => t_.id === tab)) {
       setTab("reservas");
     }
   }, [barberia, tab]);
 
   if (cargando) {
     return (
-      <div className="min-h-screen bg-stone-950 text-white p-6 flex items-center justify-center">
+      <div className={`min-h-screen ${t.bg} ${t.texto} p-6 flex items-center justify-center`}>
         <p>Cargando...</p>
       </div>
     );
@@ -79,17 +73,13 @@ export function VistaBarbero({ usuario, onLogout, supabase }) {
 
   if (!barbero) {
     return (
-      <div className="min-h-screen bg-stone-950 text-white p-6 flex flex-col items-center justify-center gap-4">
-        <Scissors size={48} className="text-amber-200" />
+      <div className={`min-h-screen ${t.bg} ${t.texto} p-6 flex flex-col items-center justify-center gap-4`}>
+        <Scissors size={48} className={t.acento} />
         <p className="text-xl font-bold">Perfil no encontrado</p>
-        <p className="text-stone-400 text-center max-w-md">
-          Tu usuario no está vinculado a ningún perfil de barbero. Contacta al
-          administrador.
+        <p className={`${t.textoSub} text-center max-w-md`}>
+          Tu usuario no está vinculado a ningún perfil de barbero. Contacta al administrador.
         </p>
-        <button
-          onClick={onLogout}
-          className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded mt-4"
-        >
+        <button onClick={onLogout} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded mt-4">
           Cerrar sesión
         </button>
       </div>
@@ -97,72 +87,42 @@ export function VistaBarbero({ usuario, onLogout, supabase }) {
   }
 
   return (
-    <div className="min-h-screen bg-stone-950 text-white p-6">
+    <div className={`min-h-screen ${t.bg} ${t.texto} p-6`}>
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">Hola, {barbero.nombre} 👋</h1>
-          <p className="text-stone-400 text-sm">
-            {barberia?.nombre} · Barbero
+          <p className={`${t.textoSub} text-sm`}>
+            {barberia?.nombre} · {t.tipo === "salon" ? "Estilista" : "Barbero"}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <BotonInstalarApp />
-          <button
-            onClick={onLogout}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded"
-          >
+          <button onClick={onLogout} className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
             <LogOut size={18} />
             Salir
           </button>
         </div>
       </div>
 
-      <div className="flex gap-2 mb-8 border-b border-stone-700 overflow-x-auto">
-        {tabs.map((t) => (
+      <div className={`flex gap-2 mb-8 border-b ${t.border} overflow-x-auto`}>
+        {tabs.map((tab_) => (
           <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
+            key={tab_.id}
+            onClick={() => setTab(tab_.id)}
             className={`pb-2 px-4 font-semibold transition whitespace-nowrap ${
-              tab === t.id
-                ? "border-b-2 border-amber-200 text-amber-200"
-                : "text-stone-400 hover:text-stone-200"
+              tab === tab_.id ? t.tabActivo : t.tabInactivo
             }`}
           >
-            {t.label}
+            {tab_.label}
           </button>
         ))}
       </div>
 
       <div className="max-w-6xl">
-        {tab === "reservas" && (
-          <TabMisReservas
-            supabase={supabase}
-            barbero={barbero}
-            barberia={barberia}
-          />
-        )}
-        {tab === "horario" && (
-          <TabMiHorario
-            supabase={supabase}
-            barbero={barbero}
-            onUpdate={cargarDatos}
-          />
-        )}
-        {tab === "dias_libres" && (
-          <TabMisDiasLibres
-            supabase={supabase}
-            barbero={barbero}
-            barberia={barberia}
-          />
-        )}
-        {tab === "perfil" && (
-          <TabMiPerfil
-            supabase={supabase}
-            barbero={barbero}
-            usuario={usuario}
-            onUpdate={cargarDatos}
-          />
-        )}
+        {tab === "reservas" && <TabMisReservas supabase={supabase} barbero={barbero} barberia={barberia} tema={t} />}
+        {tab === "horario" && <TabMiHorario supabase={supabase} barbero={barbero} onUpdate={cargarDatos} tema={t} />}
+        {tab === "dias_libres" && <TabMisDiasLibres supabase={supabase} barbero={barbero} barberia={barberia} tema={t} />}
+        {tab === "perfil" && <TabMiPerfil supabase={supabase} barbero={barbero} usuario={usuario} onUpdate={cargarDatos} tema={t} />}
       </div>
     </div>
   );

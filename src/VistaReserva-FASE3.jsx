@@ -756,7 +756,7 @@ export function VistaReserva({ supabase, barberiaId }) {
                   setBarberoSeleccionado(CUALQUIERA); cargarDuracionesBarbero(null);
                   setHoraSeleccionada("");
                 }}
-                style={{ border: "2px solid " + (barberoSeleccionado?.id === "cualquiera") ? T.tagActiveBg : T.cardBorder, background: (barberoSeleccionado?.id === "cualquiera") ? T.tagActiveBg + "22" : T.cardBg, borderRadius: 8, cursor: "pointer" }}
+                style={{ border: `2px solid ${barberoSeleccionado === CUALQUIERA ? T.tagActiveBg : T.cardBorder}`, background: barberoSeleccionado === CUALQUIERA ? T.tagActiveBg + "22" : T.cardBg, borderRadius: 8, cursor: "pointer" }}
               >
                 <div className="flex items-start gap-4">
                   <div style={{ width: 64, height: 64, background: `${T.accent}22`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>

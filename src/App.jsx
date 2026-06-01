@@ -12,31 +12,74 @@ const SUPABASE_URL = "https://fgtbhkeqzcqpjhziyijt.supabase.co";
 const SUPABASE_KEY = "sb_publishable_8E23tN1s3wbAIqjhX-1icg_VBCYqsMO";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Detectar si la URL es /encuesta/:id
+// ⭐ Detectar subdominio → barberiaId
+const detectarBarberiaId = () => {
+  const hostname = window.location.hostname;
+  const params = new URLSearchParams(window.location.search);
+
+  // Si viene por ?barberiaId= (fallback legacy)
+  if (params.get("barberiaId")) return { tipo: "param", valor: params.get("barberiaId") };
+
+  // Si es subdominio (twins.reservaia.cl, nailstudio.reservaia.cl)
+  const partes = hostname.split(".");
+  if (partes.length >= 3 && partes[partes.length - 2] === "reservaia") {
+    return { tipo: "subdominio", valor: partes[0] };
+  }
+
+  // Default local/vercel.app
+  return { tipo: "param", valor: "org-twins" };
+};
+
 const detectarEncuesta = () => {
   const path = window.location.pathname;
   const params = new URLSearchParams(window.location.search);
   const match = path.match(/^\/encuesta\/(.+)$/);
-  if (match) {
-    return { encuestaId: match[1], estrellas: params.get("estrellas") };
-  }
+  if (match) return { encuestaId: match[1], estrellas: params.get("estrellas") };
   return null;
 };
 
 export default function App() {
-  const barberiaIdUrl = new URLSearchParams(window.location.search).get("barberiaId") || "org-twins";
   const encuestaParams = detectarEncuesta();
+  const barberiaDetectada = detectarBarberiaId();
 
+  const [barberiaId, setBarberiaId] = useState(
+    barberiaDetectada.tipo === "param" ? barberiaDetectada.valor : null
+  );
   const [vista, setVista] = useState(encuestaParams ? "encuesta" : "inicio");
   const [usuario, setUsuario] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
   const [verificandoSesion, setVerificandoSesion] = useState(!encuestaParams);
   const [barberiaData, setBarberiaData] = useState(null);
+  const [resolviendo, setResolviendo] = useState(barberiaDetectada.tipo === "subdominio");
+
+  // ⭐ Resolver subdominio → barberiaId desde BD
   useEffect(() => {
-    supabase.from("barberia").select("*").eq("id", barberiaIdUrl).single()
-      .then(({ data }) => { if (data) setBarberiaData(data); });
-  }, [barberiaIdUrl]);
+    if (barberiaDetectada.tipo === "subdominio") {
+      supabase
+        .from("barberia")
+        .select("*")
+        .eq("subdominio", barberiaDetectada.valor)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            setBarberiaId(data.id);
+            setBarberiaData(data);
+          } else {
+            // Subdominio no encontrado → fallback
+            setBarberiaId("org-twins");
+          }
+          setResolviendo(false);
+        });
+    } else {
+      supabase
+        .from("barberia")
+        .select("*")
+        .eq("id", barberiaDetectada.valor)
+        .single()
+        .then(({ data }) => { if (data) setBarberiaData(data); });
+    }
+  }, []);
 
   const handleLogin = async (email, password) => {
     setCargando(true);
@@ -48,25 +91,14 @@ export default function App() {
         .eq("email", email)
         .single();
 
-      if (errorUsuarios || !usuarios) {
-        setError("Usuario no encontrado");
-        setCargando(false);
-        return;
-      }
-
-      if (usuarios.password_hash !== password) {
-        setError("Contraseña incorrecta");
-        setCargando(false);
-        return;
-      }
+      if (errorUsuarios || !usuarios) { setError("Usuario no encontrado"); setCargando(false); return; }
+      if (usuarios.password_hash !== password) { setError("Contraseña incorrecta"); setCargando(false); return; }
 
       localStorage.setItem("usuario_id", usuarios.id);
       localStorage.setItem("rol", usuarios.rol);
       setUsuario(usuarios);
       direccionarPorRol(usuarios.rol);
-    } catch (err) {
-      setError("Error en login: " + err.message);
-    }
+    } catch (err) { setError("Error en login: " + err.message); }
     setCargando(false);
   };
 
@@ -85,7 +117,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (encuestaParams) return; // No verificar sesión si es encuesta
+    if (encuestaParams || resolviendo) return;
     const verificarSesion = async () => {
       const usuarioId = localStorage.getItem("usuario_id");
       if (usuarioId) {
@@ -97,9 +129,9 @@ export default function App() {
       setVerificandoSesion(false);
     };
     verificarSesion();
-  }, []);
+  }, [resolviendo]);
 
-  if (verificandoSesion) {
+  if (resolviendo || verificandoSesion) {
     return (
       <div className="min-h-screen bg-stone-950 text-white flex items-center justify-center">
         <p className="text-stone-400">Cargando...</p>
@@ -107,90 +139,60 @@ export default function App() {
     );
   }
 
-  // ENCUESTA (público)
   if (vista === "encuesta" && encuestaParams) {
-    return (
-      <VistaEncuesta
-        supabase={supabase}
-        encuestaId={encuestaParams.encuestaId}
-        estrellasInicial={encuestaParams.estrellas}
-      />
-    );
+    return <VistaEncuesta supabase={supabase} encuestaId={encuestaParams.encuestaId} estrellasInicial={encuestaParams.estrellas} />;
   }
 
-  // INICIO (público)
   if (vista === "inicio") {
-    return <VistaInicio barberiaId={barberiaIdUrl} onNavigate={(v) => setVista(v)} supabase={supabase} />;
+    return <VistaInicio barberiaId={barberiaId} onNavigate={(v) => setVista(v)} supabase={supabase} />;
   }
 
-  // RESERVA (público)
-  const esSalonApp = barberiaIdUrl !== "org-twins";
+  const esSalonApp = barberiaData?.tipo_barberia === "salon";
   if (vista === "reserva") {
     return (
       <div style={{ minHeight: "100vh", background: esSalonApp ? "#fce8f0" : "#0c0a09" }}>
         <div style={{ background: esSalonApp ? "#fdf0f5" : "#1c1917", borderBottom: `1px solid ${esSalonApp ? "#f0c0d4" : "#44403c"}`, padding: 12 }}>
           <button onClick={() => setVista("inicio")} style={{ display: "flex", alignItems: "center", gap: 6, color: esSalonApp ? "#b05070" : "#a8a29e", background: "none", border: "none", cursor: "pointer", fontSize: 13 }}>
-            <ArrowLeft size={16} />
-            Volver al inicio
+            <ArrowLeft size={16} />Volver al inicio
           </button>
         </div>
-        <VistaReserva supabase={supabase} barberiaId={barberiaIdUrl} />
+        <VistaReserva supabase={supabase} barberiaId={barberiaId} />
       </div>
     );
   }
 
-  // LOGIN
   if (vista === "login") {
     return <VistaLogin onLogin={handleLogin} cargando={cargando} error={error} onBack={() => setVista("inicio")} barberiaData={barberiaData} />;
   }
 
-  // ADMIN
-  if (vista === "admin") {
-    return <VistaAdmin usuario={usuario} onLogout={handleLogout} supabase={supabase} />;
-  }
-
-  // BARBERO
-  if (vista === "barbero") {
-    return <VistaBarbero usuario={usuario} onLogout={handleLogout} supabase={supabase} />;
-  }
-
-  // SUPER ADMIN
-  if (vista === "super_admin") {
-    return <VistaSuperAdmin usuario={usuario} onLogout={handleLogout} supabase={supabase} />;
-  }
+  if (vista === "admin") return <VistaAdmin usuario={usuario} onLogout={handleLogout} supabase={supabase} />;
+  if (vista === "barbero") return <VistaBarbero usuario={usuario} onLogout={handleLogout} supabase={supabase} />;
+  if (vista === "super_admin") return <VistaSuperAdmin usuario={usuario} onLogout={handleLogout} supabase={supabase} />;
 
   return <div className="text-white p-4">Cargando...</div>;
 }
 
 function VistaLogin({ onLogin, cargando, error, onBack, barberiaData }) {
-  const esSalon = barberiaData?.tipo_negocio === "salon";
+  const esSalon = barberiaData?.tipo_barberia === "salon";
   const T = esSalon ? {
     bg: "#fce8f0", cardBg: "#fff", cardBorder: "#f0c0d4",
     text: "#4a1030", inputBg: "#fdf0f5", inputBorder: "#f0c0d4",
     accent: "#d4638a", accentText: "#fff", labelColor: "#b05070",
-    btnBg: "#d4638a", btnText: "#fff", mutedText: "#b08090",
-    backColor: "#b05070"
+    btnBg: "#d4638a", btnText: "#fff", mutedText: "#b08090", backColor: "#b05070"
   } : {
     bg: "#0c0a09", cardBg: "#1c1917", cardBorder: "#44403c",
     text: "#fff", inputBg: "#292524", inputBorder: "#44403c",
     accent: "#fde68a", accentText: "#1c1917", labelColor: "#d6d3d1",
-    btnBg: "#fde68a", btnText: "#1c1917", mutedText: "#78716c",
-    backColor: "#a8a29e"
+    btnBg: "#fde68a", btnText: "#1c1917", mutedText: "#78716c", backColor: "#a8a29e"
   };
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onLogin(email, password);
-  };
 
   return (
     <div style={{ minHeight: "100vh", background: T.bg, color: T.text, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <div style={{ width: "100%", maxWidth: 420 }}>
         <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 6, color: T.backColor, background: "none", border: "none", cursor: "pointer", fontSize: 13, marginBottom: 24 }}>
-          <ArrowLeft size={16} />
-          Volver al inicio
+          <ArrowLeft size={16} />Volver al inicio
         </button>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           {barberiaData?.logo_url
@@ -212,7 +214,7 @@ function VistaLogin({ onLogin, cargando, error, onBack, barberiaData }) {
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: "100%", background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: "8px 12px", color: T.text, boxSizing: "border-box" }} placeholder="••••••••" />
           </div>
           {error && <div style={{ color: "#f87171", fontSize: 13, marginBottom: 12 }}>{error}</div>}
-          <button type="button" onClick={handleSubmit} disabled={cargando} style={{ width: "100%", background: T.btnBg, color: T.btnText, fontWeight: 700, padding: "10px 0", borderRadius: 8, border: "none", cursor: "pointer", opacity: cargando ? 0.5 : 1 }}>
+          <button type="button" onClick={() => onLogin(email, password)} disabled={cargando} style={{ width: "100%", background: T.btnBg, color: T.btnText, fontWeight: 700, padding: "10px 0", borderRadius: 8, border: "none", cursor: "pointer", opacity: cargando ? 0.5 : 1 }}>
             {cargando ? "Cargando..." : "Ingresar"}
           </button>
         </div>

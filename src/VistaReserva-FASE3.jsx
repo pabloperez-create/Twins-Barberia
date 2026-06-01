@@ -9,38 +9,12 @@ import {
   Info,
 } from "lucide-react";
 
-function CategoriasFiltro({ servicios, categoriaActiva, setCategoriaActiva, T }) {
-  const categorias = [...new Set(servicios.map(s => s.categoria || "General"))];
-  if (categorias.length <= 1) return null;
-  return (
-    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
-      <button
-        onClick={() => setCategoriaActiva("todas")}
-        style={{ padding: "6px 16px", borderRadius: 40, fontSize: 13, fontWeight: 500, border: "1.5px solid " + (categoriaActiva === "todas" ? T.accent : T.cardBorder), background: categoriaActiva === "todas" ? T.accent : "transparent", color: categoriaActiva === "todas" ? "#fff" : T.pageText, cursor: "pointer" }}
-      >
-        Todos
-      </button>
-      {categorias.map(cat => (
-        <button
-          key={cat}
-          onClick={() => setCategoriaActiva(cat)}
-          style={{ padding: "6px 16px", borderRadius: 40, fontSize: 13, fontWeight: 500, border: "1.5px solid " + (categoriaActiva === cat ? T.accent : T.cardBorder), background: categoriaActiva === cat ? T.accent : "transparent", color: categoriaActiva === cat ? "#fff" : T.pageText, cursor: "pointer" }}
-        >
-          {cat}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function VistaReserva({ supabase, barberiaId }) {
   const [paso, setPaso] = useState(1);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
 
   const [servicioSeleccionado, setServicioSeleccionado] = useState(null);
-  const [categoriaActiva, setCategoriaActiva] = useState("todas");
-  const [duracionesBarbero, setDuracionesBarbero] = useState({});
   const [adicionalesSeleccionados, setAdicionalesSeleccionados] = useState([]);
   const [barberoSeleccionado, setBarberoSeleccionado] = useState(null);
   const [barberoAsignado, setBarberoAsignado] = useState(null);
@@ -110,30 +84,11 @@ export function VistaReserva({ supabase, barberiaId }) {
     }
   };
 
-  const cargarDuracionesBarbero = async (barberoId) => {
-    if (!barberoId || barberoId === "cualquiera") { setDuracionesBarbero({}); return; }
-    try {
-      const { data } = await supabase
-        .from("duraciones_barbero")
-        .select("servicio_id, duracion_minutos, tipo")
-        .eq("barbero_id", barberoId);
-      const map = {};
-      (data || []).forEach(d => { map[d.servicio_id] = d.duracion_minutos; });
-      setDuracionesBarbero(map);
-    } catch (err) { console.error("Error cargando duraciones:", err); }
-  };
-
   const calcularDuracionTotal = () => {
-    const servicioId = servicioSeleccionado?.id;
-    const duracionServicio = (servicioId && duracionesBarbero[servicioId])
-      ? duracionesBarbero[servicioId]
-      : (servicioSeleccionado?.duracion_minutos || 30);
+    const duracionServicio = servicioSeleccionado?.duracion_minutos || 30;
     const duracionAdicionales = adicionalesSeleccionados.reduce(
-      (sum, id) => {
-        const durPersonal = duracionesBarbero[id];
-        const durGeneral = adicionales.find((a) => a.id === id)?.duracion_minutos || 0;
-        return sum + (durPersonal || durGeneral);
-      },
+      (sum, id) =>
+        sum + (adicionales.find((a) => a.id === id)?.duracion_minutos || 0),
       0,
     );
     return duracionServicio + duracionAdicionales;
@@ -187,11 +142,6 @@ export function VistaReserva({ supabase, barberiaId }) {
       const aplicaABarbero =
         b.barbero_id === barberoId || b.barbero_id === null;
       const enRango = fecha >= b.fecha_inicio && fecha <= b.fecha_fin;
-      // Si tiene dias_semana, verificar que el día de la semana aplique
-      if (b.dias_semana && Array.isArray(b.dias_semana) && b.dias_semana.length > 0) {
-        const diaSemana = new Date(fecha + "T12:00:00").getDay();
-        if (!b.dias_semana.includes(diaSemana)) return false;
-      }
       return aplicaABarbero && enRango;
     });
   };
@@ -263,7 +213,7 @@ export function VistaReserva({ supabase, barberiaId }) {
           horariosDisponibles.push(horaStr);
         }
 
-        hora.setMinutes(hora.getMinutes() + (barbero.intervalo_minutos || 30));
+        hora.setMinutes(hora.getMinutes() + 15);
       }
 
       setHorariosBarbero(horariosDisponibles);
@@ -343,7 +293,7 @@ export function VistaReserva({ supabase, barberiaId }) {
           horariosDisponibles.push(horaStr);
         }
 
-        hora.setMinutes(hora.getMinutes() + 30);
+        hora.setMinutes(hora.getMinutes() + 15);
       }
 
       setHorariosBarbero(horariosDisponibles);
@@ -436,7 +386,7 @@ export function VistaReserva({ supabase, barberiaId }) {
       return false;
     }
     if (paso === 3 && !barberoSeleccionado) {
-      setError(esSalon ? "Selecciona una estilista (o 'Cualquiera')" : "Selecciona un barbero (o 'Cualquiera')");
+      setError("Selecciona un barbero (o 'Cualquiera')");
       return false;
     }
     if (paso === 4 && (!fechaSeleccionada || !horaSeleccionada)) {
@@ -445,10 +395,6 @@ export function VistaReserva({ supabase, barberiaId }) {
     }
     if (paso === 5 && (!clienteNombre || !clienteTelefono || !clienteEmail)) {
       setError("Completa nombre, teléfono y email");
-      return false;
-    }
-    if (paso === 5 && clienteTelefono.length < 8) {
-      setError("El teléfono debe tener 8 dígitos");
       return false;
     }
     if (paso === 5 && clienteEmail && !/\S+@\S+\.\S+/.test(clienteEmail)) {
@@ -499,7 +445,7 @@ export function VistaReserva({ supabase, barberiaId }) {
         servicio_id: servicioSeleccionado.id,
         adicionales_ids: adicionalesSeleccionados,
         cliente_nombre: clienteNombre,
-        cliente_telefono: "569" + clienteTelefono,
+        cliente_telefono: clienteTelefono,
         cliente_email: clienteEmail || null,
         fecha: fechaSeleccionada,
         hora_inicio: horaSeleccionada,
@@ -522,7 +468,6 @@ export function VistaReserva({ supabase, barberiaId }) {
               clienteNombre: clienteNombre,
               barberiaId: barberiaId,
               barberiaNombre: barberiaData?.nombre || "Tu Barbería",
-              tipoNegocio: barberiaData?.tipo_negocio || "barberia",
               barberoNombre: barberoFinalData?.nombre || "el profesional",
               servicioNombre: servicioSeleccionado.nombre,
               precioServicio: servicioSeleccionado.precio,
@@ -532,6 +477,7 @@ export function VistaReserva({ supabase, barberiaId }) {
                   return ad ? { nombre: ad.nombre, precio: ad.precio } : null;
                 })
                 .filter(Boolean),
+              fecha: fechaSeleccionada,
               fecha: fechaSeleccionada,
               hora: horaSeleccionada,
               precio: precioTotal,
@@ -554,52 +500,6 @@ export function VistaReserva({ supabase, barberiaId }) {
         }
       }
 
-      // WhatsApp de confirmación (si tiene teléfono y feature activa)
-      if (clienteTelefono) {
-        try {
-          await fetch("/api/send-whatsapp", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              clienteTelefono: "569" + clienteTelefono,
-              clienteNombre: clienteNombre,
-              barberiaId: barberiaId,
-              barberiaNombre: barberiaData?.nombre || "Tu Barbería",
-              barberoNombre: barberoFinalData?.nombre || "el profesional",
-              servicioNombre: servicioSeleccionado.nombre,
-              fecha: fechaSeleccionada,
-              hora: horaSeleccionada,
-              precio: precioTotal,
-              tipo: "confirmacion",
-            }),
-          });
-        } catch (waError) {
-          console.error("⚠️ Error enviando WhatsApp:", waError);
-        }
-      }
-
-      // Google Calendar
-      try {
-        await fetch("/api/google-calendar", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            barbero_id: barberoFinalId,
-            reserva: {
-              fecha: fechaSeleccionada,
-              hora_inicio: horaSeleccionada,
-              duracion_minutos: calcularDuracionTotal(),
-              cliente_nombre: clienteNombre,
-              cliente_telefono: "569" + clienteTelefono,
-              cliente_email: clienteEmail || "",
-              servicio: servicioSeleccionado.nombre,
-              precio_final: precioTotal
-            }
-          })
-        });
-      } catch (calError) {
-        console.error("⚠️ Error Google Calendar:", calError);
-      }
       setPaso(6);
     } catch (err) {
       setError("Error: " + err.message);
@@ -607,44 +507,13 @@ export function VistaReserva({ supabase, barberiaId }) {
     setCargando(false);
   };
 
-  const esSalon = barberiaData?.tipo_negocio === "salon" || (barberiaData === null && barberiaId !== "org-twins");
-  const T = esSalon ? {
-    pageBg: "#fce8f0", pageText: "#4a1030",
-    cardBg: "#fff", cardBorder: "#f0c0d4",
-    inputBg: "#fdf0f5", inputBorder: "#f0c0d4",
-    accent: "#d4638a", accentText: "#fff",
-    stepActive: "#d4638a", stepInactive: "#f0c0d4",
-    labelColor: "#b05070", mutedColor: "#b08090",
-    btnPrimary: "#d4638a", btnPrimaryText: "#fff",
-    btnSecondary: "#fdf0f5", btnSecondaryText: "#b05070",
-    btnSecondaryBorder: "#f0c0d4",
-    successBg: "#fdf0f5", successBorder: "#f0c0d4", successText: "#7a1f42",
-    errorBg: "#fff0f3", errorBorder: "#fca5a5", errorText: "#991b1b",
-    tagBg: "#fce8f0", tagBorder: "#f0c0d4", tagText: "#7a1f42",
-    tagActiveBg: "#d4638a", tagActiveBorder: "#d4638a", tagActiveText: "#fff",
-  } : {
-    pageBg: "#0c0a09", pageText: "#fff",
-    cardBg: "#1c1917", cardBorder: "#44403c",
-    inputBg: "#1c1917", inputBorder: "#44403c",
-    accent: "#fde68a", accentText: "#0c0a09",
-    stepActive: "#fde68a", stepInactive: "#44403c",
-    labelColor: "#a8a29e", mutedColor: "#78716c",
-    btnPrimary: "#fde68a", btnPrimaryText: "#0c0a09",
-    btnSecondary: "#292524", btnSecondaryText: "#d6d3d1",
-    btnSecondaryBorder: "#44403c",
-    successBg: "#14532d", successBorder: "#166534", successText: "#bbf7d0",
-    errorBg: "#450a0a", errorBorder: "#991b1b", errorText: "#fca5a5",
-    tagBg: "#292524", tagBorder: "#44403c", tagText: "#d6d3d1",
-    tagActiveBg: "#fde68a", tagActiveBorder: "#fde68a", tagActiveText: "#0c0a09",
-  };
-
   return (
-    <div style={{ minHeight: "100vh", background: T.pageBg, color: T.pageText, padding: 24 }}>
-      <div className="max-w-4xl mx-auto mb-8" style={{ color: T.pageText }}>
+    <div className="min-h-screen bg-stone-950 text-white p-6">
+      <div className="max-w-4xl mx-auto mb-8">
         <h1 className="text-4xl font-bold mb-2">
           {barberiaData?.nombre || "Reservar Hora"}
         </h1>
-        <p style={{ color: T.mutedColor }}>Paso {paso} de 6</p>
+        <p className="text-stone-400">Paso {paso} de 6</p>
       </div>
 
       <div className="max-w-4xl mx-auto mb-8">
@@ -652,7 +521,7 @@ export function VistaReserva({ supabase, barberiaId }) {
           {[1, 2, 3, 4, 5, 6].map((p) => (
             <div
               key={p}
-              style={{ height: 4, flex: 1, borderRadius: 4, background: p <= paso ? T.stepActive : T.stepInactive }}
+              className={`h-1 flex-1 rounded ${p <= paso ? "bg-amber-200" : "bg-stone-700"}`}
             />
           ))}
         </div>
@@ -671,38 +540,30 @@ export function VistaReserva({ supabase, barberiaId }) {
             <h2 className="text-2xl font-bold mb-6">
               ¿Qué servicio necesitas?
             </h2>
-            {/* Botones de categoría */}
-            <CategoriasFiltro
-              servicios={servicios}
-              categoriaActiva={categoriaActiva}
-              setCategoriaActiva={setCategoriaActiva}
-              T={T}
-            />
-            <div className="grid gap-3">
-              {(categoriaActiva === "todas" ? servicios : servicios.filter(s => (s.categoria || "General") === categoriaActiva)).map((servicio) => {
-                const seleccionado = servicioSeleccionado?.id === servicio.id;
-                return (
-                  <button
-                    key={servicio.id}
-                    onClick={() => setServicioSeleccionado(servicio)}
-                    style={{ border: "2px solid " + (seleccionado ? T.tagActiveBg : T.cardBorder), background: seleccionado ? T.tagActiveBg + "22" : T.cardBg, borderRadius: 8, cursor: "pointer", padding: 16, textAlign: "left", width: "100%" }}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div style={{ flex: 1, marginRight: 12 }}>
-                        <h3 className="font-bold text-lg">{servicio.nombre}</h3>
-                        {servicio.descripcion && (
-                          <p style={{ color: T.mutedColor, fontSize: 12, marginTop: 6, fontStyle: "italic", lineHeight: 1.4 }}>
-                            {servicio.descripcion}
-                          </p>
-                        )}
-                      </div>
-                      <p style={{ color: T.accent, fontWeight: 700, flexShrink: 0 }}>
-                        ${servicio.precio.toLocaleString()}
+            <div className="grid gap-4">
+              {servicios.map((servicio) => (
+                <button
+                  key={servicio.id}
+                  onClick={() => setServicioSeleccionado(servicio)}
+                  className={`p-6 rounded border-2 text-left transition ${
+                    servicioSeleccionado?.id === servicio.id
+                      ? "border-amber-200 bg-amber-200 bg-opacity-10"
+                      : "border-stone-700 hover:border-stone-600"
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold text-lg">{servicio.nombre}</h3>
+                      <p className="text-stone-400 text-sm mt-1">
+                        {servicio.duracion_minutos} minutos
                       </p>
                     </div>
-                  </button>
-                );
-              })}
+                    <p className="text-amber-200 font-bold">
+                      ${servicio.precio.toLocaleString()}
+                    </p>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
         )}
@@ -710,7 +571,7 @@ export function VistaReserva({ supabase, barberiaId }) {
         {paso === 2 && (
           <div>
             <h2 className="text-2xl font-bold mb-6">¿Servicios adicionales?</h2>
-            <p style={{ color: T.mutedColor, marginBottom: 24 }}>
+            <p className="text-stone-400 mb-6">
               Selecciona los que desees (opcional)
             </p>
             <div className="grid gap-3">
@@ -731,12 +592,19 @@ export function VistaReserva({ supabase, barberiaId }) {
                       ]);
                     }
                   }}
-                  style={{ border: "2px solid " + adicionalesSeleccionados.includes(adicional.id) ? T.tagActiveBg : T.cardBorder, background: adicionalesSeleccionados.includes(adicional.id) ? T.tagActiveBg + "22" : T.cardBg, borderRadius: 8, cursor: "pointer" }}
+                  className={`p-4 rounded border-2 text-left transition flex justify-between items-center ${
+                    adicionalesSeleccionados.includes(adicional.id)
+                      ? "border-amber-200 bg-amber-200 bg-opacity-10"
+                      : "border-stone-700 hover:border-stone-600"
+                  }`}
                 >
                   <div>
                     <h3 className="font-bold">{adicional.nombre}</h3>
+                    <p className="text-stone-400 text-sm">
+                      {adicional.duracion_minutos} min
+                    </p>
                   </div>
-                  <p style={{ color: T.accent, fontWeight: 700 }}>
+                  <p className="text-amber-200">
                     +${adicional.precio.toLocaleString()}
                   </p>
                 </button>
@@ -748,57 +616,67 @@ export function VistaReserva({ supabase, barberiaId }) {
         {paso === 3 && (
           <div>
             <h2 className="text-2xl font-bold mb-6">
-              {esSalon ? "¿Con quién deseas tu sesión?" : "¿Con quién deseas tu corte?"}
+              ¿Con quién deseas tu corte?
             </h2>
             <div className="grid gap-4">
               <button
                 onClick={() => {
-                  setBarberoSeleccionado(CUALQUIERA); cargarDuracionesBarbero(null);
+                  setBarberoSeleccionado(CUALQUIERA);
                   setHoraSeleccionada("");
                 }}
-                style={{ border: `2px solid ${barberoSeleccionado === CUALQUIERA ? T.tagActiveBg : T.cardBorder}`, background: barberoSeleccionado === CUALQUIERA ? T.tagActiveBg + "22" : T.cardBg, borderRadius: 8, cursor: "pointer" }}
+                className={`p-6 rounded border-2 text-left transition ${
+                  barberoSeleccionado === CUALQUIERA
+                    ? "border-amber-200 bg-amber-200 bg-opacity-10"
+                    : "border-stone-700 hover:border-stone-600"
+                }`}
               >
                 <div className="flex items-start gap-4">
-                  <div style={{ width: 64, height: 64, background: `${T.accent}22`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Users size={32} color={T.accent} />
+                  <div className="w-16 h-16 bg-amber-200 bg-opacity-20 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Users size={32} className="text-amber-200" />
                   </div>
                   <div className="flex-1">
                     <h3 className="font-bold text-lg">
-                      {esSalon ? "Cualquier estilista disponible" : "Cualquier barbero disponible"}
+                      Cualquier barbero disponible
                     </h3>
-                    <p style={{ color: T.mutedColor, fontSize: 13 }}>
-                      {esSalon ? "Te asignamos la que tenga mayor disponibilidad" : "Te asignamos el que tenga mayor disponibilidad"}
+                    <p className="text-stone-400 text-sm">
+                      Te asignamos el que tenga mayor disponibilidad
                     </p>
                   </div>
                 </div>
               </button>
 
               <div className="flex items-center gap-3 my-2">
-                <div style={{ flex: 1, height: 1, background: T.cardBorder }}></div>
+                <div className="flex-1 h-px bg-stone-700"></div>
                 <p className="text-stone-500 text-xs">O ELIGE UN ESPECÍFICO</p>
-                <div style={{ flex: 1, height: 1, background: T.cardBorder }}></div>
+                <div className="flex-1 h-px bg-stone-700"></div>
               </div>
 
-              {barberos.map((barbero) => (
+              {(servicioSeleccionado?.barbero_exclusivo_id
+                ? barberos.filter(
+                    (b) => b.id === servicioSeleccionado.barbero_exclusivo_id,
+                  )
+                : barberos
+              ).map((barbero) => (
                 <button
                   key={barbero.id}
                   onClick={() => {
-                    setBarberoSeleccionado(barbero.id); cargarDuracionesBarbero(barbero.id);
+                    setBarberoSeleccionado(barbero.id);
                     setHoraSeleccionada("");
                   }}
-                  style={{ border: "2px solid " + (barberoSeleccionado === barbero.id) ? T.tagActiveBg : T.cardBorder, background: (barberoSeleccionado === barbero.id) ? T.tagActiveBg + "22" : T.cardBg, borderRadius: 8, cursor: "pointer" }}
+                  className={`p-6 rounded border-2 text-left transition ${
+                    barberoSeleccionado === barbero.id
+                      ? "border-amber-200 bg-amber-200 bg-opacity-10"
+                      : "border-stone-700 hover:border-stone-600"
+                  }`}
                 >
                   <div className="flex items-start gap-4">
-                    <div style={{ width: 64, height: 64, background: T.inputBg, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                      {barbero.foto_url
-                        ? <img src={barbero.foto_url} alt={barbero.nombre} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        : <User size={32} color={T.accent} />
-                      }
+                    <div className="w-16 h-16 bg-stone-800 rounded-full flex items-center justify-center flex-shrink-0">
+                      <User size={32} className="text-amber-200" />
                     </div>
                     <div>
                       <h3 className="font-bold text-lg">{barbero.nombre}</h3>
-                      <p style={{ color: T.mutedColor, fontSize: 13 }}>
-                        {barbero.especialidad || (esSalon ? "Estilista" : "Barbero")}
+                      <p className="text-stone-400 text-sm">
+                        {barbero.especialidad || "Barbero"}
                       </p>
                     </div>
                   </div>
@@ -832,7 +710,7 @@ export function VistaReserva({ supabase, barberiaId }) {
                   }
                 }}
                 min={new Date().toISOString().split("T")[0]}
-                style={{ width: "100%", background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: "12px 16px", color: T.pageText, outline: "none", boxSizing: "border-box" }}
+                className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-3 text-white"
               />
             </div>
 
@@ -844,7 +722,11 @@ export function VistaReserva({ supabase, barberiaId }) {
                     <button
                       key={hora}
                       onClick={() => setHoraSeleccionada(hora)}
-                      style={{ padding: 12, borderRadius: 8, border: "2px solid " + (horaSeleccionada === hora ? T.accent : T.cardBorder), background: horaSeleccionada === hora ? T.accent + "22" : T.cardBg, cursor: "pointer", color: T.pageText }}
+                      className={`p-3 rounded border-2 transition ${
+                        horaSeleccionada === hora
+                          ? "border-amber-200 bg-amber-200 text-stone-950"
+                          : "border-stone-700 hover:border-stone-600"
+                      }`}
                     >
                       {hora}
                     </button>
@@ -874,7 +756,7 @@ export function VistaReserva({ supabase, barberiaId }) {
                   value={clienteNombre}
                   onChange={(e) => setClienteNombre(e.target.value)}
                   placeholder="Tu nombre"
-                  style={{ width: "100%", background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: "12px 16px", color: T.pageText, outline: "none", boxSizing: "border-box" }}
+                  className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-3 text-white"
                 />
               </div>
 
@@ -882,23 +764,13 @@ export function VistaReserva({ supabase, barberiaId }) {
                 <label className="block text-sm font-semibold mb-2">
                   Teléfono <span className="text-red-400">*</span>
                 </label>
-                <div style={{ display: "flex", alignItems: "center", background: T.inputBg, border: "1px solid " + T.inputBorder, borderRadius: 8, overflow: "hidden" }}>
-                  <span style={{ padding: "12px", color: T.labelColor, borderRight: "1px solid " + T.inputBorder, userSelect: "none", fontFamily: "monospace" }}>
-                    +569
-                  </span>
-                  <input
-                    type="tel"
-                    value={clienteTelefono}
-                    onChange={(e) =>
-                      setClienteTelefono(
-                        e.target.value.replace(/\D/g, "").slice(0, 8),
-                      )
-                    }
-                    placeholder="12345678"
-                    maxLength={8}
-                    style={{ flex: 1, background: "transparent", padding: "12px 16px", color: T.pageText, outline: "none" }}
-                  />
-                </div>
+                <input
+                  type="tel"
+                  value={clienteTelefono}
+                  onChange={(e) => setClienteTelefono(e.target.value)}
+                  placeholder="+56912345678"
+                  className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-3 text-white"
+                />
               </div>
 
               <div>
@@ -913,7 +785,7 @@ export function VistaReserva({ supabase, barberiaId }) {
                   value={clienteEmail}
                   onChange={(e) => setClienteEmail(e.target.value)}
                   placeholder="tu@email.com"
-                  style={{ width: "100%", background: T.inputBg, border: `1px solid ${T.inputBorder}`, borderRadius: 8, padding: "12px 16px", color: T.pageText, outline: "none", boxSizing: "border-box" }}
+                  className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-3 text-white"
                 />
               </div>
             </div>
@@ -923,26 +795,26 @@ export function VistaReserva({ supabase, barberiaId }) {
         {paso === 6 && (
           <div>
             <div className="text-center mb-8">
-              <div style={{ width: 80, height: 80, background: T.accent, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+              <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Check size={40} className="text-white" />
               </div>
               <h2 className="text-3xl font-bold mb-2">¡Reserva Confirmada!</h2>
             </div>
 
-            <div style={{ background: T.cardBg, border: `1px solid ${T.cardBorder}`, borderRadius: 8, padding: 24 }} className="space-y-4">
+            <div className="bg-stone-900 p-6 rounded border border-stone-700 space-y-4">
               <div className="flex justify-between">
-                <span style={{ color: T.labelColor }}>{esSalon ? "Estilista:" : "Barbero:"}</span>
+                <span className="text-stone-400">Barbero:</span>
                 <span className="font-semibold">
                   {barberoAsignado?.nombre || "Asignado"}
                 </span>
               </div>
               {barberoSeleccionado === CUALQUIERA && barberoAsignado && (
-                <div style={{ background: T.tagBg, border: "1px solid " + T.tagBorder, borderRadius: 8, padding: 12, display: "flex", alignItems: "flex-start", gap: 8 }}>
+                <div className="bg-amber-200 bg-opacity-10 border border-amber-200 border-opacity-30 rounded p-3 flex items-start gap-2">
                   <Info
                     size={16}
-                    style={{ color: T.accent, flexShrink: 0, marginTop: 2 }}
+                    className="text-amber-200 flex-shrink-0 mt-0.5"
                   />
-                  <p style={{ color: T.accent, fontSize: 13 }}>
+                  <p className="text-amber-200 text-sm">
                     Te asignamos a {barberoAsignado.nombre} por disponibilidad
                   </p>
                 </div>
@@ -961,9 +833,9 @@ export function VistaReserva({ supabase, barberiaId }) {
                 <span className="text-stone-400">Hora:</span>
                 <span className="font-semibold">{horaSeleccionada}</span>
               </div>
-              <div style={{ borderTop: "1px solid " + T.cardBorder, paddingTop: 16, display: "flex", justifyContent: "space-between" }}>
+              <div className="border-t border-stone-700 pt-4 flex justify-between">
                 <span className="font-semibold">Total:</span>
-                <span style={{ color: T.accent, fontWeight: 700, fontSize: 20 }}>
+                <span className="text-amber-200 font-bold text-xl">
                   ${calcularPrecioTotal().toLocaleString()}
                 </span>
               </div>
@@ -976,7 +848,7 @@ export function VistaReserva({ supabase, barberiaId }) {
             {paso > 1 && (
               <button
                 onClick={irAlAnterior}
-                style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 24px", background: T.btnSecondary, color: T.btnSecondaryText, border: "1px solid " + T.btnSecondaryBorder, borderRadius: 8, cursor: "pointer" }}
+                className="flex items-center gap-2 px-6 py-3 bg-stone-800 hover:bg-stone-700 rounded border border-stone-700"
               >
                 <ChevronLeft size={20} />
                 Anterior
@@ -986,7 +858,7 @@ export function VistaReserva({ supabase, barberiaId }) {
             {paso < 5 && (
               <button
                 onClick={irAlSiguiente}
-                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 24px", background: T.btnPrimary, color: T.btnPrimaryText, fontWeight: 700, borderRadius: 8, border: "none", cursor: "pointer" }}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-amber-200 hover:bg-amber-100 text-stone-950 font-bold rounded"
               >
                 Siguiente
                 <ChevronRight size={20} />
@@ -997,7 +869,7 @@ export function VistaReserva({ supabase, barberiaId }) {
               <button
                 onClick={confirmarReserva}
                 disabled={cargando}
-                style={{ flex: 1, padding: "12px 24px", background: T.btnPrimary, color: T.btnPrimaryText, fontWeight: 700, borderRadius: 8, border: "none", cursor: "pointer" }}
+                className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 font-bold rounded disabled:opacity-50"
               >
                 {cargando ? "Confirmando..." : "Confirmar"}
               </button>
@@ -1008,7 +880,7 @@ export function VistaReserva({ supabase, barberiaId }) {
         {paso === 6 && (
           <button
             onClick={() => window.location.reload()}
-            style={{ width: "100%", padding: "12px 24px", background: T.btnPrimary, color: T.btnPrimaryText, fontWeight: 700, borderRadius: 8, border: "none", cursor: "pointer", marginTop: 32 }}
+            className="w-full px-6 py-3 bg-amber-200 hover:bg-amber-100 text-stone-950 font-bold rounded mt-8"
           >
             Hacer otra reserva
           </button>

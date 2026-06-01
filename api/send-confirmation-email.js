@@ -46,6 +46,9 @@ export default async function handler(req, res) {
     const headerColor = esSalon ? '#7a1f42' : '#fde68a';
     const headerSubColor = esSalon ? '#b05070' : '#a8a29e';
     const accentColor = esSalon ? '#d4638a' : '#d97706';
+    const checkColor = esSalon ? '#d4638a' : '#10b981';
+    const whatsappBg = esSalon ? '#d4638a' : '#25D366';
+    const whatsappEmoji = esSalon ? '💗' : '💚';
     const textColor = esSalon ? '#4a1030' : '#1c1917';
 
     if (!clienteEmail || !clienteNombre || !fecha || !hora) {
@@ -106,8 +109,8 @@ export default async function handler(req, res) {
         <p style="margin: 0 0 16px 0; color: #57534e; font-size: 15px;">
           Confirma tu reserva por WhatsApp para recibir actualizaciones:
         </p>
-        <a href="${linkWhatsApp}" target="_blank" style="display: inline-block; background-color: #25D366; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px;">
-          💚 Confirmar por WhatsApp
+        <a href="${linkWhatsApp}" target="_blank" style="display: inline-block; background-color: ${whatsappBg}; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px;">
+          ${whatsappEmoji} Confirmar por WhatsApp
         </a>
       </td>
     </tr>
@@ -144,7 +147,7 @@ export default async function handler(req, res) {
     </tr>
     <tr>
       <td style="padding: 40px 30px 20px 30px; text-align: center;">
-        <div style="background-color: #10b981; width: 80px; height: 80px; border-radius: 50%; display: inline-block; line-height: 80px; color: white; font-size: 40px;">✓</div>
+        <div style="background-color: ${checkColor}; width: 80px; height: 80px; border-radius: 50%; display: inline-block; line-height: 80px; color: white; font-size: 40px;">✓</div>
         <h2 style="margin: 20px 0 8px 0; color: #1c1917; font-size: 28px;">¡Reserva confirmada!</h2>
         <p style="margin: 0; color: #57534e; font-size: 16px;">Hola ${clienteNombre} 👋</p>
       </td>

@@ -557,8 +557,7 @@ export function VistaReserva({ supabase, barberiaId }) {
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-bold text-lg">{servicio.nombre}</h3>
-                      <p className="text-stone-400 text-sm mt-1">
-                      </p>
+                      <p className="text-stone-400 text-sm mt-1"></p>
                     </div>
                     <p className="text-amber-200 font-bold">
                       ${servicio.precio.toLocaleString()}
@@ -602,8 +601,7 @@ export function VistaReserva({ supabase, barberiaId }) {
                 >
                   <div>
                     <h3 className="font-bold">{adicional.nombre}</h3>
-                    <p className="text-stone-400 text-sm">
-                    </p>
+                    <p className="text-stone-400 text-sm"></p>
                   </div>
                   <p className="text-amber-200">
                     +${adicional.precio.toLocaleString()}
@@ -620,32 +618,33 @@ export function VistaReserva({ supabase, barberiaId }) {
               ¿Con quién deseas tu corte?
             </h2>
             <div className="grid gap-4">
-              <button
-                onClick={() => {
-                  setBarberoSeleccionado(CUALQUIERA);
-                  setHoraSeleccionada("");
-                }}
-                className={`p-6 rounded border-2 text-left transition ${
-                  barberoSeleccionado === CUALQUIERA
-                    ? "border-amber-200 bg-amber-200 bg-opacity-10"
-                    : "border-stone-700 hover:border-stone-600"
-                }`}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 bg-amber-200 bg-opacity-20 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Users size={32} className="text-amber-200" />
+              {!servicioSeleccionado?.barbero_exclusivo_id && (
+                <button
+                  onClick={() => {
+                    setBarberoSeleccionado(CUALQUIERA);
+                    setHoraSeleccionada("");
+                  }}
+                  className={`p-6 rounded border-2 text-left transition ${
+                    barberoSeleccionado === CUALQUIERA
+                      ? "border-amber-200 bg-amber-200 bg-opacity-10"
+                      : "border-stone-700 hover:border-stone-600"
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 bg-amber-200 bg-opacity-20 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Users size={32} className="text-amber-200" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-lg">
+                        Cualquier barbero disponible
+                      </h3>
+                      <p className="text-stone-400 text-sm">
+                        Te asignamos el que tenga mayor disponibilidad
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-lg">
-                      Cualquier barbero disponible
-                    </h3>
-                    <p className="text-stone-400 text-sm">
-                      Te asignamos el que tenga mayor disponibilidad
-                    </p>
-                  </div>
-                </div>
-              </button>
-
+                </button>
+              )}
               <div className="flex items-center gap-3 my-2">
                 <div className="flex-1 h-px bg-stone-700"></div>
                 <p className="text-stone-500 text-xs">O ELIGE UN ESPECÍFICO</p>
@@ -672,7 +671,20 @@ export function VistaReserva({ supabase, barberiaId }) {
                 >
                   <div className="flex items-start gap-4">
                     <div className="w-16 h-16 bg-stone-800 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      {barbero.foto_url ? <img src={barbero.foto_url} alt={barbero.nombre} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"top"}} /> : <User size={32} className="text-amber-200" />}
+                      {barbero.foto_url ? (
+                        <img
+                          src={barbero.foto_url}
+                          alt={barbero.nombre}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            objectPosition: "top",
+                          }}
+                        />
+                      ) : (
+                        <User size={32} className="text-amber-200" />
+                      )}
                     </div>
                     <div>
                       <h3 className="font-bold text-lg">{barbero.nombre}</h3>

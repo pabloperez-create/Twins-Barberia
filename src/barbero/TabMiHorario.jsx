@@ -175,7 +175,7 @@ export function TabMiHorario({ supabase, barbero, onUpdate, tema: t }) {
           <label className="block text-sm font-semibold mb-2">Intervalo entre citas</label>
           <p className={`${t.textoSub} text-xs mb-3`}>Define cada cuántos minutos aceptas reservas nuevas</p>
           <div className="flex gap-2 flex-wrap">
-            {[15, 30, 45, 60, 75, 90].map((min) => (
+            {[15, 30, 40, 45, 60, 75, 90].map((min) => (
               <button key={min} onClick={() => setIntervalo(min)} className={`px-4 py-2 rounded text-sm font-semibold transition ${intervalo === min ? t.filtroActivo : t.filtroInactivo}`}>
                 {min} min
               </button>

@@ -216,7 +216,7 @@ export function VistaReserva({ supabase, barberiaId }) {
           horariosDisponibles.push(horaStr);
         }
 
-        hora.setMinutes(hora.getMinutes() + 15);
+        hora.setMinutes(hora.getMinutes() + (barbero?.intervalo_minutos || 15));
       }
 
       setHorariosBarbero(horariosDisponibles);
@@ -296,7 +296,7 @@ export function VistaReserva({ supabase, barberiaId }) {
           horariosDisponibles.push(horaStr);
         }
 
-        hora.setMinutes(hora.getMinutes() + 15);
+        hora.setMinutes(hora.getMinutes() + (barbero?.intervalo_minutos || 15));
       }
 
       setHorariosBarbero(horariosDisponibles);

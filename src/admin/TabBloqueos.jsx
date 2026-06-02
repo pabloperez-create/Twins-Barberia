@@ -51,8 +51,8 @@ export function TabBloqueos({ supabase, barberiaId, tema: t }) {
         barbero_id: form.barbero_id || null,
         fecha_inicio: form.fecha_inicio || new Date().toISOString().split("T")[0],
         fecha_fin: form.fecha_fin || (form.tipo === "recurrente" ? "2099-12-31" : null),
-        hora_inicio: form.tipo === "bloque_horas" ? form.hora_inicio : null,
-        hora_fin: form.tipo === "bloque_horas" ? form.hora_fin : null,
+        hora_inicio: (form.tipo === "bloque_horas" || form.tipo === "recurrente") ? form.hora_inicio : null,
+        hora_fin: (form.tipo === "bloque_horas" || form.tipo === "recurrente") ? form.hora_fin : null,
         motivo: form.motivo.trim() || null,
         dias_semana: form.tipo === "recurrente" ? form.dias_semana : null,
       });
@@ -194,7 +194,7 @@ export function TabBloqueos({ supabase, barberiaId, tema: t }) {
               </div>
             </div>
           )}
-          {form.tipo === "bloque_horas" && (
+          {(form.tipo === "bloque_horas" || form.tipo === "recurrente") && (
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-semibold mb-2">Hora inicio <span className="text-red-400">*</span></label>

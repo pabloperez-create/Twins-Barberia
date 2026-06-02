@@ -503,6 +503,28 @@ export function VistaReserva({ supabase, barberiaId }) {
         }
       }
 
+      // ⭐ Google Calendar
+      try {
+        await fetch("/api/google-calendar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            barbero_id: barberoFinalId,
+            reserva: {
+              fecha: fechaSeleccionada,
+              hora_inicio: horaSeleccionada,
+              duracion_minutos: calcularDuracionTotal(),
+              cliente_nombre: clienteNombre,
+              cliente_telefono: clienteTelefono,
+              cliente_email: clienteEmail || "",
+              servicio: servicioSeleccionado.nombre,
+              precio_final: precioTotal,
+            }
+          })
+        });
+      } catch (gcErr) {
+        console.error("Error Google Calendar:", gcErr);
+      }
       setPaso(6);
     } catch (err) {
       setError("Error: " + err.message);

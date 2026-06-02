@@ -72,7 +72,7 @@ export default async function handler(req, res) {
           <tr>
             <td style="padding: 8px 16px;">
               <p style="margin: 0; color: #78716c; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Dirección</p>
-              <p style="margin: 4px 0 0 0; color: #1c1917; font-size: 16px; font-weight: 600;">${direccionBarberia}</p>
+              <p style="margin: 4px 0 0 0; color: ${esSalon ? "#1c1917" : "#ffffff"}; font-size: 16px; font-weight: 600;">${direccionBarberia}</p>
             </td>
           </tr>` : '';
 
@@ -83,7 +83,7 @@ export default async function handler(req, res) {
           <tr>
             <td style="padding: 8px 16px;">
               <p style="margin: 0; color: #78716c; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Servicio</p>
-              <p style="margin: 4px 0 0 0; color: #1c1917; font-size: 16px; font-weight: 600;">${servicioNombre} <span style="color: #78716c; font-weight: 400;">· $${precioServicioMostrar.toLocaleString('es-CL')}</span></p>
+              <p style="margin: 4px 0 0 0; color: ${esSalon ? "#1c1917" : "#ffffff"}; font-size: 16px; font-weight: 600;">${servicioNombre} <span style="color: #78716c; font-weight: 400;">· $${precioServicioMostrar.toLocaleString('es-CL')}</span></p>
             </td>
           </tr>
           <tr>
@@ -99,7 +99,7 @@ export default async function handler(req, res) {
           <tr>
             <td style="padding: 8px 16px;">
               <p style="margin: 0; color: #78716c; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Servicio</p>
-              <p style="margin: 4px 0 0 0; color: #1c1917; font-size: 16px; font-weight: 600;">${servicioNombre}</p>
+              <p style="margin: 4px 0 0 0; color: ${esSalon ? "#1c1917" : "#ffffff"}; font-size: 16px; font-weight: 600;">${servicioNombre}</p>
             </td>
           </tr>`;
 
@@ -137,8 +137,8 @@ export default async function handler(req, res) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reserva Confirmada</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background-color: #f5f5f5;">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="100%" style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background-color: ${esSalon ? "#fdf0f5" : "#0c0a09"};">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="100%" style="max-width: 600px; margin: 40px auto; background-color: ${esSalon ? "#ffffff" : "#1c1917"}; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
     <tr>
       <td style="background-color: ${headerBg}; padding: 40px 30px; text-align: center;">
         <h1 style="margin: 0; color: ${headerColor}; font-size: 32px; font-weight: bold; letter-spacing: 1px;">${barberiaNombre}</h1>
@@ -148,24 +148,24 @@ export default async function handler(req, res) {
     <tr>
       <td style="padding: 40px 30px 20px 30px; text-align: center;">
         <div style="background-color: ${checkColor}; width: 80px; height: 80px; border-radius: 50%; display: inline-block; line-height: 80px; color: white; font-size: 40px;">✓</div>
-        <h2 style="margin: 20px 0 8px 0; color: #1c1917; font-size: 28px;">¡Reserva confirmada!</h2>
+        <h2 style="margin: 20px 0 8px 0; color: ${esSalon ? "#1c1917" : "#ffffff"}; font-size: 28px;">¡Reserva confirmada!</h2>
         <p style="margin: 0; color: #57534e; font-size: 16px;">Hola ${clienteNombre} 👋</p>
       </td>
     </tr>
     <tr>
       <td style="padding: 20px 30px;">
-        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #fafaf9; border-radius: 8px; padding: 24px;">
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: ${esSalon ? "#fafaf9" : "#292524"}; border-radius: 8px; padding: 24px;">
           ${bloqueServicios}
           <tr>
             <td style="padding: 8px 16px;">
               <p style="margin: 0; color: #78716c; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Profesional</p>
-              <p style="margin: 4px 0 0 0; color: #1c1917; font-size: 16px; font-weight: 600;">${barberoNombre}</p>
+              <p style="margin: 4px 0 0 0; color: ${esSalon ? "#1c1917" : "#ffffff"}; font-size: 16px; font-weight: 600;">${barberoNombre}</p>
             </td>
           </tr>
           <tr>
             <td style="padding: 8px 16px;">
               <p style="margin: 0; color: #78716c; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Fecha y Hora</p>
-              <p style="margin: 4px 0 0 0; color: #1c1917; font-size: 16px; font-weight: 600;">${fecha} a las ${hora}</p>
+              <p style="margin: 4px 0 0 0; color: ${esSalon ? "#1c1917" : "#ffffff"}; font-size: 16px; font-weight: 600;">${fecha} a las ${hora}</p>
             </td>
           </tr>${bloqueDireccion}
           <tr>

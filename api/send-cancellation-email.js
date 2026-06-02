@@ -140,7 +140,7 @@ export default async function handler(req, res) {
 </html>`;
 
     const { data, error } = await resend.emails.send({
-      from: `${barberiaNombre} <onboarding@resend.dev>`,
+      from: `${barberiaNombre} <no-reply@reservaia.cl>`,
       to: clienteEmail,
       subject: `❌ Reserva cancelada en ${barberiaNombre}`,
       html: emailHtml,

@@ -96,7 +96,7 @@ export default async function handler(req, res) {
 </table></body></html>`;
 
         const { data, error } = await resend.emails.send({
-          from: `${barberiaNombre} <onboarding@resend.dev>`,
+          from: `${barberiaNombre} <no-reply@reservaia.cl>`,
           to: r.cliente_email,
           subject: `⏰ Recordatorio: tu cita mañana en ${barberiaNombre}`,
           html: emailHtml,
@@ -204,7 +204,7 @@ export default async function handler(req, res) {
 </table></body></html>`;
 
         const { error } = await resend.emails.send({
-          from: `${barberiaNombre} <onboarding@resend.dev>`,
+          from: `${barberiaNombre} <no-reply@reservaia.cl>`,
           to: r.cliente_email,
           subject: `⭐ ¿Cómo estuvo tu visita en ${barberiaNombre}?`,
           html: emailHtml,

@@ -71,7 +71,7 @@ export default async function handler(req, res) {
 
         try {
           await resend.emails.send({
-            from: `${barberia.nombre} <onboarding@resend.dev>`,
+            from: `${barberia.nombre} <no-reply@reservaia.cl>`,
             to: cliente.cliente_email,
             subject: asunto,
             html: `

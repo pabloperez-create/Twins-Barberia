@@ -195,7 +195,7 @@ export default async function handler(req, res) {
 
     // ── Email al cliente ──
     const { data, error } = await resend.emails.send({
-      from: `${barberiaNombre} <onboarding@resend.dev>`,
+      from: `${barberiaNombre} <no-reply@reservaia.cl>`,
       to: clienteEmail,
       subject: `✂️ Reserva confirmada en ${barberiaNombre}`,
       html: emailHtml,
@@ -243,7 +243,7 @@ export default async function handler(req, res) {
         // Enviar al admin
         if (barberiaInfo?.email_admin) {
           await resend.emails.send({
-            from: `${barberiaNombre} <onboarding@resend.dev>`,
+            from: `${barberiaNombre} <no-reply@reservaia.cl>`,
             to: barberiaInfo.email_admin,
             subject: `🆕 Nueva reserva: ${clienteNombre} - ${fecha} ${hora}`,
             html: emailNotif,
@@ -253,7 +253,7 @@ export default async function handler(req, res) {
         // Enviar al barbero (si tiene email y es distinto al admin)
         if (barberoInfo?.email && barberoInfo.email !== barberiaInfo?.email_admin) {
           await resend.emails.send({
-            from: `${barberiaNombre} <onboarding@resend.dev>`,
+            from: `${barberiaNombre} <no-reply@reservaia.cl>`,
             to: barberoInfo.email,
             subject: `✂️ Nueva cita asignada: ${clienteNombre} - ${fecha} ${hora}`,
             html: emailNotif,

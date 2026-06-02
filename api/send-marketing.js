@@ -116,7 +116,7 @@ export default async function handler(req, res) {
 </table></body></html>`;
 
             await resend.emails.send({
-              from: `${barberiaNombre} <onboarding@resend.dev>`,
+              from: `${barberiaNombre} <no-reply@reservaia.cl>`,
               to: email,
               subject: campana.asunto,
               html: emailHtml,

@@ -8,6 +8,7 @@ import {
   Users,
   Info,
 } from "lucide-react";
+import { CalendarioPicker } from "./components/CalendarioPicker";
 
 export function VistaReserva({ supabase, barberiaId }) {
   const [paso, setPaso] = useState(1);
@@ -747,25 +748,24 @@ export function VistaReserva({ supabase, barberiaId }) {
 
             <div className="mb-8">
               <label className="block text-sm font-semibold mb-3">Fecha</label>
-              <input
-                type="date"
+              <CalendarioPicker
                 value={fechaSeleccionada}
-                onChange={(e) => {
-                  setFechaSeleccionada(e.target.value);
+                onChange={(fecha) => {
+                  setFechaSeleccionada(fecha);
                   setHoraSeleccionada("");
-                  if (e.target.value && barberoSeleccionado) {
+                  if (fecha && barberoSeleccionado) {
                     if (barberoSeleccionado === CUALQUIERA) {
-                      cargarHorariosCualquierBarbero(e.target.value);
+                      cargarHorariosCualquierBarbero(fecha);
                     } else {
-                      cargarHorariosBarbero(
-                        barberoSeleccionado,
-                        e.target.value,
-                      );
+                      cargarHorariosBarbero(barberoSeleccionado, fecha);
                     }
                   }
                 }}
-                min={new Date().toISOString().split("T")[0]}
-                className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-3 text-white"
+                horariosSemana={
+                  barberoSeleccionado === CUALQUIERA
+                    ? null
+                    : barberos.find((b) => b.id === barberoSeleccionado)?.horarios_semana
+                }
               />
             </div>
 

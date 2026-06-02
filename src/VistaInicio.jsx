@@ -222,7 +222,7 @@ export function VistaInicio({
                 style={{
                   width: 80,
                   height: 80,
-                  objectFit: "cover",
+                  objectFit: "cover", objectPosition: "top",
                   borderRadius: "50%",
                 }}
               />

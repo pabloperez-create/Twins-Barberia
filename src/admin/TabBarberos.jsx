@@ -145,7 +145,7 @@ export function TabBarberos({ supabase, barberiaId, tema: t }) {
             <div key={b.id} className={`${t.bgCard} border ${t.border} rounded p-4 flex flex-wrap justify-between items-center gap-3 ${!b.activo && "opacity-50"}`}>
               <div className="flex items-center gap-4 flex-1">
                 <div className={`w-12 h-12 ${t.bgMuted} rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden`}>
-                  {b.foto_url ? <img src={b.foto_url} alt={b.nombre} className="w-full h-full object-cover" /> : <User size={24} className={t.acento} />}
+                  {b.foto_url ? <img src={b.foto_url} alt={b.nombre} className="w-full h-full object-cover object-top" /> : <User size={24} className={t.acento} />}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
@@ -181,7 +181,7 @@ export function TabBarberos({ supabase, barberiaId, tema: t }) {
             <label className="block text-sm font-semibold mb-2">Foto <span className={`${t.textoMuted} text-xs font-normal`}>(opcional)</span></label>
             <div className="flex items-center gap-4">
               <div className={`w-16 h-16 rounded-full overflow-hidden ${t.bgMuted} flex items-center justify-center flex-shrink-0`}>
-                {(form.fotoPreview || editando?.foto_url) ? <img src={form.fotoPreview || editando?.foto_url} alt="foto" className="w-full h-full object-cover" /> : <User size={28} className={t.textoSub} />}
+                {(form.fotoPreview || editando?.foto_url) ? <img src={form.fotoPreview || editando?.foto_url} alt="foto" className="w-full h-full object-cover object-top" /> : <User size={28} className={t.textoSub} />}
               </div>
               <label className={`flex items-center gap-2 px-4 py-2 ${t.bgMuted} ${t.bgHover} border ${t.border} rounded cursor-pointer text-sm`}>
                 <Upload size={16} />

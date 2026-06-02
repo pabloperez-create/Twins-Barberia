@@ -672,7 +672,7 @@ export function VistaReserva({ supabase, barberiaId }) {
                 >
                   <div className="flex items-start gap-4">
                     <div className="w-16 h-16 bg-stone-800 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      {barbero.foto_url ? <img src={barbero.foto_url} alt={barbero.nombre} style={{width:"100%",height:"100%",objectFit:"cover"}} /> : <User size={32} className="text-amber-200" />}
+                      {barbero.foto_url ? <img src={barbero.foto_url} alt={barbero.nombre} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"top"}} /> : <User size={32} className="text-amber-200" />}
                     </div>
                     <div>
                       <h3 className="font-bold text-lg">{barbero.nombre}</h3>

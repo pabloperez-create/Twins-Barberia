@@ -28,16 +28,17 @@ export function VistaReserva({ supabase, barberiaId }) {
   const [adicionales, setAdicionales] = useState([]);
   const [barberos, setBarberos] = useState([]);
   const [horariosBarbero, setHorariosBarbero] = useState([]);
-  const [barberiaData, setBarberiaData] = useState(null); // NUEVO: datos de la barbería
+  const [barberiaData, setBarberiaData] = useState(null);
 
   const CUALQUIERA = "cualquiera";
+  // ⭐ FIX: mapeo de índice JS (0=dom) a keys de horarios_semana
+  const DIAS_KEY = ["dom", "lun", "mar", "mie", "jue", "vie", "sab"];
 
   useEffect(() => {
     cargarDatos();
     cargarBarberia();
   }, []);
 
-  // NUEVO: Carga datos de la barbería (nombre, whatsapp, dirección, etc.)
   const cargarBarberia = async () => {
     try {
       const { data, error } = await supabase
@@ -97,16 +98,19 @@ export function VistaReserva({ supabase, barberiaId }) {
     return duracionServicio + duracionAdicionales;
   };
 
+  // ⭐ FIX: acepta overrides de horario para respetar el día específico
   const barberoDisponibleEnHora = (
     barbero,
     hora,
     reservasDelBarbero,
     bloqueosDelBarbero = [],
+    horarioInicioOverride = null,
+    horarioFinOverride = null,
   ) => {
     const duracionTotal = calcularDuracionTotal();
-    const horaInicio = new Date(`2000-01-01 ${barbero.horario_inicio}`);
-    const horaFin = new Date(`2000-01-01 ${barbero.horario_fin}`);
-    const horaTest = new Date(`2000-01-01 ${hora}`);
+    const horaInicio = new Date(`2000-01-01 ${horarioInicioOverride || barbero.horario_inicio}`);
+    const horaFin    = new Date(`2000-01-01 ${horarioFinOverride    || barbero.horario_fin}`);
+    const horaTest   = new Date(`2000-01-01 ${hora}`);
 
     if (horaTest < horaInicio) return false;
     if (horaTest.getTime() + duracionTotal * 60000 > horaFin.getTime())
@@ -125,12 +129,9 @@ export function VistaReserva({ supabase, barberiaId }) {
 
     if (choca) return false;
 
-    // Verificar bloqueos
     const horaTestEnd = new Date(horaTest.getTime() + duracionTotal * 60000);
     const chocaConBloqueo = bloqueosDelBarbero.some((b) => {
-      // Día completo
       if (!b.hora_inicio) return true;
-      // Bloque de horas
       const bInicio = new Date(`2000-01-01 ${b.hora_inicio}`);
       const bFin = new Date(`2000-01-01 ${b.hora_fin}`);
       return horaTest < bFin && horaTestEnd > bInicio;
@@ -139,7 +140,6 @@ export function VistaReserva({ supabase, barberiaId }) {
     return !chocaConBloqueo;
   };
 
-  // Helper: obtener bloqueos aplicables a un barbero en una fecha
   const obtenerBloqueosDelBarbero = (barberoId, fecha, todosLosBloqueos) => {
     return todosLosBloqueos.filter((b) => {
       const aplicaABarbero =
@@ -158,7 +158,6 @@ export function VistaReserva({ supabase, barberiaId }) {
         .eq("fecha", fecha)
         .eq("estado", "confirmada");
 
-      // Cargar bloqueos del barbero + de la barbería
       const { data: bloqueosExistentes } = await supabase
         .from("bloqueos_horarios")
         .select("*")
@@ -170,7 +169,6 @@ export function VistaReserva({ supabase, barberiaId }) {
         (b) => b.barbero_id === barberoId || b.barbero_id === null,
       );
 
-      // Si hay bloqueo de día completo, no hay horarios
       const tieneBloqueoCompleto = bloqueosDelBarbero.some(
         (b) => !b.hora_inicio,
       );
@@ -180,8 +178,18 @@ export function VistaReserva({ supabase, barberiaId }) {
       }
 
       const barbero = barberos.find((b) => b.id === barberoId);
-      const horaInicio = new Date(`2000-01-01 ${barbero.horario_inicio}`);
-      const horaFin = new Date(`2000-01-01 ${barbero.horario_fin}`);
+
+      // ⭐ FIX: leer horario del día específico de la semana
+      const diaSemana = DIAS_KEY[new Date(fecha + "T12:00:00").getDay()];
+      const horarioDia = barbero?.horarios_semana?.[diaSemana];
+
+      if (horarioDia && !horarioDia.activo) {
+        setHorariosBarbero([]);
+        return;
+      }
+
+      const horaInicio = new Date(`2000-01-01 ${horarioDia?.inicio || barbero.horario_inicio}`);
+      const horaFin    = new Date(`2000-01-01 ${horarioDia?.fin    || barbero.horario_fin}`);
 
       const duracionTotal = calcularDuracionTotal();
       const horariosDisponibles = [];
@@ -201,9 +209,8 @@ export function VistaReserva({ supabase, barberiaId }) {
           );
         });
 
-        // Verificar bloqueos de horas
         const chocaBloqueo = bloqueosDelBarbero.some((b) => {
-          if (!b.hora_inicio) return false; // ya descartado arriba
+          if (!b.hora_inicio) return false;
           const bInicio = new Date(`2000-01-01 ${b.hora_inicio}`);
           const bFin = new Date(`2000-01-01 ${b.hora_fin}`);
           return (
@@ -234,7 +241,6 @@ export function VistaReserva({ supabase, barberiaId }) {
         .eq("fecha", fecha)
         .eq("estado", "confirmada");
 
-      // Cargar todos los bloqueos relevantes
       const { data: bloqueosExistentes } = await supabase
         .from("bloqueos_horarios")
         .select("*")
@@ -244,7 +250,6 @@ export function VistaReserva({ supabase, barberiaId }) {
 
       const todosLosBloqueos = bloqueosExistentes || [];
 
-      // Si hay un bloqueo a nivel de barbería (barbero_id = null) de día completo, no hay horarios
       const barberiaCerrada = todosLosBloqueos.some(
         (b) => b.barbero_id === null && !b.hora_inicio,
       );
@@ -253,14 +258,22 @@ export function VistaReserva({ supabase, barberiaId }) {
         return;
       }
 
+      // ⭐ FIX: calcular día de la semana una sola vez
+      const diaSemana = DIAS_KEY[new Date(fecha + "T12:00:00").getDay()];
+
       let horaMinima = null;
       let horaMaxima = null;
 
       barberos.forEach((b) => {
-        const inicio = new Date(`2000-01-01 ${b.horario_inicio}`);
-        const fin = new Date(`2000-01-01 ${b.horario_fin}`);
+        // ⭐ FIX: usar horario del día específico
+        const horarioDia = b?.horarios_semana?.[diaSemana];
+        if (horarioDia && !horarioDia.activo) return; // día libre para este barbero
+        const inicioStr = horarioDia?.inicio || b.horario_inicio;
+        const finStr    = horarioDia?.fin    || b.horario_fin;
+        const inicio = new Date(`2000-01-01 ${inicioStr}`);
+        const fin    = new Date(`2000-01-01 ${finStr}`);
         if (!horaMinima || inicio < horaMinima) horaMinima = inicio;
-        if (!horaMaxima || fin > horaMaxima) horaMaxima = fin;
+        if (!horaMaxima || fin    > horaMaxima) horaMaxima = fin;
       });
 
       if (!horaMinima || !horaMaxima) {
@@ -276,6 +289,9 @@ export function VistaReserva({ supabase, barberiaId }) {
         const horaStr = hora.toTimeString().slice(0, 5);
 
         const hayAlguienDisponible = barberos.some((barbero) => {
+          // ⭐ FIX: pasar horario del día a barberoDisponibleEnHora
+          const horarioDia = barbero?.horarios_semana?.[diaSemana];
+          if (horarioDia && !horarioDia.activo) return false;
           const reservasDelBarbero = reservasExistentes.filter(
             (r) => r.barbero_id === barbero.id,
           );
@@ -289,6 +305,8 @@ export function VistaReserva({ supabase, barberiaId }) {
             horaStr,
             reservasDelBarbero,
             bloqueosDelBarbero,
+            horarioDia?.inicio || null,
+            horarioDia?.fin    || null,
           );
         });
 
@@ -296,7 +314,7 @@ export function VistaReserva({ supabase, barberiaId }) {
           horariosDisponibles.push(horaStr);
         }
 
-        hora.setMinutes(hora.getMinutes() + (barbero?.intervalo_minutos || 15));
+        hora.setMinutes(hora.getMinutes() + (barberos[0]?.intervalo_minutos || 15));
       }
 
       setHorariosBarbero(horariosDisponibles);
@@ -314,7 +332,6 @@ export function VistaReserva({ supabase, barberiaId }) {
         .eq("fecha", fecha)
         .eq("estado", "confirmada");
 
-      // Cargar bloqueos del día
       const { data: bloqueosDelDia } = await supabase
         .from("bloqueos_horarios")
         .select("*")
@@ -323,8 +340,12 @@ export function VistaReserva({ supabase, barberiaId }) {
         .gte("fecha_fin", fecha);
 
       const todosLosBloqueos = bloqueosDelDia || [];
+      // ⭐ FIX: usar horario del día también en asignación
+      const diaSemana = DIAS_KEY[new Date(fecha + "T12:00:00").getDay()];
 
       const barberosDisponibles = barberos.filter((barbero) => {
+        const horarioDia = barbero?.horarios_semana?.[diaSemana];
+        if (horarioDia && !horarioDia.activo) return false;
         const reservasDelBarbero = reservasDelDia.filter(
           (r) => r.barbero_id === barbero.id,
         );
@@ -338,6 +359,8 @@ export function VistaReserva({ supabase, barberiaId }) {
           hora,
           reservasDelBarbero,
           bloqueosDelBarbero,
+          horarioDia?.inicio || null,
+          horarioDia?.fin    || null,
         );
       });
 
@@ -460,7 +483,6 @@ export function VistaReserva({ supabase, barberiaId }) {
 
       if (errorSupabase) throw errorSupabase;
 
-      // Email con datos DINÁMICOS de la barbería (multi-tenant ✅)
       if (clienteEmail) {
         try {
           const emailResponse = await fetch("/api/send-confirmation-email", {
@@ -480,7 +502,6 @@ export function VistaReserva({ supabase, barberiaId }) {
                   return ad ? { nombre: ad.nombre, precio: ad.precio } : null;
                 })
                 .filter(Boolean),
-              fecha: fechaSeleccionada,
               fecha: fechaSeleccionada,
               hora: horaSeleccionada,
               precio: precioTotal,
@@ -503,7 +524,6 @@ export function VistaReserva({ supabase, barberiaId }) {
         }
       }
 
-      // ⭐ Google Calendar
       try {
         await fetch("/api/google-calendar", {
           method: "POST",

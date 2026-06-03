@@ -25,3 +25,6 @@ dist-ssr
 .env.local
 .env*
 .vercel
+
+# Archivos de contexto internos (contienen notas/credenciales, no van al repo)
+CONTEXTO-TWINS-*.md

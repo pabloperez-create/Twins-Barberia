@@ -21,6 +21,7 @@ export function ModalNuevaCita({
   barberiaId,
   barberia,
   usuario,
+  barberoFijo = null,
 }) {
   const [cargando, setCargando] = useState(false);
   const [procesando, setProcesando] = useState(false);
@@ -49,7 +50,7 @@ export function ModalNuevaCita({
       setClienteEmail("");
       setServicioId("");
       setAdicionalesSeleccionados([]);
-      setBarberoId("");
+      setBarberoId(barberoFijo || "");
       setFecha(new Date().toISOString().split("T")[0]);
       setHora("");
       setEnviarEmail(true);
@@ -462,18 +463,24 @@ export function ModalNuevaCita({
                     <label className="block text-xs text-stone-400 mb-1">
                       Barbero <span className="text-red-400">*</span>
                     </label>
-                    <select
-                      value={barberoId}
-                      onChange={(e) => setBarberoId(e.target.value)}
-                      className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-white text-sm"
-                    >
-                      <option value="">Elegir...</option>
-                      {barberos.map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {b.nombre}
-                        </option>
-                      ))}
-                    </select>
+                    {barberoFijo ? (
+                      <div className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-white text-sm opacity-80">
+                        {barberos.find((b) => b.id === barberoFijo)?.nombre || "Tú"}
+                      </div>
+                    ) : (
+                      <select
+                        value={barberoId}
+                        onChange={(e) => setBarberoId(e.target.value)}
+                        className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-white text-sm"
+                      >
+                        <option value="">Elegir...</option>
+                        {barberos.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs text-stone-400 mb-1">

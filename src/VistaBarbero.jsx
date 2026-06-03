@@ -119,7 +119,7 @@ export function VistaBarbero({ usuario, onLogout, supabase }) {
       </div>
 
       <div className="max-w-6xl">
-        {tab === "reservas" && <TabMisReservas supabase={supabase} barbero={barbero} barberia={barberia} tema={t} />}
+        {tab === "reservas" && <TabMisReservas supabase={supabase} barbero={barbero} barberia={barberia} usuario={usuario} tema={t} />}
         {tab === "horario" && <TabMiHorario supabase={supabase} barbero={barbero} onUpdate={cargarDatos} tema={t} />}
         {tab === "dias_libres" && <TabMisDiasLibres supabase={supabase} barbero={barbero} barberia={barberia} tema={t} />}
         {tab === "perfil" && <TabMiPerfil supabase={supabase} barbero={barbero} usuario={usuario} onUpdate={cargarDatos} tema={t} />}

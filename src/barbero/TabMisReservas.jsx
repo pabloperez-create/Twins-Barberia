@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, Phone, Mail, X, Edit, Check, AlertCircle } from "lucide-react";
+import { Calendar, Phone, Mail, X, Edit, Check, AlertCircle, Plus } from "lucide-react";
 import { Modal } from "../components/Modal";
 import { SelectorHora } from "../components/SelectorHora";
+import { ModalNuevaCita } from "../components/ModalNuevaCita";
 
-export function TabMisReservas({ supabase, barbero, barberia, tema: t }) {
+export function TabMisReservas({ supabase, barbero, barberia, usuario, tema: t }) {
   const [reservas, setReservas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [filtro, setFiltro] = useState("proximas");
@@ -14,6 +15,7 @@ export function TabMisReservas({ supabase, barbero, barberia, tema: t }) {
   const [procesando, setProcesando] = useState(false);
   const [modalCancelar, setModalCancelar] = useState(null);
   const [motivoCancelacion, setMotivoCancelacion] = useState("");
+  const [modalNuevaCita, setModalNuevaCita] = useState(false);
 
   useEffect(() => { cargarReservas(); }, [filtro]);
 
@@ -79,7 +81,10 @@ export function TabMisReservas({ supabase, barbero, barberia, tema: t }) {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <h2 className="text-2xl font-bold">Mis Reservas</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold">Mis Reservas</h2>
+          <button onClick={() => setModalNuevaCita(true)} className={`flex items-center gap-2 ${t.boton} px-3 py-2 rounded text-sm`}><Plus size={16} />Nueva cita</button>
+        </div>
         <div className="flex gap-2">
           {[{ id: "hoy", label: "Hoy" }, { id: "proximas", label: "Próximas" }, { id: "todas", label: "Todas" }].map((f) => (
             <button key={f.id} onClick={() => setFiltro(f.id)} className={`px-4 py-2 rounded text-sm font-semibold transition ${filtro === f.id ? t.filtroActivo : t.filtroInactivo}`}>{f.label}</button>
@@ -196,6 +201,17 @@ export function TabMisReservas({ supabase, barbero, barberia, tema: t }) {
           </div>
         )}
       </Modal>
+
+      <ModalNuevaCita
+        isOpen={modalNuevaCita}
+        onClose={() => setModalNuevaCita(false)}
+        onCreated={() => { cargarReservas(); mostrarMensaje("success", "✅ Cita creada exitosamente"); }}
+        supabase={supabase}
+        barberiaId={barbero.barberia_id}
+        barberia={barberia}
+        usuario={usuario}
+        barberoFijo={barbero.id}
+      />
     </div>
   );
 }

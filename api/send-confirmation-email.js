@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
 import { verifyToken } from './_verify-token.js';
+import { cancelToken } from './_cancel-token.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const supabase = createClient(
@@ -60,14 +61,22 @@ export default async function handler(req, res) {
     }
 
     let mostrarWhatsApp = true;
+    let subdominio = null;
     if (barberiaId) {
       const { data: barberia } = await supabase
         .from('barberia')
-        .select('configuracion')
+        .select('configuracion, subdominio')
         .eq('id', barberiaId)
         .single();
+      subdominio = barberia?.subdominio || null;
       mostrarWhatsApp = true; // Botón wa.me siempre visible, no depende de Twilio
     }
+
+    // Link de cancelación (con token para que no sea adivinable)
+    const baseUrl = subdominio
+      ? `https://${subdominio}.reservaia.cl`
+      : 'https://twins-barberia.vercel.app';
+    const cancelUrl = `${baseUrl}/cancelar/${reservaId}?t=${cancelToken(reservaId)}${subdominio ? '' : `&barberiaId=${barberiaId}`}`;
 
     const mensajeWhatsApp = `Hola ${barberiaNombre}! 👋 Confirmo mi reserva del ${fecha} a las ${hora} con ${barberoNombre}. Código: ${reservaId}`;
     const linkWhatsApp = `https://wa.me/${whatsappBarberia}?text=${encodeURIComponent(mensajeWhatsApp)}`;
@@ -185,7 +194,7 @@ export default async function handler(req, res) {
     <tr>
       <td style="background-color: ${esSalon ? "#fafaf9" : "#1c1917"}; padding: 24px 30px; text-align: center; border-top: 1px solid ${esSalon ? "#e7e5e4" : "#292524"};">
         <p style="margin: 0; color: ${esSalon ? "#78716c" : "#a8a29e"}; font-size: 12px;">
-          ¿Necesitas cancelar o reagendar? Contáctanos
+          ¿No puedes asistir? <a href="${cancelUrl}" style="color: ${accentColor}; text-decoration: underline;">Cancela tu reserva aquí</a>
         </p>
         <p style="margin: 8px 0 0 0; color: #a8a29e; font-size: 11px;">
           Reserva ID: ${reservaId}

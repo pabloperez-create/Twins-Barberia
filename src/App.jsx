@@ -7,6 +7,7 @@ import { VistaAdmin } from "./VistaAdmin";
 import { VistaBarbero } from "./VistaBarbero";
 import { VistaSuperAdmin } from "./VistaSuperAdmin";
 import { VistaEncuesta } from "./VistaEncuesta";
+import { VistaCancelar } from "./VistaCancelar";
 
 const SUPABASE_URL = "https://fgtbhkeqzcqpjhziyijt.supabase.co";
 const SUPABASE_KEY = "sb_publishable_8E23tN1s3wbAIqjhX-1icg_VBCYqsMO";
@@ -38,18 +39,27 @@ const detectarEncuesta = () => {
   return null;
 };
 
+const detectarCancelacion = () => {
+  const path = window.location.pathname;
+  const params = new URLSearchParams(window.location.search);
+  const match = path.match(/^\/cancelar\/(.+)$/);
+  if (match) return { reservaId: match[1], token: params.get("t") };
+  return null;
+};
+
 export default function App() {
   const encuestaParams = detectarEncuesta();
+  const cancelacionParams = detectarCancelacion();
   const barberiaDetectada = detectarBarberiaId();
 
   const [barberiaId, setBarberiaId] = useState(
     barberiaDetectada.tipo === "param" ? barberiaDetectada.valor : null
   );
-  const [vista, setVista] = useState(encuestaParams ? "encuesta" : "inicio");
+  const [vista, setVista] = useState(encuestaParams ? "encuesta" : cancelacionParams ? "cancelar" : "inicio");
   const [usuario, setUsuario] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
-  const [verificandoSesion, setVerificandoSesion] = useState(!encuestaParams);
+  const [verificandoSesion, setVerificandoSesion] = useState(!encuestaParams && !cancelacionParams);
   const [barberiaData, setBarberiaData] = useState(null);
   const [resolviendo, setResolviendo] = useState(barberiaDetectada.tipo === "subdominio");
 
@@ -137,6 +147,10 @@ export default function App() {
         <p className="text-stone-400">Cargando...</p>
       </div>
     );
+  }
+
+  if (vista === "cancelar" && cancelacionParams) {
+    return <VistaCancelar supabase={supabase} reservaId={cancelacionParams.reservaId} token={cancelacionParams.token} />;
   }
 
   if (vista === "encuesta" && encuestaParams) {

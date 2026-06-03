@@ -39,42 +39,35 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Faltan campos requeridos' });
     }
 
-    // ⭐ Auto-leer feature whatsapp_recordatorios
-    let mostrarWhatsApp = true;
+    let subdominio = null;
     if (barberiaId) {
       const { data: barberia } = await supabase
         .from('barberia')
-        .select('configuracion')
+        .select('configuracion, subdominio')
         .eq('id', barberiaId)
         .single();
-      const features = barberia?.configuracion?.features || {};
-      mostrarWhatsApp = true; // Botón wa.me siempre visible, no depende de Twilio
+      subdominio = barberia?.subdominio || null;
     }
 
-    const mensajeWhatsApp = `Hola ${barberiaNombre}! Me cancelaron mi reserva del ${fecha} a las ${hora}, me gustaría reagendar.`;
-    const linkWhatsApp = `https://wa.me/${whatsappBarberia}?text=${encodeURIComponent(mensajeWhatsApp)}`;
+    // Link directo a la página de reservas (self-service), no al WhatsApp del local
+    const bookingUrl = subdominio
+      ? `https://${subdominio}.reservaia.cl`
+      : `https://twins-barberia.vercel.app/?barberiaId=${barberiaId}`;
 
     const bloqueMotivo = motivo ? `
       <p style="margin: 16px 0 0 0; color: #57534e; font-size: 14px; font-style: italic; text-align: center;">
         Motivo: ${motivo}
       </p>` : '';
 
-    const bloqueWhatsApp = mostrarWhatsApp ? `
+    const bloqueReagendar = `
     <tr>
       <td style="padding: 20px 30px 10px 30px; text-align: center;">
         <p style="margin: 0 0 16px 0; color: #57534e; font-size: 15px;">
           ¿Quieres reagendar tu cita?
         </p>
-        <a href="${linkWhatsApp}" target="_blank" style="display: inline-block; background-color: #25D366; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px;">
-          💚 Reagendar por WhatsApp
+        <a href="${bookingUrl}" target="_blank" style="display: inline-block; background-color: #1c1917; color: #fde68a; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px;">
+          📅 Reservar nueva hora
         </a>
-      </td>
-    </tr>` : `
-    <tr>
-      <td style="padding: 20px 30px; text-align: center;">
-        <p style="margin: 0; color: #a8a29e; font-size: 13px;">
-          💡 Contáctanos si quieres reagendar tu cita
-        </p>
       </td>
     </tr>`;
 
@@ -127,7 +120,7 @@ export default async function handler(req, res) {
         </table>
       </td>
     </tr>
-    ${bloqueWhatsApp}
+    ${bloqueReagendar}
     <tr>
       <td style="background-color: #fafaf9; padding: 24px 30px; text-align: center; border-top: 1px solid #e7e5e4;">
         <p style="margin: 0; color: #78716c; font-size: 12px;">

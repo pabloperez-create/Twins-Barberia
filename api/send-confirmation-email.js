@@ -45,10 +45,14 @@ export default async function handler(req, res) {
     const headerBg = esSalon ? '#fce8f0' : '#1c1917';
     const headerColor = esSalon ? '#7a1f42' : '#fde68a';
     const headerSubColor = esSalon ? '#b05070' : '#a8a29e';
-    const accentColor = esSalon ? '#d4638a' : '#d97706';
-    const checkColor = esSalon ? '#d4638a' : '#10b981';
-    const whatsappBg = esSalon ? '#d4638a' : '#25D366';
-    const whatsappEmoji = esSalon ? '💗' : '💚';
+    const accentColor = esSalon ? '#d4638a' : '#e0b84c';
+    const checkColor = esSalon ? '#d4638a' : '#e0b84c';
+    const whatsappBg = esSalon ? '#d4638a' : '#e0b84c';
+    // Texto sobre el dorado/rosado: oscuro en barbería (dorado claro), blanco en salón
+    const onAccentColor = esSalon ? '#ffffff' : '#1c1917';
+    const whatsappIcon = esSalon
+      ? '💗'
+      : '<img src="https://twins-barberia.vercel.app/whatsapp-white.png" width="20" height="20" alt="WhatsApp" style="vertical-align: middle; margin-right: 8px; border-radius: 4px;">';
     const textColor = esSalon ? '#4a1030' : '#1c1917';
 
     if (!clienteEmail || !clienteNombre || !fecha || !hora) {
@@ -90,8 +94,8 @@ export default async function handler(req, res) {
             <td style="padding: 8px 16px;">
               <p style="margin: 0; color: #78716c; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Adicionales</p>
               ${adicionales.map(ad => `
-                <p style="margin: 4px 0 0 0; color: #1c1917; font-size: 14px;">
-                  <span style="color: #16a34a; font-weight: 700;">+</span> ${ad.nombre} <span style="color: #78716c;">· $${ad.precio.toLocaleString('es-CL')}</span>
+                <p style="margin: 4px 0 0 0; color: ${esSalon ? "#1c1917" : "#e7e5e4"}; font-size: 14px;">
+                  <span style="color: #16a34a; font-weight: 700;">+</span> ${ad.nombre} <span style="color: #a8a29e;">· $${ad.precio.toLocaleString('es-CL')}</span>
                 </p>
               `).join('')}
             </td>
@@ -106,11 +110,11 @@ export default async function handler(req, res) {
     const bloqueWhatsApp = mostrarWhatsApp ? `
     <tr>
       <td style="padding: 20px 30px 10px 30px; text-align: center;">
-        <p style="margin: 0 0 16px 0; color: #57534e; font-size: 15px;">
+        <p style="margin: 0 0 16px 0; color: ${esSalon ? "#57534e" : "#d6d3d1"}; font-size: 15px;">
           Confirma tu reserva por WhatsApp para recibir actualizaciones:
         </p>
-        <a href="${linkWhatsApp}" target="_blank" style="display: inline-block; background-color: ${whatsappBg}; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px;">
-          ${whatsappEmoji} Confirmar por WhatsApp
+        <a href="${linkWhatsApp}" target="_blank" style="display: inline-block; background-color: ${whatsappBg}; color: ${onAccentColor}; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px;">
+          ${whatsappIcon} Confirmar por WhatsApp
         </a>
       </td>
     </tr>
@@ -147,9 +151,9 @@ export default async function handler(req, res) {
     </tr>
     <tr>
       <td style="padding: 40px 30px 20px 30px; text-align: center;">
-        <div style="background-color: ${checkColor}; width: 80px; height: 80px; border-radius: 50%; display: inline-block; line-height: 80px; color: white; font-size: 40px;">✓</div>
+        <div style="background-color: ${checkColor}; width: 80px; height: 80px; border-radius: 50%; display: inline-block; line-height: 80px; color: ${onAccentColor}; font-size: 40px;">✓</div>
         <h2 style="margin: 20px 0 8px 0; color: ${esSalon ? "#1c1917" : "#ffffff"}; font-size: 28px;">¡Reserva confirmada!</h2>
-        <p style="margin: 0; color: #57534e; font-size: 16px;">Hola ${clienteNombre} 👋</p>
+        <p style="margin: 0; color: ${esSalon ? "#57534e" : "#d6d3d1"}; font-size: 16px;">Hola ${clienteNombre} 👋</p>
       </td>
     </tr>
     <tr>
@@ -179,8 +183,8 @@ export default async function handler(req, res) {
     </tr>
     ${bloqueWhatsApp}
     <tr>
-      <td style="background-color: #fafaf9; padding: 24px 30px; text-align: center; border-top: 1px solid #e7e5e4;">
-        <p style="margin: 0; color: #78716c; font-size: 12px;">
+      <td style="background-color: ${esSalon ? "#fafaf9" : "#1c1917"}; padding: 24px 30px; text-align: center; border-top: 1px solid ${esSalon ? "#e7e5e4" : "#292524"};">
+        <p style="margin: 0; color: ${esSalon ? "#78716c" : "#a8a29e"}; font-size: 12px;">
           ¿Necesitas cancelar o reagendar? Contáctanos
         </p>
         <p style="margin: 8px 0 0 0; color: #a8a29e; font-size: 11px;">

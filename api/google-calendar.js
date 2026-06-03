@@ -6,12 +6,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
-const oauth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI
-);
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -28,6 +22,15 @@ export default async function handler(req, res) {
     if (error || !barbero?.google_calendar_conectado) {
       return res.status(200).json({ ok: false, motivo: 'Barbero sin calendario conectado' });
     }
+
+    // ⚠️ Cliente OAuth POR REQUEST: un cliente a nivel de módulo se comparte entre
+    // requests concurrentes y cruza las credenciales (el evento de un barbero termina
+    // en el calendario de otro). Cada request debe tener su propia instancia.
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
 
     // Configurar tokens
     oauth2Client.setCredentials({

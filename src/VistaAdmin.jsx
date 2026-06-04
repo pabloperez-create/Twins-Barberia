@@ -9,6 +9,7 @@ import { TabEstadisticas } from "./admin/TabEstadisticas";
 import { TabBloqueos } from "./admin/TabBloqueos";
 import { TabEncuestas } from "./admin/TabEncuestas";
 import { TabMarketing } from "./admin/TabMarketing";
+import { TabMisReservas } from "./barbero/TabMisReservas";
 import { TabMiHorario } from "./barbero/TabMiHorario";
 import { TabMiPerfil } from "./barbero/TabMiPerfil";
 import { TabMisDiasLibres } from "./barbero/TabMisDiasLibres";
@@ -70,6 +71,7 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
 
     // ⭐ Tabs personales si el admin también es barbero
     if (barberoAdmin) {
+      tabs.push({ id: "mis_reservas", label: "✂️ Mis Reservas" });
       tabs.push({ id: "mi_horario", label: "✂️ Mi Horario" });
       if (isFeatureEnabled(barberia, "bloqueos_horarios")) {
         tabs.push({ id: "mis_dias_libres", label: "✂️ Mis Días Libres" });
@@ -151,6 +153,7 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
         {tab === "configuracion" && <TabConfiguracion supabase={supabase} barberia={barberia} onUpdate={cargarDatos} tema={t} />}
 
         {/* ⭐ Tabs personales del admin-barbero */}
+        {tab === "mis_reservas" && barberoAdmin && <TabMisReservas supabase={supabase} barbero={barberoAdmin} barberia={barberia} usuario={usuario} tema={t} />}
         {tab === "mi_horario" && barberoAdmin && <TabMiHorario supabase={supabase} barbero={barberoAdmin} onUpdate={cargarDatos} tema={t} />}
         {tab === "mis_dias_libres" && barberoAdmin && <TabMisDiasLibres supabase={supabase} barbero={barberoAdmin} barberia={barberia} tema={t} />}
         {tab === "mi_perfil" && barberoAdmin && <TabMiPerfil supabase={supabase} barbero={barberoAdmin} usuario={usuario} onUpdate={cargarDatos} tema={t} />}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Edit, Trash2, Check, AlertCircle, User, Clock, Upload } from "lucide-react";
+import { Plus, Edit, Trash2, Check, AlertCircle, User, Clock, Upload, ChevronUp, ChevronDown } from "lucide-react";
 import { SelectorHora } from "../components/SelectorHora";
 import { Modal } from "../components/Modal";
 
@@ -32,7 +32,7 @@ export function TabBarberos({ supabase, barberiaId, tema: t }) {
   const cargarBarberos = async () => {
     setCargando(true);
     try {
-      const { data, error } = await supabase.from("barberos").select("*, usuario:usuario_id(email, nombre)").eq("barberia_id", barberiaId).order("nombre", { ascending: true });
+      const { data, error } = await supabase.from("barberos").select("*, usuario:usuario_id(email, nombre)").eq("barberia_id", barberiaId).order("orden", { ascending: true, nullsFirst: false }).order("nombre", { ascending: true });
       if (!error) setBarberos(data || []);
     } catch (err) { console.error("Error cargando barberos:", err); }
     setCargando(false);
@@ -105,6 +105,23 @@ export function TabBarberos({ supabase, barberiaId, tema: t }) {
     } catch (err) { mostrarMensaje("error", "Error: " + err.message); }
   };
 
+  const moverBarbero = async (index, dir) => {
+    const nuevoIndex = index + dir;
+    if (nuevoIndex < 0 || nuevoIndex >= barberos.length) return;
+    const arr = [...barberos];
+    [arr[index], arr[nuevoIndex]] = [arr[nuevoIndex], arr[index]];
+    const reordenados = arr.map((b, i) => ({ ...b, orden: i }));
+    setBarberos(reordenados); // optimista
+    try {
+      await Promise.all(
+        reordenados.map((b) => supabase.from("barberos").update({ orden: b.orden }).eq("id", b.id)),
+      );
+    } catch (err) {
+      mostrarMensaje("error", "No se pudo guardar el orden");
+      cargarBarberos();
+    }
+  };
+
   const eliminar = async (b) => {
     if (!confirm(`¿Desactivar a "${b.nombre}"?`)) return;
     try {
@@ -141,7 +158,7 @@ export function TabBarberos({ supabase, barberiaId, tema: t }) {
               <p className={`${t.textoSub} mb-4`}>No hay {labelPros.toLowerCase()} aún</p>
               <button onClick={abrirCrear} className={`${t.boton} px-4 py-2 rounded`}>Agregar primer {labelPro.toLowerCase()}</button>
             </div>
-          ) : barberos.map((b) => (
+          ) : barberos.map((b, index) => (
             <div key={b.id} className={`${t.bgCard} border ${t.border} rounded p-4 flex flex-wrap justify-between items-center gap-3 ${!b.activo && "opacity-50"}`}>
               <div className="flex items-center gap-4 flex-1">
                 <div className={`w-12 h-12 ${t.bgMuted} rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden`}>
@@ -159,7 +176,11 @@ export function TabBarberos({ supabase, barberiaId, tema: t }) {
                   </div>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                <div className="flex flex-col gap-1">
+                  <button onClick={() => moverBarbero(index, -1)} disabled={index === 0} className={`p-1 ${t.bgMuted} ${t.bgHover} rounded disabled:opacity-30 disabled:cursor-not-allowed`} title="Subir"><ChevronUp size={16} /></button>
+                  <button onClick={() => moverBarbero(index, 1)} disabled={index === barberos.length - 1} className={`p-1 ${t.bgMuted} ${t.bgHover} rounded disabled:opacity-30 disabled:cursor-not-allowed`} title="Bajar"><ChevronDown size={16} /></button>
+                </div>
                 <button onClick={() => abrirEditar(b)} className={`p-2 ${t.bgMuted} ${t.bgHover} rounded`} title="Editar"><Edit size={16} /></button>
                 {b.activo && <button onClick={() => eliminar(b)} className="p-2 bg-red-900 hover:bg-red-800 text-red-200 rounded" title="Desactivar"><Trash2 size={16} /></button>}
               </div>

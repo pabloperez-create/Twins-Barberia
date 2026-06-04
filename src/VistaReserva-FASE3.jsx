@@ -86,7 +86,9 @@ export function VistaReserva({ supabase, barberiaId }) {
         .from("barberos")
         .select("*")
         .eq("barberia_id", barberiaId)
-        .eq("activo", true);
+        .eq("activo", true)
+        .order("orden", { ascending: true, nullsFirst: false })
+        .order("nombre", { ascending: true });
 
       console.log("Servicios cargados:", srvs);
       console.log("Adicionales cargados:", ads);

@@ -144,17 +144,16 @@ GOOGLE_REDIRECT_URI   # https://twins-barberia.vercel.app/api/google-calendar-ca
 ```
 
 ## Hecho recientemente (jun 2026)
-Email confirmación (dorado + logo WhatsApp + link cancelar) · cancelación por cliente · email cancelación con link self-service · cita manual por barbero · fix cruce Google Calendar · ocultar horas pasadas · marcar asistencia + métricas (no-shows no suman ingresos) · tab "Mis Reservas" para admin-barbero.
+Email confirmación (dorado + logo WhatsApp + link cancelar) · cancelación por cliente · email cancelación con link self-service · cita manual por barbero · fix cruce Google Calendar · ocultar horas pasadas · marcar asistencia + métricas (no-shows no suman ingresos) · tab "Mis Reservas" para admin-barbero · orden configurable de barberos (columna `barberos.orden` + flechas ↑/↓ en TabBarberos; reserva y admin ordenan por `orden`).
 
 ## Pendientes
-
-**Features próximas:**
-- Orden configurable de barberos (campo `orden` + drag-and-drop en TabBarberos)
 
 **Técnico (deuda de seguridad ⭐):**
 - Migrar a Supabase Auth + RLS — hoy las contraseñas se guardan en texto plano en `usuarios.password_hash` y RLS está apagado (anon key hardcodeado en `App.jsx` da acceso total). Repo público.
 - Activar WhatsApp (Twilio)
-- Conexión de Google Calendar por cada barbero
+
+**Menores:**
+- Conexión de Google Calendar por barbero YA existe (botón en "Mi Horario"); solo falta opción de **desconectar**.
 
 **Futuro:**
 - Sincronización bidireccional Google Calendar ↔ agenda (bloqueos automáticos desde GCal)

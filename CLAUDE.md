@@ -51,26 +51,31 @@ Gestiona las capacidades según el plan contratado (BASE / PLUS / PRO).
 
 ```
 api/                                # funciones serverless (Vercel)
-├── send-confirmation-email.js      # confirmación (fondo oscuro TWINS)
+├── send-confirmation-email.js      # confirmación (tema oscuro/dorado TWINS, logo WhatsApp, link cancelar)
 ├── send-reminder-emails.js         # recordatorios
-├── send-cancellation-email.js
+├── send-cancellation-email.js      # cancelación (botón "Reservar nueva hora" → link self-service)
 ├── send-reassignment-email.js
 ├── send-inactive-clients.js        # reactivación clientes inactivos
 ├── send-marketing.js               # campañas
 ├── send-whatsapp.js                # DESACTIVADO
-├── google-calendar.js              # crea evento al confirmar reserva
+├── cancel-reservation.js           # cancela reserva (token HMAC + política 2h) y notifica
+├── _cancel-token.js                # HMAC(reservaId, API_SECRET_TOKEN) — link de cancelación
+├── google-calendar.js              # crea evento al confirmar (cliente OAuth POR-REQUEST, ver nota)
 └── google-calendar-callback.js     # OAuth Google
 src/
-├── App.jsx                         # detección subdominio → barberiaId
+├── App.jsx                         # subdominio → barberiaId; rutas /encuesta/:id y /cancelar/:id
 ├── VistaInicio.jsx
-├── VistaReserva-FASE3.jsx          # flujo de reserva (filtros, foto, exclusividad, GCal, intervalo dinámico)
-├── VistaAdmin.jsx
+├── VistaReserva-FASE3.jsx          # flujo de reserva (oculta horas pasadas si es hoy, hora de Chile)
+├── VistaCancelar.jsx               # página de cancelación por cliente (/cancelar/:id?t=token)
+├── VistaAdmin.jsx                  # admin; si es admin-barbero suma tabs personales (incl. Mis Reservas)
 ├── VistaBarbero.jsx
 ├── VistaSuperAdmin.jsx
 ├── admin/                          # TabAgenda, TabServicios, TabAdicionales, TabBarberos,
 │                                   #   TabBloqueos, TabEstadisticas, TabEncuestas,
 │                                   #   TabMarketing, TabConfiguracion
-├── barbero/                        # TabMisReservas, TabMiPerfil, TabMiHorario, TabMisDiasLibres
+├── barbero/                        # TabMisReservas (asistencia + nueva cita), TabMiPerfil,
+│                                   #   TabMiHorario, TabMisDiasLibres
+├── components/                     # ModalNuevaCita (prop barberoFijo), Modal, SelectorHora, ...
 └── utils/
     ├── features.js                 # capacidades por plan
     └── tema.js                     # theming barberia/salon
@@ -84,7 +89,7 @@ Tablas principales:
 3. `barberos` — `foto_url`, `telefono`, `google_access_token`, `google_refresh_token`, `google_calendar_conectado`
 4. `servicios_principales` — `barbero_exclusivo_id`
 5. `servicios_adicionales`
-6. `reservas`
+6. `reservas` — `estado` (`confirmada`/`cancelada`), `motivo_cancelacion`, `asistencia` (`asistio`/`no_asistio`/null), `creada_manualmente`. **Ojo:** la asistencia es un campo aparte de `estado` (no romper los filtros `estado === 'confirmada'`). IDs tipo `r-<timestamp>`.
 7. `encuestas`
 8. `bloqueos_horarios`
 9. `duraciones_barbero`
@@ -102,6 +107,13 @@ Tablas principales:
 - OAuth configurado. El evento se crea automáticamente al confirmar la reserva.
 - Cada barbero conecta su propio calendario desde **Mi Horario**.
 - Los test users deben estar agregados en Google Cloud Console.
+- ⚠️ **El `oauth2Client` se crea POR-REQUEST** dentro del handler (`api/google-calendar.js`). NO usar un cliente a nivel de módulo: se comparte entre requests concurrentes y cruza credenciales → eventos en el calendario equivocado (bug ya corregido).
+
+## Reservas: cancelación y asistencia
+
+- **Cancelación por cliente:** el email de confirmación trae un link `…/cancelar/:id?t=<token>`. `VistaCancelar.jsx` muestra detalles + botón confirmar → `POST /api/cancel-reservation`, que valida el token HMAC, aplica política de **2h de antelación**, marca `estado='cancelada'` y dispara el email de cancelación.
+- **Asistencia:** en `TabMisReservas` (barbero, y admin-barbero) cada reserva confirmada tiene botones **Asistió / No llegó** que setean `reservas.asistencia`. En Estadísticas hay desglose por barbero (asistidos · inasistencias · canceladas) y los **no-shows no suman a los ingresos**.
+- **Cita manual:** `ModalNuevaCita` con prop `barberoFijo` permite que cada barbero agende sus propias citas.
 
 ## Modelo de negocio (planes)
 
@@ -131,15 +143,16 @@ GOOGLE_CLIENT_SECRET
 GOOGLE_REDIRECT_URI   # https://twins-barberia.vercel.app/api/google-calendar-callback
 ```
 
+## Hecho recientemente (jun 2026)
+Email confirmación (dorado + logo WhatsApp + link cancelar) · cancelación por cliente · email cancelación con link self-service · cita manual por barbero · fix cruce Google Calendar · ocultar horas pasadas · marcar asistencia + métricas (no-shows no suman ingresos) · tab "Mis Reservas" para admin-barbero.
+
 ## Pendientes
 
 **Features próximas:**
-- Cancelación de reserva por cliente (link en email de confirmación)
 - Orden configurable de barberos (campo `orden` + drag-and-drop en TabBarberos)
-- Revisar email oscuro TWINS en modo día (posible revert a `#f5f5f5`)
 
-**Técnico:**
-- Migrar a Supabase Auth + RLS
+**Técnico (deuda de seguridad ⭐):**
+- Migrar a Supabase Auth + RLS — hoy las contraseñas se guardan en texto plano en `usuarios.password_hash` y RLS está apagado (anon key hardcodeado en `App.jsx` da acceso total). Repo público.
 - Activar WhatsApp (Twilio)
 - Conexión de Google Calendar por cada barbero
 

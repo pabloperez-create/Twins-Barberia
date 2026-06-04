@@ -10,6 +10,18 @@ import {
 } from "lucide-react";
 import { CalendarioPicker } from "./components/CalendarioPicker";
 
+// ⭐ ¿La hora ya pasó? Solo aplica si la fecha es hoy (hora de Chile).
+// Evita que aparezcan horas pasadas (ej: son las 18h y muestra las 13h) al reservar.
+function horaYaPaso(fecha, horaStr) {
+  const ahoraCL = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "America/Santiago" }),
+  );
+  const hoyCL = `${ahoraCL.getFullYear()}-${String(ahoraCL.getMonth() + 1).padStart(2, "0")}-${String(ahoraCL.getDate()).padStart(2, "0")}`;
+  if (fecha !== hoyCL) return false;
+  const [h, m] = horaStr.split(":").map(Number);
+  return h * 60 + m <= ahoraCL.getHours() * 60 + ahoraCL.getMinutes();
+}
+
 export function VistaReserva({ supabase, barberiaId }) {
   const [paso, setPaso] = useState(1);
   const [cargando, setCargando] = useState(false);
@@ -220,7 +232,7 @@ export function VistaReserva({ supabase, barberiaId }) {
           );
         });
 
-        if (!chocaReserva && !chocaBloqueo) {
+        if (!chocaReserva && !chocaBloqueo && !horaYaPaso(fecha, horaStr)) {
           horariosDisponibles.push(horaStr);
         }
 
@@ -311,7 +323,7 @@ export function VistaReserva({ supabase, barberiaId }) {
           );
         });
 
-        if (hayAlguienDisponible) {
+        if (hayAlguienDisponible && !horaYaPaso(fecha, horaStr)) {
           horariosDisponibles.push(horaStr);
         }
 

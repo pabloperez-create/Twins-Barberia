@@ -111,7 +111,7 @@ Tablas principales:
 
 ## Reservas: cancelación y asistencia
 
-- **Cancelación por cliente:** el email de confirmación trae un link `…/cancelar/:id?t=<token>`. `VistaCancelar.jsx` muestra detalles + botón confirmar → `POST /api/cancel-reservation`, que valida el token HMAC, aplica política de **2h de antelación**, marca `estado='cancelada'` y dispara el email de cancelación.
+- **Cancelación por cliente:** el email de confirmación trae un link `…/cancelar/:id?t=<token>`. `VistaCancelar.jsx` muestra detalles + botón confirmar → `POST /api/cancel-reservation`, que valida el token HMAC, aplica la **antelación mínima configurable por barbero** (`barberos.min_cancelacion` en minutos, default 120 = 2h; se setea en "Mi Horario"), marca `estado='cancelada'` y dispara el email de cancelación.
 - **Asistencia:** en `TabMisReservas` (barbero, y admin-barbero) cada reserva confirmada tiene botones **Asistió / No llegó** que setean `reservas.asistencia`. En Estadísticas hay desglose por barbero (asistidos · inasistencias · canceladas) y los **no-shows no suman a los ingresos**.
 - **Cita manual:** `ModalNuevaCita` con prop `barberoFijo` permite que cada barbero agende sus propias citas.
 
@@ -144,16 +144,13 @@ GOOGLE_REDIRECT_URI   # https://twins-barberia.vercel.app/api/google-calendar-ca
 ```
 
 ## Hecho recientemente (jun 2026)
-Email confirmación (dorado + logo WhatsApp + link cancelar) · cancelación por cliente · email cancelación con link self-service · cita manual por barbero · fix cruce Google Calendar · ocultar horas pasadas · marcar asistencia + métricas (no-shows no suman ingresos) · tab "Mis Reservas" para admin-barbero · orden configurable de barberos (columna `barberos.orden` + flechas ↑/↓ en TabBarberos; reserva y admin ordenan por `orden`).
+Email confirmación (dorado + logo WhatsApp + link cancelar) · cancelación por cliente · email cancelación con link self-service · cita manual por barbero · fix cruce Google Calendar · ocultar horas pasadas · marcar asistencia + métricas (no-shows no suman ingresos) · tab "Mis Reservas" para admin-barbero · orden configurable de barberos (columna `barberos.orden` + flechas ↑/↓ en TabBarberos; reserva y admin ordenan por `orden`) · botón para desconectar Google Calendar · antelación mínima de cancelación configurable por barbero (`barberos.min_cancelacion`).
 
 ## Pendientes
 
 **Técnico (deuda de seguridad ⭐):**
 - Migrar a Supabase Auth + RLS — hoy las contraseñas se guardan en texto plano en `usuarios.password_hash` y RLS está apagado (anon key hardcodeado en `App.jsx` da acceso total). Repo público.
 - Activar WhatsApp (Twilio)
-
-**Menores:**
-- Conexión de Google Calendar por barbero YA existe (botón en "Mi Horario"); solo falta opción de **desconectar**.
 
 **Futuro:**
 - Sincronización bidireccional Google Calendar ↔ agenda (bloqueos automáticos desde GCal)

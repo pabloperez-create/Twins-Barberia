@@ -6,8 +6,24 @@ const supabase = createClient(
   process.env.VITE_SUPABASE_KEY,
 );
 
-// Horas mínimas de antelación para que el cliente pueda cancelar online
-const HORAS_MINIMAS = 2;
+// Minutos mínimos de antelación por defecto (si el barbero no configuró nada): 2h
+const MIN_CANCELACION_DEFAULT = 120;
+
+// Convierte minutos a una etiqueta legible para el mensaje al cliente
+function formatLimite(min) {
+  if (min < 60) return `${min} minutos`;
+  if (min < 1440) {
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    if (m === 0) return h === 1 ? '1 hora' : `${h} horas`;
+    return `${h} h ${m} min`;
+  }
+  if (min < 10080) {
+    const d = min / 1440;
+    return d === 1 ? '1 día' : `${d} días`;
+  }
+  return '1 semana';
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -43,13 +59,20 @@ export default async function handler(req, res) {
       return res.status(200).json({ yaCancelada: true });
     }
 
-    // Política: no permitir cancelar dentro de las últimas HORAS_MINIMAS.
+    // Política configurable por el barbero (minutos de antelación mínima).
+    const { data: barberoPol } = await supabase
+      .from('barberos')
+      .select('min_cancelacion')
+      .eq('id', reserva.barbero_id)
+      .single();
+    const minCancel = barberoPol?.min_cancelacion ?? MIN_CANCELACION_DEFAULT;
+
     // Comparamos hora local de Chile (fecha/hora se guardan en hora local).
     const nowCL = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Santiago' }));
     const cita = new Date(`${reserva.fecha}T${reserva.hora_inicio}`);
-    const horasRestantes = (cita - nowCL) / 3600000;
-    if (!isNaN(horasRestantes) && horasRestantes < HORAS_MINIMAS) {
-      return res.status(200).json({ tarde: true, horasMinimas: HORAS_MINIMAS });
+    const minutosRestantes = (cita - nowCL) / 60000;
+    if (!isNaN(minutosRestantes) && minutosRestantes < minCancel) {
+      return res.status(200).json({ tarde: true, limite: formatLimite(minCancel) });
     }
 
     // Cancelar

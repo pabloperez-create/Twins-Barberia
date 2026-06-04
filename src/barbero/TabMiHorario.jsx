@@ -12,6 +12,20 @@ const DIAS = [
   { key: "dom", label: "Domingo" },
 ];
 
+const OPCIONES_CANCELACION = [
+  { min: 30, label: "30 minutos" },
+  { min: 60, label: "1 hora" },
+  { min: 90, label: "1 hora 30 min" },
+  { min: 120, label: "2 horas" },
+  { min: 150, label: "2 horas 30 min" },
+  { min: 180, label: "3 horas" },
+  { min: 1440, label: "1 día" },
+  { min: 2880, label: "2 días" },
+  { min: 4320, label: "3 días" },
+  { min: 5760, label: "4 días" },
+  { min: 10080, label: "1 semana" },
+];
+
 const initHorariosSemana = (barbero) => {
   if (barbero?.horarios_semana) return barbero.horarios_semana;
   const inicio = barbero?.horario_inicio?.slice(0, 5) || "09:00";
@@ -37,8 +51,32 @@ export function TabMiHorario({ supabase, barbero, onUpdate, tema: t }) {
   const [duraciones, setDuraciones] = useState({});
   const [duracionesAdicionales, setDuracionesAdicionales] = useState({});
   const [guardandoDuraciones, setGuardandoDuraciones] = useState(false);
+  const [minCancelacion, setMinCancelacion] = useState(barbero?.min_cancelacion ?? 120);
+  const [guardandoCancel, setGuardandoCancel] = useState(false);
 
   useEffect(() => { cargarServiciosYDuraciones(); }, []);
+
+  const guardarCancelacion = async (valor) => {
+    setMinCancelacion(valor);
+    setGuardandoCancel(true);
+    try {
+      const { error } = await supabase.from("barberos").update({ min_cancelacion: valor }).eq("id", barbero.id);
+      if (error) throw error;
+      mostrarMensaje("success", "✅ Política de cancelación actualizada");
+      onUpdate();
+    } catch (err) { mostrarMensaje("error", "Error: " + err.message); }
+    setGuardandoCancel(false);
+  };
+
+  const desconectarCalendar = async () => {
+    if (!confirm("¿Desconectar tu Google Calendar? Las nuevas reservas dejarán de crearse en tu calendario.")) return;
+    try {
+      const { error } = await supabase.from("barberos").update({ google_calendar_conectado: false, google_access_token: null, google_refresh_token: null }).eq("id", barbero.id);
+      if (error) throw error;
+      mostrarMensaje("success", "Google Calendar desconectado");
+      onUpdate();
+    } catch (err) { mostrarMensaje("error", "Error: " + err.message); }
+  };
 
   const cargarServiciosYDuraciones = async () => {
     try {
@@ -239,14 +277,24 @@ export function TabMiHorario({ supabase, barbero, onUpdate, tema: t }) {
         <h3 className="text-lg font-bold mb-1 flex items-center gap-2">📅 Google Calendar</h3>
         <p className={`${t.textoSub} text-sm mb-4`}>Conecta tu Google Calendar para que cada reserva aparezca automáticamente.</p>
         {barbero?.google_calendar_conectado ? (
-          <div className="flex items-center gap-2 text-green-400 font-semibold">
-            <Check size={18} /> Calendario conectado
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="flex items-center gap-2 text-green-400 font-semibold"><Check size={18} /> Calendario conectado</span>
+            <button onClick={desconectarCalendar} className="text-sm bg-red-900 hover:bg-red-800 text-red-200 px-3 py-1.5 rounded">Desconectar</button>
           </div>
         ) : (
           <a href={`/api/google-calendar-callback?action=authorize&barbero_id=${barbero?.id}`} className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-2 rounded">
             Conectar Google Calendar
           </a>
         )}
+      </div>
+
+      {/* Política de cancelación */}
+      <div className={`${t.bgCard} border ${t.border} rounded p-6 max-w-2xl mt-6`}>
+        <h3 className="text-lg font-bold mb-1 flex items-center gap-2">⏰ Cancelación de reservas</h3>
+        <p className={`${t.textoSub} text-sm mb-4`}>Tiempo mínimo de antelación con el que un cliente puede cancelar online su cita contigo. Después de ese límite ya no podrá cancelar desde el link.</p>
+        <select value={minCancelacion} onChange={(e) => guardarCancelacion(Number(e.target.value))} disabled={guardandoCancel} className={`w-full max-w-xs ${t.bgInput} border ${t.borderInput} rounded px-4 py-2 ${t.texto} disabled:opacity-50`}>
+          {OPCIONES_CANCELACION.map((o) => <option key={o.min} value={o.min}>{o.label}</option>)}
+        </select>
       </div>
     </div>
   );

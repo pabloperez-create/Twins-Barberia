@@ -7,6 +7,7 @@ export function VistaCancelar({ supabase, reservaId, token }) {
   const [estado, setEstado] = useState("cargando");
   const [reserva, setReserva] = useState(null);
   const [barberia, setBarberia] = useState(null);
+  const [limite, setLimite] = useState("");
   const [detalle, setDetalle] = useState({ barbero: "", servicio: "" });
 
   useEffect(() => {
@@ -53,7 +54,7 @@ export function VistaCancelar({ supabase, reservaId, token }) {
       const data = await response.json();
       if (data.ok) setEstado("ok");
       else if (data.yaCancelada) setEstado("yaCancelada");
-      else if (data.tarde) setEstado("tarde");
+      else if (data.tarde) { setLimite(data.limite || ""); setEstado("tarde"); }
       else setEstado("error");
     } catch (err) {
       setEstado("error");
@@ -137,7 +138,7 @@ export function VistaCancelar({ supabase, reservaId, token }) {
             <Clock size={40} className="text-amber-400 mx-auto mb-4" />
             <h2 className="text-xl font-bold mb-2">Ya no se puede cancelar online</h2>
             <p className={t.textoSub}>
-              Tu cita es en menos de 2 horas. Para cancelar a esta altura, por favor contacta directamente a la barbería.
+              Tu cita es en menos de {limite || "el tiempo permitido"}. Para cancelar a esta altura, por favor contacta directamente a la barbería.
             </p>
           </div>
         )}

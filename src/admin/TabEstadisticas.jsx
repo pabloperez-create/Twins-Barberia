@@ -33,17 +33,19 @@ export function TabEstadisticas({ supabase, barberiaId, tema: t }) {
       const inicio6Meses = new Date(hoy.getFullYear(), hoy.getMonth() - 5, 1).toISOString().split("T")[0];
 
       const { data: reservas } = await supabase.from("reservas").select("*, barbero:barbero_id(nombre), servicio:servicio_id(nombre)").eq("barberia_id", barberiaId).eq("estado", "confirmada").gte("fecha", inicioFiltro).lte("fecha", hoyStr);
-      const { data: reservasAnterior } = await supabase.from("reservas").select("precio_final").eq("barberia_id", barberiaId).eq("estado", "confirmada").gte("fecha", inicioMesAnterior).lte("fecha", finMesAnterior);
-      const { data: reservas6Meses } = await supabase.from("reservas").select("fecha, precio_final").eq("barberia_id", barberiaId).eq("estado", "confirmada").gte("fecha", inicio6Meses).lte("fecha", hoyStr);
+      const { data: reservasAnterior } = await supabase.from("reservas").select("precio_final, asistencia").eq("barberia_id", barberiaId).eq("estado", "confirmada").gte("fecha", inicioMesAnterior).lte("fecha", finMesAnterior);
+      const { data: reservas6Meses } = await supabase.from("reservas").select("fecha, precio_final, asistencia").eq("barberia_id", barberiaId).eq("estado", "confirmada").gte("fecha", inicio6Meses).lte("fecha", hoyStr);
       const { data: reservasCanceladas } = await supabase.from("reservas").select("barbero:barbero_id(nombre)").eq("barberia_id", barberiaId).eq("estado", "cancelada").gte("fecha", inicioFiltro).lte("fecha", hoyStr);
 
       const r = reservas || [];
       const rAnt = reservasAnterior || [];
       const totalReservas = r.length;
-      const totalIngresos = r.reduce((s, x) => s + (x.precio_final || 0), 0);
-      const ticketPromedio = totalReservas > 0 ? Math.round(totalIngresos / totalReservas) : 0;
+      // Los "no llegó" (no-show) no generan ingreso: se excluyen de ingresos y ticket
+      const conIngreso = r.filter((x) => x.asistencia !== "no_asistio");
+      const totalIngresos = conIngreso.reduce((s, x) => s + (x.precio_final || 0), 0);
+      const ticketPromedio = conIngreso.length > 0 ? Math.round(totalIngresos / conIngreso.length) : 0;
       const totalReservasAnt = rAnt.length;
-      const totalIngresosAnt = rAnt.reduce((s, x) => s + (x.precio_final || 0), 0);
+      const totalIngresosAnt = rAnt.filter((x) => x.asistencia !== "no_asistio").reduce((s, x) => s + (x.precio_final || 0), 0);
       const deltaReservas = totalReservasAnt > 0 ? Math.round(((totalReservas - totalReservasAnt) / totalReservasAnt) * 100) : null;
       const deltaIngresos = totalIngresosAnt > 0 ? Math.round(((totalIngresos - totalIngresosAnt) / totalIngresosAnt) * 100) : null;
       setKpis({ totalReservas, totalIngresos, ticketPromedio, deltaReservas, deltaIngresos });
@@ -61,7 +63,7 @@ export function TabEstadisticas({ supabase, barberiaId, tema: t }) {
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
         meses[key] = { mes: nombresMeses[d.getMonth()], ingresos: 0, reservas: 0 };
       }
-      (reservas6Meses || []).forEach((res) => { const key = res.fecha.slice(0, 7); if (meses[key]) { meses[key].ingresos += res.precio_final || 0; meses[key].reservas++; } });
+      (reservas6Meses || []).forEach((res) => { const key = res.fecha.slice(0, 7); if (meses[key]) { if (res.asistencia !== "no_asistio") meses[key].ingresos += res.precio_final || 0; meses[key].reservas++; } });
       setIngresosPorMes(Object.values(meses));
 
       const barbMap = {};
@@ -70,7 +72,7 @@ export function TabEstadisticas({ supabase, barberiaId, tema: t }) {
         const nombre = res.barbero?.nombre || "Sin asignar";
         if (!barbMap[nombre]) barbMap[nombre] = nuevoBarbero(nombre);
         barbMap[nombre].reservas++;
-        barbMap[nombre].ingresos += res.precio_final || 0;
+        if (res.asistencia !== "no_asistio") barbMap[nombre].ingresos += res.precio_final || 0;
         if (res.asistencia === "asistio") barbMap[nombre].asistidos++;
         else if (res.asistencia === "no_asistio") barbMap[nombre].inasistencias++;
       });

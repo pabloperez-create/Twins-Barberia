@@ -61,6 +61,14 @@ export function TabMisReservas({ supabase, barbero, barberia, usuario, tema: t }
 
   const abrirCancelar = (reserva) => { setModalCancelar(reserva); setMotivoCancelacion(""); };
 
+  const marcarAsistencia = async (reserva, valor) => {
+    // Toggle: si ya estaba marcado igual, lo desmarca (vuelve a null)
+    const nuevo = reserva.asistencia === valor ? null : valor;
+    setReservas((prev) => prev.map((x) => (x.id === reserva.id ? { ...x, asistencia: nuevo } : x)));
+    const { error } = await supabase.from("reservas").update({ asistencia: nuevo }).eq("id", reserva.id);
+    if (error) { mostrarMensaje("error", "No se pudo guardar la asistencia"); cargarReservas(); }
+  };
+
   const confirmarCancelar = async () => {
     setProcesando(true);
     try {
@@ -134,10 +142,17 @@ export function TabMisReservas({ supabase, barbero, barberia, usuario, tema: t }
                     <div className="flex flex-col items-end gap-2">
                       <p className={`${t.acento} font-bold text-xl`}>${r.precio_final?.toLocaleString("es-CL")}</p>
                       {r.estado === "confirmada" && (
-                        <div className="flex gap-2">
-                          <button onClick={() => abrirReagendar(r)} className={`flex items-center gap-1 text-xs ${t.bgCard} border ${t.border} ${t.bgHover} px-3 py-1.5 rounded`}><Edit size={12} />Reagendar</button>
-                          <button onClick={() => abrirCancelar(r)} className="flex items-center gap-1 text-xs bg-red-900 hover:bg-red-800 text-red-200 px-3 py-1.5 rounded"><X size={12} />Cancelar</button>
-                        </div>
+                        <>
+                          <div className="flex gap-2">
+                            <button onClick={() => abrirReagendar(r)} className={`flex items-center gap-1 text-xs ${t.bgCard} border ${t.border} ${t.bgHover} px-3 py-1.5 rounded`}><Edit size={12} />Reagendar</button>
+                            <button onClick={() => abrirCancelar(r)} className="flex items-center gap-1 text-xs bg-red-900 hover:bg-red-800 text-red-200 px-3 py-1.5 rounded"><X size={12} />Cancelar</button>
+                          </div>
+                          <div className="flex gap-2 items-center mt-1">
+                            <span className={`text-xs ${t.textoMuted}`}>Asistencia:</span>
+                            <button onClick={() => marcarAsistencia(r, "asistio")} className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded border ${r.asistencia === "asistio" ? "bg-green-600 border-green-600 text-white" : `${t.bgCard} ${t.border} ${t.textoSub} ${t.bgHover}`}`}><Check size={12} />Asistió</button>
+                            <button onClick={() => marcarAsistencia(r, "no_asistio")} className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded border ${r.asistencia === "no_asistio" ? "bg-red-600 border-red-600 text-white" : `${t.bgCard} ${t.border} ${t.textoSub} ${t.bgHover}`}`}><X size={12} />No llegó</button>
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>

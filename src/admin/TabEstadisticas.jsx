@@ -35,6 +35,7 @@ export function TabEstadisticas({ supabase, barberiaId, tema: t }) {
       const { data: reservas } = await supabase.from("reservas").select("*, barbero:barbero_id(nombre), servicio:servicio_id(nombre)").eq("barberia_id", barberiaId).eq("estado", "confirmada").gte("fecha", inicioFiltro).lte("fecha", hoyStr);
       const { data: reservasAnterior } = await supabase.from("reservas").select("precio_final").eq("barberia_id", barberiaId).eq("estado", "confirmada").gte("fecha", inicioMesAnterior).lte("fecha", finMesAnterior);
       const { data: reservas6Meses } = await supabase.from("reservas").select("fecha, precio_final").eq("barberia_id", barberiaId).eq("estado", "confirmada").gte("fecha", inicio6Meses).lte("fecha", hoyStr);
+      const { data: reservasCanceladas } = await supabase.from("reservas").select("barbero:barbero_id(nombre)").eq("barberia_id", barberiaId).eq("estado", "cancelada").gte("fecha", inicioFiltro).lte("fecha", hoyStr);
 
       const r = reservas || [];
       const rAnt = reservasAnterior || [];
@@ -64,7 +65,20 @@ export function TabEstadisticas({ supabase, barberiaId, tema: t }) {
       setIngresosPorMes(Object.values(meses));
 
       const barbMap = {};
-      r.forEach((res) => { const nombre = res.barbero?.nombre || "Sin asignar"; if (!barbMap[nombre]) barbMap[nombre] = { nombre, reservas: 0, ingresos: 0 }; barbMap[nombre].reservas++; barbMap[nombre].ingresos += res.precio_final || 0; });
+      const nuevoBarbero = (nombre) => ({ nombre, reservas: 0, ingresos: 0, asistidos: 0, inasistencias: 0, canceladas: 0 });
+      r.forEach((res) => {
+        const nombre = res.barbero?.nombre || "Sin asignar";
+        if (!barbMap[nombre]) barbMap[nombre] = nuevoBarbero(nombre);
+        barbMap[nombre].reservas++;
+        barbMap[nombre].ingresos += res.precio_final || 0;
+        if (res.asistencia === "asistio") barbMap[nombre].asistidos++;
+        else if (res.asistencia === "no_asistio") barbMap[nombre].inasistencias++;
+      });
+      (reservasCanceladas || []).forEach((res) => {
+        const nombre = res.barbero?.nombre || "Sin asignar";
+        if (!barbMap[nombre]) barbMap[nombre] = nuevoBarbero(nombre);
+        barbMap[nombre].canceladas++;
+      });
       setPorBarbero(Object.values(barbMap).sort((a, b) => b.reservas - a.reservas));
 
       const srvMap = {};
@@ -191,6 +205,25 @@ export function TabEstadisticas({ supabase, barberiaId, tema: t }) {
                 <Bar dataKey="reservas" fill={t.chartColor} radius={[0,4,4,0]} />
               </BarChart>
             </ResponsiveContainer>
+          )}
+          {porBarbero.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <div className={`flex items-center justify-end gap-3 text-[10px] uppercase tracking-wide ${t.textoMuted} pr-1`}>
+                <span className="w-12 text-center">Asistió</span>
+                <span className="w-12 text-center">No llegó</span>
+                <span className="w-12 text-center">Cancel.</span>
+              </div>
+              {porBarbero.map((b) => (
+                <div key={b.nombre} className={`flex items-center justify-between text-xs ${t.bgMuted} rounded px-3 py-2`}>
+                  <span className="font-semibold truncate">{b.nombre}</span>
+                  <div className="flex gap-3">
+                    <span className="w-12 text-center text-green-400 font-semibold">{b.asistidos}</span>
+                    <span className="w-12 text-center text-red-400 font-semibold">{b.inasistencias}</span>
+                    <span className={`w-12 text-center ${t.textoMuted} font-semibold`}>{b.canceladas}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
         <div className={`${t.bgCard} border ${t.border} rounded p-6`}>

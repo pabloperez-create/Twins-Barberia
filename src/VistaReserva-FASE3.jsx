@@ -165,6 +165,7 @@ export function VistaReserva({ supabase, barberiaId }) {
   };
 
   const cargarHorariosBarbero = async (barberoId, fecha) => {
+    if (!barberoId || !fecha) { setHorariosBarbero([]); return; }
     try {
       const { data: reservasExistentes } = await supabase
         .from("reservas")
@@ -248,6 +249,7 @@ export function VistaReserva({ supabase, barberiaId }) {
   };
 
   const cargarHorariosCualquierBarbero = async (fecha) => {
+    if (!fecha) { setHorariosBarbero([]); return; }
     try {
       const { data: reservasExistentes } = await supabase
         .from("reservas")
@@ -339,6 +341,7 @@ export function VistaReserva({ supabase, barberiaId }) {
   };
 
   const asignarBarberoBalanceado = async (fecha, hora) => {
+    if (!fecha || !hora) return null;
     try {
       const { data: reservasDelDia } = await supabase
         .from("reservas")

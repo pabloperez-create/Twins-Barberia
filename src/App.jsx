@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
 import { Scissors, ArrowLeft } from "lucide-react";
+import { supabase } from "./lib/supabase";
 import { VistaReserva } from "./VistaReserva-FASE3";
 import { VistaInicio } from "./VistaInicio";
 import { VistaAdmin } from "./VistaAdmin";
@@ -8,10 +8,6 @@ import { VistaBarbero } from "./VistaBarbero";
 import { VistaSuperAdmin } from "./VistaSuperAdmin";
 import { VistaEncuesta } from "./VistaEncuesta";
 import { VistaCancelar } from "./VistaCancelar";
-
-const SUPABASE_URL = "https://fgtbhkeqzcqpjhziyijt.supabase.co";
-const SUPABASE_KEY = "sb_publishable_8E23tN1s3wbAIqjhX-1icg_VBCYqsMO";
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ⭐ Detectar subdominio → barberiaId
 const detectarBarberiaId = () => {

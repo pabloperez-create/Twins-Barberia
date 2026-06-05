@@ -86,7 +86,7 @@ src/
 Tablas principales:
 1. `barberia` — `tipo_barberia`, `subdominio`, `configuracion` (jsonb)
 2. `usuarios`
-3. `barberos` — `foto_url`, `telefono`, `google_access_token`, `google_refresh_token`, `google_calendar_conectado`
+3. `barberos` — `foto_url`, `telefono`, `google_access_token`, `google_refresh_token`, `google_calendar_conectado`, `usuario_id` (FK → `usuarios`). **Ojo:** el barbero NO tiene email propio; su email vive en `usuarios` y se obtiene vía el join `usuario:usuario_id(email)`. (La antigua columna `barberos.email` con datos dummy fue eliminada en jun 2026.)
 4. `servicios_principales` — `barbero_exclusivo_id`
 5. `servicios_adicionales`
 6. `reservas` — `estado` (`confirmada`/`cancelada`), `motivo_cancelacion`, `asistencia` (`asistio`/`no_asistio`/null), `creada_manualmente`. **Ojo:** la asistencia es un campo aparte de `estado` (no romper los filtros `estado === 'confirmada'`). IDs tipo `r-<timestamp>`.
@@ -144,7 +144,7 @@ GOOGLE_REDIRECT_URI   # https://twins-barberia.vercel.app/api/google-calendar-ca
 ```
 
 ## Hecho recientemente (jun 2026)
-Email confirmación (dorado + logo WhatsApp + link cancelar) · cancelación por cliente · email cancelación con link self-service · cita manual por barbero · fix cruce Google Calendar · ocultar horas pasadas · marcar asistencia + métricas (no-shows no suman ingresos) · tab "Mis Reservas" para admin-barbero · orden configurable de barberos (columna `barberos.orden` + flechas ↑/↓ en TabBarberos; reserva y admin ordenan por `orden`) · botón para desconectar Google Calendar · antelación mínima de cancelación configurable por barbero (`barberos.min_cancelacion`) · **fix notificación de nueva reserva a barberos no-admin**: el email del barbero vive en `usuarios` (no en `barberos`), así que la notificación interna ahora lo busca con `.select('usuario:usuario_id(email)').eq('id', barberoId)` y matchea por **id** (no por nombre, que fallaba con dos "Alonso"). Los call sites (`VistaReserva-FASE3.jsx`, `ModalNuevaCita.jsx`) ahora envían `barberoId`.
+Email confirmación (dorado + logo WhatsApp + link cancelar) · cancelación por cliente · email cancelación con link self-service · cita manual por barbero · fix cruce Google Calendar · ocultar horas pasadas · marcar asistencia + métricas (no-shows no suman ingresos) · tab "Mis Reservas" para admin-barbero · orden configurable de barberos (columna `barberos.orden` + flechas ↑/↓ en TabBarberos; reserva y admin ordenan por `orden`) · botón para desconectar Google Calendar · antelación mínima de cancelación configurable por barbero (`barberos.min_cancelacion`) · **fix notificación de nueva reserva a barberos no-admin**: el email del barbero vive en `usuarios` (no en `barberos`), así que la notificación interna ahora lo busca con `.select('usuario:usuario_id(email)').eq('id', barberoId)` y matchea por **id** (no por nombre, que fallaba con dos "Alonso"). Los call sites (`VistaReserva-FASE3.jsx`, `ModalNuevaCita.jsx`) ahora envían `barberoId`. Verificado en producción (mail entregado a `wolfbarbercl@gmail.com`). Se eliminó la columna huérfana `barberos.email` (tenía emails dummy tipo `alonso@twins.cl` que nadie revisaba — esa era la causa real del "no me llega").
 
 ## Pendientes
 

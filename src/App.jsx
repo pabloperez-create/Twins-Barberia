@@ -95,19 +95,32 @@ export default function App() {
     setCargando(true);
     setError("");
     try {
-      const { data: usuarios, error: errorUsuarios } = await supabase
-        .from("usuarios")
-        .select("*")
-        .eq("email", email)
-        .single();
+      const emailNorm = (email || "").trim().toLowerCase();
 
-      if (errorUsuarios || !usuarios) { setError("Usuario no encontrado"); setCargando(false); return; }
-      if (usuarios.password_hash !== password) { setError("Contraseña incorrecta"); setCargando(false); return; }
+      // 1) Intentar Supabase Auth
+      const { data: authData, error: authError } =
+        await supabase.auth.signInWithPassword({ email: emailNorm, password });
 
-      localStorage.setItem("usuario_id", usuarios.id);
-      localStorage.setItem("rol", usuarios.rol);
-      setUsuario(usuarios);
-      direccionarPorRol(usuarios.rol);
+      let usr = null;
+      if (!authError && authData?.user) {
+        const { data } = await supabase
+          .from("usuarios").select("*").eq("auth_id", authData.user.id).single();
+        usr = data;
+      } else {
+        // 2) Fallback al método viejo (red de seguridad durante la migración)
+        const { data } = await supabase
+          .from("usuarios").select("*").eq("email", emailNorm).single();
+        if (data && data.password_hash === password) {
+          usr = data;
+          localStorage.setItem("usuario_id", data.id);
+          localStorage.setItem("rol", data.rol);
+        }
+      }
+
+      if (!usr) { setError("Usuario o contraseña incorrectos"); setCargando(false); return; }
+
+      setUsuario(usr);
+      direccionarPorRol(usr.rol);
     } catch (err) { setError("Error en login: " + err.message); }
     setCargando(false);
   };
@@ -119,7 +132,8 @@ export default function App() {
     else setVista("inicio");
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem("usuario_id");
     localStorage.removeItem("rol");
     setUsuario(null);
@@ -129,13 +143,20 @@ export default function App() {
   useEffect(() => {
     if (encuestaParams || resolviendo) return;
     const verificarSesion = async () => {
-      const usuarioId = localStorage.getItem("usuario_id");
-      if (usuarioId) {
-        try {
+      try {
+        // 1) Sesión de Supabase Auth
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: usr } = await supabase.from("usuarios").select("*").eq("auth_id", session.user.id).single();
+          if (usr) { setUsuario(usr); direccionarPorRol(usr.rol); setVerificandoSesion(false); return; }
+        }
+        // 2) Fallback: sesión vieja por localStorage
+        const usuarioId = localStorage.getItem("usuario_id");
+        if (usuarioId) {
           const { data: usr } = await supabase.from("usuarios").select("*").eq("id", usuarioId).single();
           if (usr) { setUsuario(usr); direccionarPorRol(usr.rol); }
-        } catch (err) { console.error("Error verificando sesión:", err); }
-      }
+        }
+      } catch (err) { console.error("Error verificando sesión:", err); }
       setVerificandoSesion(false);
     };
     verificarSesion();

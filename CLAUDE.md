@@ -146,10 +146,16 @@ GOOGLE_REDIRECT_URI   # https://twins-barberia.vercel.app/api/google-calendar-ca
 ## Hecho recientemente (jun 2026)
 Email confirmación (dorado + logo WhatsApp + link cancelar) · cancelación por cliente · email cancelación con link self-service · cita manual por barbero · fix cruce Google Calendar · ocultar horas pasadas · marcar asistencia + métricas (no-shows no suman ingresos) · tab "Mis Reservas" para admin-barbero · orden configurable de barberos (columna `barberos.orden` + flechas ↑/↓ en TabBarberos; reserva y admin ordenan por `orden`) · botón para desconectar Google Calendar · antelación mínima de cancelación configurable por barbero (`barberos.min_cancelacion`) · **fix notificación de nueva reserva a barberos no-admin**: el email del barbero vive en `usuarios` (no en `barberos`), así que la notificación interna ahora lo busca con `.select('usuario:usuario_id(email)').eq('id', barberoId)` y matchea por **id** (no por nombre, que fallaba con dos "Alonso"). Los call sites (`VistaReserva-FASE3.jsx`, `ModalNuevaCita.jsx`) ahora envían `barberoId`. Verificado en producción (mail entregado a `wolfbarbercl@gmail.com`). Se eliminó la columna huérfana `barberos.email` (tenía emails dummy tipo `alonso@twins.cl` que nadie revisaba — esa era la causa real del "no me llega").
 
+**Migración de seguridad a Supabase Auth + RLS (en curso, jun 2026):**
+- **Fase 1 (Auth) ✅** — los 11 usuarios existen en Supabase Auth con su password actual, linkeados vía `usuarios.auth_id`. Login **híbrido** en `App.jsx`: `handleLogin` intenta `signInWithPassword` y cae al fallback viejo (`password_hash`) como red de seguridad; `verificarSesion` usa la sesión de Auth + fallback localStorage; `handleLogout` cierra ambas. El login matchea la fila `usuarios` por `auth_id`. Script de migración one-off: `scripts/migrate-to-auth.mjs` (dry-run por defecto, `--apply`, idempotente).
+- **Fase 2 (cliente centralizado) ✅** — el cliente supabase del frontend se crea en `src/lib/supabase.js` leyendo `VITE_SUPABASE_URL/KEY` de env (ya no hardcodeado en `App.jsx`). Los componentes lo reciben por prop `supabase`. Bonus: guard en las 3 funciones del flujo de reserva para no correr queries con `fecha`/`barbero` undefined (eliminaba un 400 de PostgREST).
+
 ## Pendientes
 
-**Técnico (deuda de seguridad ⭐):**
-- Migrar a Supabase Auth + RLS — hoy las contraseñas se guardan en texto plano en `usuarios.password_hash` y RLS está apagado (anon key hardcodeado en `App.jsx` da acceso total). Repo público.
+**Técnico (deuda de seguridad ⭐ — migración en curso):**
+- **Fase 1.4** quitar el fallback `password_hash` del login y borrar la columna (esperar unos días a que el login híbrido repose en prod y todos entren por Auth).
+- **Fase 3 (RLS)** activar RLS tabla por tabla (el paso más delicado: empezar con policies espejo permisivas = comportamiento idéntico, luego endurecer; solo hay proyecto de producción, ir fino). RLS real necesita Auth, que ya está (Fase 1).
+- **Fase 4** rotar la publishable key y sacar credenciales del repo (es público; las `VITE_*` igual quedan embebidas en el bundle, así que rotar solo sirve con RLS activo).
 - Activar WhatsApp (Twilio)
 
 **Futuro:**

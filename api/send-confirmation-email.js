@@ -38,6 +38,7 @@ export default async function handler(req, res) {
       direccionBarberia,
       reservaId,
       barberiaId,
+      barberoId,
       tipoNegocio,
     } = req.body;
 
@@ -230,10 +231,10 @@ export default async function handler(req, res) {
 
         const { data: barberoInfo } = await supabase
           .from('barberos')
-          .select('email')
-          .eq('barberia_id', barberiaId)
-          .eq('nombre', barberoNombre)
+          .select('usuario:usuario_id(email)')
+          .eq('id', barberoId)
           .single();
+        const barberoEmail = barberoInfo?.usuario?.email;
 
         const emailNotif = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f5f5f5;">
@@ -264,10 +265,10 @@ export default async function handler(req, res) {
         }
 
         // Enviar al barbero (si tiene email y es distinto al admin)
-        if (barberoInfo?.email && barberoInfo.email !== barberiaInfo?.email_admin) {
+        if (barberoEmail && barberoEmail !== barberiaInfo?.email_admin) {
           await resend.emails.send({
             from: `${barberiaNombre} <no-reply@reservaia.cl>`,
-            to: barberoInfo.email,
+            to: barberoEmail,
             subject: `✂️ Nueva cita asignada: ${clienteNombre} - ${fecha} ${hora}`,
             html: emailNotif,
           });

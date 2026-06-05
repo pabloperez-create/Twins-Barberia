@@ -279,6 +279,7 @@ export function ModalNuevaCita({
               clienteNombre: clienteNombre.trim(),
               barberiaNombre: barberia?.nombre || "Tu Barbería",
               barberoNombre,
+              barberoId,
               servicioNombre: servicioActual?.nombre || "tu servicio",
               precioServicio: servicioActual?.precio || 0,
               adicionales: adicionalesDetalle,

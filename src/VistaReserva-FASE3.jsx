@@ -509,6 +509,7 @@ export function VistaReserva({ supabase, barberiaId }) {
               barberiaId: barberiaId,
               barberiaNombre: barberiaData?.nombre || "Tu Barbería",
               barberoNombre: barberoFinalData?.nombre || "el profesional",
+              barberoId: barberoFinalData?.id,
               servicioNombre: servicioSeleccionado.nombre,
               precioServicio: servicioSeleccionado.precio,
               adicionales: adicionalesSeleccionados

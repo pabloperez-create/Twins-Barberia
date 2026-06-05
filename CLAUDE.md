@@ -144,7 +144,7 @@ GOOGLE_REDIRECT_URI   # https://twins-barberia.vercel.app/api/google-calendar-ca
 ```
 
 ## Hecho recientemente (jun 2026)
-Email confirmación (dorado + logo WhatsApp + link cancelar) · cancelación por cliente · email cancelación con link self-service · cita manual por barbero · fix cruce Google Calendar · ocultar horas pasadas · marcar asistencia + métricas (no-shows no suman ingresos) · tab "Mis Reservas" para admin-barbero · orden configurable de barberos (columna `barberos.orden` + flechas ↑/↓ en TabBarberos; reserva y admin ordenan por `orden`) · botón para desconectar Google Calendar · antelación mínima de cancelación configurable por barbero (`barberos.min_cancelacion`).
+Email confirmación (dorado + logo WhatsApp + link cancelar) · cancelación por cliente · email cancelación con link self-service · cita manual por barbero · fix cruce Google Calendar · ocultar horas pasadas · marcar asistencia + métricas (no-shows no suman ingresos) · tab "Mis Reservas" para admin-barbero · orden configurable de barberos (columna `barberos.orden` + flechas ↑/↓ en TabBarberos; reserva y admin ordenan por `orden`) · botón para desconectar Google Calendar · antelación mínima de cancelación configurable por barbero (`barberos.min_cancelacion`) · **fix notificación de nueva reserva a barberos no-admin**: el email del barbero vive en `usuarios` (no en `barberos`), así que la notificación interna ahora lo busca con `.select('usuario:usuario_id(email)').eq('id', barberoId)` y matchea por **id** (no por nombre, que fallaba con dos "Alonso"). Los call sites (`VistaReserva-FASE3.jsx`, `ModalNuevaCita.jsx`) ahora envían `barberoId`.
 
 ## Pendientes
 

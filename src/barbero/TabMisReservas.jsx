@@ -9,6 +9,8 @@ export function TabMisReservas({ supabase, barbero, barberia, usuario, tema: t }
   const [reservas, setReservas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [filtro, setFiltro] = useState("proximas");
+  const [desde, setDesde] = useState("");
+  const [hasta, setHasta] = useState("");
   const [mensaje, setMensaje] = useState({ tipo: "", texto: "" });
   const [modalReagendar, setModalReagendar] = useState(null);
   const [nuevaFecha, setNuevaFecha] = useState("");
@@ -18,20 +20,29 @@ export function TabMisReservas({ supabase, barbero, barberia, usuario, tema: t }
   const [motivoCancelacion, setMotivoCancelacion] = useState("");
   const [modalNuevaCita, setModalNuevaCita] = useState(false);
 
-  useEffect(() => { cargarReservas(); }, [filtro]);
+  const hayRango = !!(desde || hasta);
+
+  useEffect(() => { cargarReservas(); }, [filtro, desde, hasta]);
 
   const cargarReservas = async () => {
     setCargando(true);
     try {
       const hoy = hoyChile();
       let query = supabase.from("reservas").select("*, servicio:servicio_id(nombre, precio)").eq("barbero_id", barbero.id);
-      if (filtro === "hoy") query = query.eq("fecha", hoy);
-      else if (filtro === "proximas") query = query.gte("fecha", hoy);
+      if (hayRango) {
+        // El rango de fechas tiene prioridad sobre los filtros rápidos
+        if (desde) query = query.gte("fecha", desde);
+        if (hasta) query = query.lte("fecha", hasta);
+      } else if (filtro === "hoy") {
+        query = query.eq("fecha", hoy);
+      } else if (filtro === "proximas") {
+        query = query.gte("fecha", hoy);
+      }
       query = query.order("fecha", { ascending: true }).order("hora_inicio", { ascending: true });
       const { data, error } = await query;
       if (!error) {
         let lista = data || [];
-        if (filtro === "proximas") {
+        if (!hayRango && filtro === "proximas") {
           // "Próximas" = de ahora en adelante: hoy con hora aún no pasada + días futuros
           const ahora = ahoraChileHM();
           lista = lista.filter(
@@ -43,6 +54,9 @@ export function TabMisReservas({ supabase, barbero, barberia, usuario, tema: t }
     } catch (err) { console.error("Error cargando reservas:", err); }
     setCargando(false);
   };
+
+  const seleccionarFiltro = (id) => { setDesde(""); setHasta(""); setFiltro(id); };
+  const limpiarRango = () => { setDesde(""); setHasta(""); };
 
   const mostrarMensaje = (tipo, texto) => { setMensaje({ tipo, texto }); setTimeout(() => setMensaje({ tipo: "", texto: "" }), 4000); };
 
@@ -104,10 +118,21 @@ export function TabMisReservas({ supabase, barbero, barberia, usuario, tema: t }
           <h2 className="text-2xl font-bold">Mis Reservas</h2>
           <button onClick={() => setModalNuevaCita(true)} className={`flex items-center gap-2 ${t.boton} px-3 py-2 rounded text-sm`}><Plus size={16} />Nueva cita</button>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {[{ id: "hoy", label: "Hoy" }, { id: "proximas", label: "Próximas" }, { id: "todas", label: "Todas" }].map((f) => (
-            <button key={f.id} onClick={() => setFiltro(f.id)} className={`px-4 py-2 rounded text-sm font-semibold transition ${filtro === f.id ? t.filtroActivo : t.filtroInactivo}`}>{f.label}</button>
+            <button key={f.id} onClick={() => seleccionarFiltro(f.id)} className={`px-4 py-2 rounded text-sm font-semibold transition ${filtro === f.id ? t.filtroActivo : t.filtroInactivo}`}>{f.label}</button>
           ))}
+          {filtro === "todas" && (
+            <div className={`flex items-center gap-1.5 ml-1 pl-2 border-l ${t.border}`}>
+              <Calendar size={14} className={t.textoSub} />
+              <input type="date" value={desde} max={hasta || undefined} onChange={(e) => setDesde(e.target.value)} title="Desde" className={`${t.bgInput} border ${t.borderInput} rounded px-2 py-1.5 text-sm ${t.texto}`} />
+              <span className={`text-xs ${t.textoSub}`}>a</span>
+              <input type="date" value={hasta} min={desde || undefined} onChange={(e) => setHasta(e.target.value)} title="Hasta" className={`${t.bgInput} border ${t.borderInput} rounded px-2 py-1.5 text-sm ${t.texto}`} />
+              {hayRango && (
+                <button onClick={limpiarRango} title="Limpiar rango" className={`flex items-center gap-1 text-xs ${t.bgMuted} ${t.bgHover} px-2 py-1.5 rounded`}><X size={12} />Limpiar</button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

@@ -10,13 +10,16 @@ import {
 import { Modal } from "../components/Modal";
 import { ModalNuevaCita } from "../components/ModalNuevaCita";
 import { SelectorHora } from "../components/SelectorHora";
+import { hoyChile } from "../utils/fecha";
 
 const COLORES_BARBEROS = [
   "#10b981", "#3b82f6", "#8b5cf6", "#f59e0b",
   "#ec4899", "#06b6d4", "#f97316", "#84cc16",
 ];
 
-export function TabAgenda({ supabase, barberiaId, usuario, barberia, tema: t }) {
+export function TabAgenda({ supabase, barberiaId, usuario, barberia, tema: t, barberoFijo = null }) {
+  // Cuando viene barberoFijo, la agenda se scopea a ese barbero (vista de barbero).
+  const esVistaBarbero = !!barberoFijo;
   const calendarRef = useRef(null);
   const [esMobil, setEsMobil] = useState(typeof window !== "undefined" && window.innerWidth < 768);
   const [vista, setVista] = useState(typeof window !== "undefined" && window.innerWidth < 768 ? "timeGridDay" : "dayGridMonth");
@@ -49,8 +52,10 @@ export function TabAgenda({ supabase, barberiaId, usuario, barberia, tema: t }) 
     setCargando(true);
     try {
       const { data: brbs } = await supabase.from("barberos").select("*").eq("barberia_id", barberiaId).order("nombre");
-      const { data: rsvs } = await supabase.from("reservas").select("*, barbero:barbero_id(nombre), servicio:servicio_id(nombre, precio)").eq("barberia_id", barberiaId).order("fecha", { ascending: true });
-      const hoy = new Date().toISOString().split("T")[0];
+      let rsvQuery = supabase.from("reservas").select("*, barbero:barbero_id(nombre), servicio:servicio_id(nombre, precio)").eq("barberia_id", barberiaId);
+      if (barberoFijo) rsvQuery = rsvQuery.eq("barbero_id", barberoFijo);
+      const { data: rsvs } = await rsvQuery.order("fecha", { ascending: true });
+      const hoy = hoyChile();
       const { data: blqs } = await supabase.from("bloqueos_horarios").select("*, barbero:barbero_id(nombre)").eq("barberia_id", barberiaId).gte("fecha_fin", hoy);
       setBarberos(brbs || []);
       setReservas(rsvs || []);
@@ -88,7 +93,7 @@ export function TabAgenda({ supabase, barberiaId, usuario, barberia, tema: t }) 
         extendedProps: { tipo: "reserva", reserva: r },
       };
     }),
-    ...bloqueos.flatMap((b) => {
+    ...bloqueos.filter((b) => !esVistaBarbero || b.barbero_id === barberoFijo || b.barbero_id === null).flatMap((b) => {
       const eventos = [];
       const inicio = new Date(b.fecha_inicio);
       const fin = new Date(b.fecha_fin);
@@ -177,7 +182,7 @@ export function TabAgenda({ supabase, barberiaId, usuario, barberia, tema: t }) 
 
       <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
         <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold">Agenda</h2>
+          <h2 className="text-2xl font-bold">{esVistaBarbero ? "Mi Agenda" : "Agenda"}</h2>
           <div className={`flex gap-1 ${t.bgCard} border ${t.border} rounded p-1`}>
             {!esMobil && (
               <button onClick={() => cambiarVista("dayGridMonth")} className={`px-3 py-1 rounded text-sm font-semibold transition ${vista === "dayGridMonth" ? `${t.acentoBg} ${t.acentoText}` : `${t.textoSub} ${t.bgHover}`}`}>Mes</button>
@@ -191,7 +196,7 @@ export function TabAgenda({ supabase, barberiaId, usuario, barberia, tema: t }) 
         </button>
       </div>
 
-      {barberos.length > 0 && (
+      {!esVistaBarbero && barberos.length > 0 && (
         <div className={`${t.bgCard} border ${t.border} rounded p-3 mb-4 flex flex-wrap gap-2 items-center`}>
           <span className={`text-xs ${t.textoSub} font-semibold mr-1`}>Filtrar:</span>
           <button onClick={() => setFiltroBarbero("todos")} className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition ${filtroBarbero === "todos" ? `${t.filtroActivo} border-transparent font-bold` : `border ${t.border} ${t.textoSub} ${t.bgHover}`}`}>Todos</button>
@@ -257,7 +262,7 @@ export function TabAgenda({ supabase, barberiaId, usuario, barberia, tema: t }) 
         )}
       </div>
 
-      <ModalNuevaCita isOpen={modalNuevaCita} onClose={() => setModalNuevaCita(false)} onCreated={() => { cargarDatos(); mostrarMensaje("success", "✅ Cita creada exitosamente"); }} supabase={supabase} barberiaId={barberiaId} barberia={barberia} usuario={usuario} />
+      <ModalNuevaCita isOpen={modalNuevaCita} onClose={() => setModalNuevaCita(false)} onCreated={() => { cargarDatos(); mostrarMensaje("success", "✅ Cita creada exitosamente"); }} supabase={supabase} barberiaId={barberiaId} barberia={barberia} usuario={usuario} barberoFijo={barberoFijo} />
 
       <Modal isOpen={!!modalDetalles} onClose={() => setModalDetalles(null)} title="Detalles de la reserva"
         footer={
@@ -340,7 +345,7 @@ export function TabAgenda({ supabase, barberiaId, usuario, barberia, tema: t }) 
             </div>
             <div>
               <label className="block text-sm font-semibold mb-2">Nueva fecha</label>
-              <input type="date" value={nuevaFecha} onChange={(e) => setNuevaFecha(e.target.value)} min={new Date().toISOString().split("T")[0]} className={`w-full ${t.bgInput} border ${t.borderInput} rounded px-4 py-2 ${t.texto}`} />
+              <input type="date" value={nuevaFecha} onChange={(e) => setNuevaFecha(e.target.value)} min={hoyChile()} className={`w-full ${t.bgInput} border ${t.borderInput} rounded px-4 py-2 ${t.texto}`} />
             </div>
             <div>
               <label className="block text-sm font-semibold mb-2">Nueva hora</label>

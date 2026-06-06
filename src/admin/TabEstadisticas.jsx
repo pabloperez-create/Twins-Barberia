@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { TrendingUp, Users, DollarSign, Calendar, ArrowUp, ArrowDown, Minus, Download } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { hoyChile } from "../utils/fecha";
 
 export function TabEstadisticas({ supabase, barberiaId, tema: t }) {
   const [cargando, setCargando] = useState(true);
@@ -103,7 +104,7 @@ export function TabEstadisticas({ supabase, barberiaId, tema: t }) {
   };
 
   const exportarCSV = async () => {
-    const hoy = new Date().toISOString().split("T")[0];
+    const hoy = hoyChile();
     const inicioFiltro = getFechaInicio().toISOString().split("T")[0];
     const { data } = await supabase.from("reservas").select("fecha, hora_inicio, cliente_nombre, cliente_telefono, cliente_email, precio_final, barbero:barbero_id(nombre), servicio:servicio_id(nombre)").eq("barberia_id", barberiaId).eq("estado", "confirmada").gte("fecha", inicioFiltro).lte("fecha", hoy);
     if (!data?.length) return;

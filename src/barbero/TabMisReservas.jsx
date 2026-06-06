@@ -3,6 +3,7 @@ import { Calendar, Phone, Mail, X, Edit, Check, AlertCircle, Plus } from "lucide
 import { Modal } from "../components/Modal";
 import { SelectorHora } from "../components/SelectorHora";
 import { ModalNuevaCita } from "../components/ModalNuevaCita";
+import { hoyChile, ahoraChileHM } from "../utils/fecha";
 
 export function TabMisReservas({ supabase, barbero, barberia, usuario, tema: t }) {
   const [reservas, setReservas] = useState([]);
@@ -22,13 +23,23 @@ export function TabMisReservas({ supabase, barbero, barberia, usuario, tema: t }
   const cargarReservas = async () => {
     setCargando(true);
     try {
-      const hoy = new Date().toISOString().split("T")[0];
+      const hoy = hoyChile();
       let query = supabase.from("reservas").select("*, servicio:servicio_id(nombre, precio)").eq("barbero_id", barbero.id);
       if (filtro === "hoy") query = query.eq("fecha", hoy);
       else if (filtro === "proximas") query = query.gte("fecha", hoy);
       query = query.order("fecha", { ascending: true }).order("hora_inicio", { ascending: true });
       const { data, error } = await query;
-      if (!error) setReservas(data || []);
+      if (!error) {
+        let lista = data || [];
+        if (filtro === "proximas") {
+          // "Próximas" = de ahora en adelante: hoy con hora aún no pasada + días futuros
+          const ahora = ahoraChileHM();
+          lista = lista.filter(
+            (r) => r.fecha > hoy || (r.fecha === hoy && (r.hora_inicio || "").slice(0, 5) >= ahora),
+          );
+        }
+        setReservas(lista);
+      }
     } catch (err) { console.error("Error cargando reservas:", err); }
     setCargando(false);
   };
@@ -183,7 +194,7 @@ export function TabMisReservas({ supabase, barbero, barberia, usuario, tema: t }
             </div>
             <div>
               <label className="block text-sm font-semibold mb-2">Nueva fecha</label>
-              <input type="date" value={nuevaFecha} onChange={(e) => setNuevaFecha(e.target.value)} min={new Date().toISOString().split("T")[0]} className={`w-full ${t.bgInput} border ${t.borderInput} rounded px-4 py-2 ${t.texto}`} />
+              <input type="date" value={nuevaFecha} onChange={(e) => setNuevaFecha(e.target.value)} min={hoyChile()} className={`w-full ${t.bgInput} border ${t.borderInput} rounded px-4 py-2 ${t.texto}`} />
             </div>
             <div>
               <label className="block text-sm font-semibold mb-2">Nueva hora</label>

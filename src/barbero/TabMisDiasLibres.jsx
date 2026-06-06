@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Plus, Trash2, Check, AlertCircle, CalendarOff } from "lucide-react";
 import { SelectorHora } from "../components/SelectorHora";
 import { Modal } from "../components/Modal";
+import { hoyChile } from "../utils/fecha";
 
 export function TabMisDiasLibres({ supabase, barbero, barberia, tema: t }) {
   const [bloqueos, setBloqueos] = useState([]);
@@ -16,7 +17,7 @@ export function TabMisDiasLibres({ supabase, barbero, barberia, tema: t }) {
   const cargarBloqueos = async () => {
     setCargando(true);
     try {
-      const hoy = new Date().toISOString().split("T")[0];
+      const hoy = hoyChile();
       const { data } = await supabase.from("bloqueos_horarios").select("*").eq("barbero_id", barbero.id).gte("fecha_fin", hoy).order("fecha_inicio", { ascending: true });
       setBloqueos(data || []);
     } catch (err) { console.error("Error:", err); }
@@ -121,7 +122,7 @@ export function TabMisDiasLibres({ supabase, barbero, barberia, tema: t }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-semibold mb-2">Desde <span className="text-red-400">*</span></label>
-              <input type="date" value={form.fecha_inicio} onChange={(e) => setForm({ ...form, fecha_inicio: e.target.value, fecha_fin: form.fecha_fin || e.target.value })} min={new Date().toISOString().split("T")[0]} className={inputClass} />
+              <input type="date" value={form.fecha_inicio} onChange={(e) => setForm({ ...form, fecha_inicio: e.target.value, fecha_fin: form.fecha_fin || e.target.value })} min={hoyChile()} className={inputClass} />
             </div>
             <div>
               <label className="block text-sm font-semibold mb-16">Hasta <span className="text-red-400">*</span></label>

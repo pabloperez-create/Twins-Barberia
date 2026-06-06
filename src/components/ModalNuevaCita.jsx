@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { hoyChile } from "../utils/fecha";
 import {
   X,
   User,
@@ -51,7 +52,7 @@ export function ModalNuevaCita({
       setServicioId("");
       setAdicionalesSeleccionados([]);
       setBarberoId(barberoFijo || "");
-      setFecha(new Date().toISOString().split("T")[0]);
+      setFecha(hoyChile());
       setHora("");
       setEnviarEmail(true);
       setError("");

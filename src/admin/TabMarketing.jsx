@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Send, Plus, X, Check, AlertCircle, Mail, Users, Calendar, Tag } from "lucide-react";
 import { FeatureBloqueada } from "../components/FeatureBloqueada";
 import { isFeatureEnabled } from "../utils/features";
+import { hoyChile } from "../utils/fecha";
 
 export function TabMarketing({ supabase, barberiaId, barberia, tema: t }) {
   const [campanas, setCampanas] = useState([]);
@@ -184,7 +185,7 @@ export function TabMarketing({ supabase, barberiaId, barberia, tema: t }) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-semibold mb-1">Fecha de envío <span className="text-red-400">*</span></label>
-                  <input type="date" value={form.fecha_envio} onChange={(e) => setForm({ ...form, fecha_envio: e.target.value })} min={new Date().toISOString().split("T")[0]} className={inputClass} />
+                  <input type="date" value={form.fecha_envio} onChange={(e) => setForm({ ...form, fecha_envio: e.target.value })} min={hoyChile()} className={inputClass} />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold mb-1">Hora</label>

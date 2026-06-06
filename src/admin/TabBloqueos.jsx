@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Plus, Trash2, Check, AlertCircle, CalendarOff, Building, User } from "lucide-react";
 import { SelectorHora } from "../components/SelectorHora";
 import { Modal } from "../components/Modal";
+import { hoyChile } from "../utils/fecha";
 
 export function TabBloqueos({ supabase, barberiaId, tema: t }) {
   const esSalon = t.tipo === "salon";
@@ -22,7 +23,7 @@ export function TabBloqueos({ supabase, barberiaId, tema: t }) {
   const cargarDatos = async () => {
     setCargando(true);
     try {
-      const hoy = new Date().toISOString().split("T")[0];
+      const hoy = hoyChile();
       const { data: bloqs } = await supabase.from("bloqueos_horarios").select("*").eq("barberia_id", barberiaId).gte("fecha_fin", hoy).order("fecha_inicio", { ascending: true });
       const { data: brbs } = await supabase.from("barberos").select("*").eq("barberia_id", barberiaId).eq("activo", true).order("nombre");
       setBloqueos(bloqs || []);
@@ -49,7 +50,7 @@ export function TabBloqueos({ supabase, barberiaId, tema: t }) {
         id: `bl-${Date.now()}`,
         barberia_id: barberiaId,
         barbero_id: form.barbero_id || null,
-        fecha_inicio: form.fecha_inicio || new Date().toISOString().split("T")[0],
+        fecha_inicio: form.fecha_inicio || hoyChile(),
         fecha_fin: form.fecha_fin || (form.tipo === "recurrente" ? "2099-12-31" : null),
         hora_inicio: (form.tipo === "bloque_horas" || form.tipo === "recurrente") ? form.hora_inicio : null,
         hora_fin: (form.tipo === "bloque_horas" || form.tipo === "recurrente") ? form.hora_fin : null,
@@ -186,7 +187,7 @@ export function TabBloqueos({ supabase, barberiaId, tema: t }) {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-semibold mb-2">Desde <span className="text-red-400">*</span></label>
-                <input type="date" value={form.fecha_inicio} onChange={(e) => setForm({ ...form, fecha_inicio: e.target.value, fecha_fin: form.fecha_fin || e.target.value })} min={new Date().toISOString().split("T")[0]} className={`w-full ${t.bgInput} border ${t.borderInput} rounded px-3 py-2 ${t.texto} text-sm`} />
+                <input type="date" value={form.fecha_inicio} onChange={(e) => setForm({ ...form, fecha_inicio: e.target.value, fecha_fin: form.fecha_fin || e.target.value })} min={hoyChile()} className={`w-full ${t.bgInput} border ${t.borderInput} rounded px-3 py-2 ${t.texto} text-sm`} />
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-2">Hasta <span className="text-red-400">*</span></label>

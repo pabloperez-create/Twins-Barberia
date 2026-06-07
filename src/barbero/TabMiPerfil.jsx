@@ -30,9 +30,11 @@ export function TabMiPerfil({ supabase, barbero, usuario, onUpdate, tema: t }) {
     if (passwordNuevo.length < 6) { mostrarMensaje("error", "La nueva contraseña debe tener al menos 6 caracteres"); return; }
     setGuardando(true);
     try {
-      const { data: user } = await supabase.from("usuarios").select("password_hash").eq("id", usuario.id).single();
-      if (user?.password_hash !== passwordActual) { mostrarMensaje("error", "La contraseña actual no es correcta"); setGuardando(false); return; }
-      const { error } = await supabase.from("usuarios").update({ password_hash: passwordNuevo }).eq("id", usuario.id);
+      // Valida la contraseña actual reautenticando contra Supabase Auth
+      const { error: errorAuth } = await supabase.auth.signInWithPassword({ email: usuario.email, password: passwordActual });
+      if (errorAuth) { mostrarMensaje("error", "La contraseña actual no es correcta"); setGuardando(false); return; }
+      // Actualiza la contraseña del usuario autenticado
+      const { error } = await supabase.auth.updateUser({ password: passwordNuevo });
       if (error) throw error;
       mostrarMensaje("success", "✅ Contraseña actualizada");
       setPasswordActual(""); setPasswordNuevo("");

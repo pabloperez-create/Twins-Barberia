@@ -87,17 +87,25 @@ export function TabBarberos({ supabase, barberiaId, tema: t }) {
         const timestamp = Date.now().toString().slice(-4);
         const usuarioId = `u-${baseId}-${timestamp}`;
         const barberoId = `b-${baseId}-${timestamp}`;
-        const { data: existente } = await supabase.from("usuarios").select("id").eq("email", form.email.trim().toLowerCase()).maybeSingle();
-        if (existente) { mostrarMensaje("error", "Este email ya está registrado"); return; }
-        const { error: errorUsuario } = await supabase.from("usuarios").insert({ id: usuarioId, barberia_id: barberiaId, nombre: form.nombre.trim(), email: form.email.trim().toLowerCase(), password_hash: form.password, rol: "barbero" });
-        if (errorUsuario) throw errorUsuario;
+        // Crea el usuario en Supabase Auth + fila `usuarios` (vía endpoint con service role)
+        const respUsuario = await fetch("/api/admin-create-user", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: usuarioId, barberia_id: barberiaId, nombre: form.nombre.trim(), email: form.email.trim().toLowerCase(), password: form.password, rol: "barbero" }),
+        });
+        const dataUsuario = await respUsuario.json();
+        if (!respUsuario.ok) { mostrarMensaje("error", dataUsuario.error || "No se pudo crear el usuario"); return; }
         let foto_url = null;
         if (fotoFileRef.current) {
           const url = await subirFoto(fotoFileRef.current, barberoId);
           if (url) foto_url = url;
         }
         const { error: errorBarbero } = await supabase.from("barberos").insert({ id: barberoId, barberia_id: barberiaId, usuario_id: usuarioId, nombre: form.nombre.trim(), especialidad: form.especialidad.trim() || null, horario_inicio: form.horario_inicio, horario_fin: form.horario_fin, foto_url, activo: true });
-        if (errorBarbero) { await supabase.from("usuarios").delete().eq("id", usuarioId); throw errorBarbero; }
+        if (errorBarbero) {
+          // Rollback: borra usuario (fila + Auth) para no dejar huérfanos
+          await fetch("/api/admin-create-user", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: usuarioId }) });
+          throw errorBarbero;
+        }
         mostrarMensaje("success", `✅ ${labelPro} "${form.nombre}" creado. Login: ${form.email}`);
       }
       cerrarModal();

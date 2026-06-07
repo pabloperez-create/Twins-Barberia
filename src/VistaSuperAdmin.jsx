@@ -148,18 +148,22 @@ export function VistaSuperAdmin({ usuario, onLogout, supabase }) {
 
       if (errorBarberia) throw new Error("Error creando barbería: " + errorBarberia.message);
 
-      // 4. Insertar usuario admin
+      // 4. Crear usuario admin en Supabase Auth + fila `usuarios` (vía endpoint con service role)
       const usuarioId = `u-${Date.now()}`;
-      const { error: errorUsuario } = await supabase.from("usuarios").insert({
-        id: usuarioId,
-        barberia_id: barberiaId,
-        nombre: form.nombre.trim() + " Admin",
-        email: form.email_admin.trim().toLowerCase(),
-        password_hash: form.password.trim(),
-        rol: "admin",
+      const respUsuario = await fetch("/api/admin-create-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: usuarioId,
+          barberia_id: barberiaId,
+          nombre: form.nombre.trim() + " Admin",
+          email: form.email_admin.trim().toLowerCase(),
+          password: form.password.trim(),
+          rol: "admin",
+        }),
       });
-
-      if (errorUsuario) throw new Error("Barbería creada pero error en usuario: " + errorUsuario.message);
+      const dataUsuario = await respUsuario.json();
+      if (!respUsuario.ok) throw new Error("Barbería creada pero error en usuario: " + (dataUsuario.error || "desconocido"));
 
       // Éxito
       mostrarMensaje("success", `✅ Barbería "${form.nombre}" creada con plan ${PLANES[form.plan].nombre}`);

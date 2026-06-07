@@ -93,7 +93,7 @@ export default function App() {
     try {
       const emailNorm = (email || "").trim().toLowerCase();
 
-      // 1) Intentar Supabase Auth
+      // Login vía Supabase Auth (el fallback a password_hash se retiró en Fase 1.4)
       const { data: authData, error: authError } =
         await supabase.auth.signInWithPassword({ email: emailNorm, password });
 
@@ -102,15 +102,6 @@ export default function App() {
         const { data } = await supabase
           .from("usuarios").select("*").eq("auth_id", authData.user.id).single();
         usr = data;
-      } else {
-        // 2) Fallback al método viejo (red de seguridad durante la migración)
-        const { data } = await supabase
-          .from("usuarios").select("*").eq("email", emailNorm).single();
-        if (data && data.password_hash === password) {
-          usr = data;
-          localStorage.setItem("usuario_id", data.id);
-          localStorage.setItem("rol", data.rol);
-        }
       }
 
       if (!usr) { setError("Usuario o contraseña incorrectos"); setCargando(false); return; }
@@ -140,17 +131,11 @@ export default function App() {
     if (encuestaParams || resolviendo) return;
     const verificarSesion = async () => {
       try {
-        // 1) Sesión de Supabase Auth
+        // Sesión de Supabase Auth (el fallback por localStorage se retiró en Fase 1.4)
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           const { data: usr } = await supabase.from("usuarios").select("*").eq("auth_id", session.user.id).single();
           if (usr) { setUsuario(usr); direccionarPorRol(usr.rol); setVerificandoSesion(false); return; }
-        }
-        // 2) Fallback: sesión vieja por localStorage
-        const usuarioId = localStorage.getItem("usuario_id");
-        if (usuarioId) {
-          const { data: usr } = await supabase.from("usuarios").select("*").eq("id", usuarioId).single();
-          if (usr) { setUsuario(usr); direccionarPorRol(usr.rol); }
         }
       } catch (err) { console.error("Error verificando sesión:", err); }
       setVerificandoSesion(false);

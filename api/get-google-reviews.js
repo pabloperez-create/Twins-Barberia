@@ -3,7 +3,7 @@ import { verifyToken } from './_verify-token.js';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
-  process.env.VITE_SUPABASE_KEY,
+  process.env.SUPABASE_SERVICE_KEY,
 );
 
 const GOOGLE_API_KEY = process.env.GOOGLE_PLACES_API_KEY;

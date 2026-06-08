@@ -6,7 +6,7 @@ import { cancelToken } from './_cancel-token.js';
 const resend = new Resend(process.env.RESEND_API_KEY);
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
-  process.env.VITE_SUPABASE_KEY,
+  process.env.SUPABASE_SERVICE_KEY,
 );
 
 export default async function handler(req, res) {

@@ -4,7 +4,7 @@ import { verifyToken } from './_verify-token.js';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
-  process.env.VITE_SUPABASE_KEY,
+  process.env.SUPABASE_SERVICE_KEY,
 );
 
 export default async function handler(req, res) {

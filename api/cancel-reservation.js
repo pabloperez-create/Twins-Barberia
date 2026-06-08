@@ -3,7 +3,7 @@ import { cancelToken } from './_cancel-token.js';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
-  process.env.VITE_SUPABASE_KEY,
+  process.env.SUPABASE_SERVICE_KEY,
 );
 
 // Minutos mínimos de antelación por defecto (si el barbero no configuró nada): 2h

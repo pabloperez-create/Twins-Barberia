@@ -16,25 +16,20 @@ export function VistaCancelar({ supabase, reservaId, token }) {
 
   const cargarReserva = async () => {
     try {
-      const { data, error } = await supabase
-        .from("reservas")
-        .select("*")
-        .eq("id", reservaId)
-        .single();
-
-      if (error || !data) {
-        setEstado("noEncontrada");
+      // Lectura por endpoint con token (antes era un select directo que exponía
+      // PII de cualquier reserva por id adivinable). El endpoint valida el token HMAC.
+      const resp = await fetch(
+        `/api/cancel-reservation?reservaId=${encodeURIComponent(reservaId)}&token=${encodeURIComponent(token)}`
+      );
+      if (!resp.ok) {
+        setEstado(resp.status === 404 ? "noEncontrada" : "error");
         return;
       }
-      setReserva(data);
+      const data = await resp.json();
 
-      const [{ data: barbero }, { data: servicio }, { data: barb }] = await Promise.all([
-        supabase.from("barberos").select("nombre").eq("id", data.barbero_id).single(),
-        supabase.from("servicios_principales").select("nombre").eq("id", data.servicio_id).single(),
-        supabase.from("barberia").select("nombre, tipo_barberia").eq("id", data.barberia_id).single(),
-      ]);
-      setDetalle({ barbero: barbero?.nombre || "", servicio: servicio?.nombre || "" });
-      setBarberia(barb);
+      setReserva({ cliente_nombre: data.cliente_nombre, fecha: data.fecha, hora_inicio: data.hora_inicio, estado: data.estado });
+      setDetalle({ barbero: data.barberoNombre || "", servicio: data.servicioNombre || "" });
+      setBarberia({ nombre: data.barberiaNombre, tipo_barberia: data.tipo_barberia });
 
       if (data.estado === "cancelada") setEstado("yaCancelada");
       else setEstado("confirmar");

@@ -27,10 +27,48 @@ function formatLimite(min) {
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // Modo "detalle" (GET): valida el token y devuelve solo lo que muestra
+  // VistaCancelar (sin exponer PII a quien no tenga el token de la reserva).
+  if (req.method === 'GET') {
+    try {
+      const { reservaId, token } = req.query;
+      if (!reservaId || !token) return res.status(400).json({ error: 'Faltan parámetros' });
+      if (token !== cancelToken(reservaId)) return res.status(403).json({ error: 'Token inválido' });
+
+      const { data: reserva, error } = await supabase
+        .from('reservas')
+        .select('cliente_nombre, fecha, hora_inicio, estado, barbero_id, servicio_id, barberia_id')
+        .eq('id', reservaId)
+        .single();
+      if (error || !reserva) return res.status(404).json({ error: 'Reserva no encontrada' });
+
+      const [{ data: barbero }, { data: servicio }, { data: barberia }] = await Promise.all([
+        supabase.from('barberos').select('nombre').eq('id', reserva.barbero_id).single(),
+        supabase.from('servicios_principales').select('nombre').eq('id', reserva.servicio_id).single(),
+        supabase.from('barberia').select('nombre, tipo_barberia').eq('id', reserva.barberia_id).single(),
+      ]);
+
+      return res.status(200).json({
+        cliente_nombre: reserva.cliente_nombre,
+        fecha: reserva.fecha,
+        hora_inicio: reserva.hora_inicio,
+        estado: reserva.estado,
+        barberoNombre: barbero?.nombre || '',
+        servicioNombre: servicio?.nombre || '',
+        barberiaNombre: barberia?.nombre || '',
+        tipo_barberia: barberia?.tipo_barberia || null,
+      });
+    } catch (error) {
+      console.error('Error en cancel-reservation (detalle):', error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {

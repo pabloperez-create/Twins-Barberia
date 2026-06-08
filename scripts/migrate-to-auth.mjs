@@ -1,3 +1,7 @@
+// ⚠️ OBSOLETO (2026-06-08) — NO EJECUTAR. La columna `usuarios.password_hash` que
+// este script lee ya fue eliminada (Fase 1.4 paso 6). Se conserva solo como registro
+// histórico de cómo se migraron los 11 usuarios a Supabase Auth. Correrlo fallará.
+//
 // Migración Fase 1.2 — crea los usuarios existentes en Supabase Auth y los
 // linkea con usuarios.auth_id. NO toca el login actual (sigue funcionando).
 //

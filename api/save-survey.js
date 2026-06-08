@@ -24,15 +24,18 @@ export default async function handler(req, res) {
       if (!encuestaId) return res.status(400).json({ error: 'Falta encuestaId' });
       const { data: enc } = await supabase
         .from('encuestas')
-        .select('estrellas, cliente_nombre, barbero_id, barberia:barberia_id(nombre)')
+        .select('estrellas, cliente_nombre, barbero_id, barberia_id')
         .eq('id', encuestaId)
         .single();
       if (!enc) return res.status(404).json({ error: 'Encuesta no encontrada' });
+      // No hay FK encuestas->barberia en el schema, así que el nombre se lee aparte.
+      const { data: barberia } = await supabase
+        .from('barberia').select('nombre').eq('id', enc.barberia_id).single();
       return res.status(200).json({
         estrellas: enc.estrellas,
         cliente_nombre: enc.cliente_nombre,
         barbero_id: enc.barbero_id,
-        barberiaNombre: enc.barberia?.nombre || '',
+        barberiaNombre: barberia?.nombre || '',
       });
     } catch (err) {
       console.error('Error leyendo encuesta:', err);

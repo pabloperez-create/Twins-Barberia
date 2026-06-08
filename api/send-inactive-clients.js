@@ -11,6 +11,11 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  // Solo invocable por Vercel Cron (manda Authorization: Bearer $CRON_SECRET).
+  if ((req.headers['authorization'] || '') !== `Bearer ${process.env.CRON_SECRET}`) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+
   try {
     // Obtener todas las barberías activas
     const { data: barberias } = await supabase

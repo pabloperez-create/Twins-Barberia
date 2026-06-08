@@ -150,9 +150,10 @@ export function VistaSuperAdmin({ usuario, onLogout, supabase }) {
 
       // 4. Crear usuario admin en Supabase Auth + fila `usuarios` (vía endpoint con service role)
       const usuarioId = `u-${Date.now()}`;
+      const { data: { session } } = await supabase.auth.getSession();
       const respUsuario = await fetch("/api/admin-create-user", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token || ""}` },
         body: JSON.stringify({
           id: usuarioId,
           barberia_id: barberiaId,

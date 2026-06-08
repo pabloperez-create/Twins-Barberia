@@ -87,10 +87,13 @@ export function TabBarberos({ supabase, barberiaId, tema: t }) {
         const timestamp = Date.now().toString().slice(-4);
         const usuarioId = `u-${baseId}-${timestamp}`;
         const barberoId = `b-${baseId}-${timestamp}`;
+        // Token de la sesión del admin (el endpoint valida JWT + rol)
+        const { data: { session } } = await supabase.auth.getSession();
+        const authHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token || ""}` };
         // Crea el usuario en Supabase Auth + fila `usuarios` (vía endpoint con service role)
         const respUsuario = await fetch("/api/admin-create-user", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders,
           body: JSON.stringify({ id: usuarioId, barberia_id: barberiaId, nombre: form.nombre.trim(), email: form.email.trim().toLowerCase(), password: form.password, rol: "barbero" }),
         });
         const dataUsuario = await respUsuario.json();
@@ -103,7 +106,7 @@ export function TabBarberos({ supabase, barberiaId, tema: t }) {
         const { error: errorBarbero } = await supabase.from("barberos").insert({ id: barberoId, barberia_id: barberiaId, usuario_id: usuarioId, nombre: form.nombre.trim(), especialidad: form.especialidad.trim() || null, horario_inicio: form.horario_inicio, horario_fin: form.horario_fin, foto_url, activo: true });
         if (errorBarbero) {
           // Rollback: borra usuario (fila + Auth) para no dejar huérfanos
-          await fetch("/api/admin-create-user", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: usuarioId }) });
+          await fetch("/api/admin-create-user", { method: "DELETE", headers: authHeaders, body: JSON.stringify({ id: usuarioId }) });
           throw errorBarbero;
         }
         mostrarMensaje("success", `✅ ${labelPro} "${form.nombre}" creado. Login: ${form.email}`);

@@ -1,6 +1,5 @@
 import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
-import { verifyToken } from './_verify-token.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const supabase = createClient(
@@ -11,7 +10,8 @@ const supabase = createClient(
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
-  if (req.method !== 'OPTIONS' && !verifyToken(req)) {
+  // Solo invocable por Vercel Cron (manda Authorization: Bearer $CRON_SECRET).
+  if ((req.headers['authorization'] || '') !== `Bearer ${process.env.CRON_SECRET}`) {
     return res.status(401).json({ error: 'No autorizado' });
   }
 

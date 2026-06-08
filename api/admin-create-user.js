@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { verifyToken } from './_verify-token.js';
 
 // Cliente admin (service role) — vive SOLO en el servidor. Bypassa RLS y
 // habilita auth.admin.* para crear usuarios en Supabase Auth.
@@ -16,12 +15,26 @@ const norm = (e) => (e || '').trim().toLowerCase();
 // (crear barbero) y VistaSuperAdmin (crear admin de una barbería nueva).
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-
-  if (req.method !== 'OPTIONS' && !verifyToken(req)) {
-    return res.status(401).json({ error: 'No autorizado' });
-  }
+  res.setHeader('Access-Control-Allow-Methods', 'POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // Autenticación: requiere el JWT de Supabase Auth del llamador (admin/super_admin).
+  // Antes bastaba verifyToken (Origin, spoofeable) → cualquiera con curl podía crear
+  // un super_admin. Ahora validamos la sesión real y el rol.
+  const authHeader = req.headers['authorization'] || '';
+  const jwt = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!jwt) return res.status(401).json({ error: 'No autenticado' });
+  const { data: getUserData, error: authErr } = await admin.auth.getUser(jwt);
+  const authUser = getUserData?.user;
+  if (authErr || !authUser) return res.status(401).json({ error: 'Sesión inválida' });
+  const { data: caller } = await admin
+    .from('usuarios').select('rol, barberia_id').eq('auth_id', authUser.id).maybeSingle();
+  if (!caller || !['admin', 'super_admin'].includes(caller.rol)) {
+    return res.status(403).json({ error: 'No autorizado' });
+  }
+  const esSuper = caller.rol === 'super_admin';
 
   // Rollback/cleanup: borra la fila `usuarios` y su usuario de Auth. Lo usa el
   // caller si un paso posterior (ej. insertar el barbero) falla.
@@ -29,7 +42,10 @@ export default async function handler(req, res) {
     try {
       const { id } = req.body || {};
       if (!id) return res.status(400).json({ error: 'Falta id' });
-      const { data: row } = await admin.from('usuarios').select('auth_id').eq('id', id).maybeSingle();
+      const { data: row } = await admin.from('usuarios').select('auth_id, barberia_id').eq('id', id).maybeSingle();
+      if (row && !esSuper && row.barberia_id !== caller.barberia_id) {
+        return res.status(403).json({ error: 'Fuera de tu barbería' });
+      }
       await admin.from('usuarios').delete().eq('id', id);
       if (row?.auth_id) await admin.auth.admin.deleteUser(row.auth_id);
       return res.status(200).json({ ok: true });
@@ -49,6 +65,13 @@ export default async function handler(req, res) {
     }
     if (password.length < 6) {
       return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+
+    // Autorización: super_admin crea cualquier rol/barbería; admin solo crea
+    // barberos en SU propia barbería.
+    if (!esSuper) {
+      if (barberia_id !== caller.barberia_id) return res.status(403).json({ error: 'Fuera de tu barbería' });
+      if (rol !== 'barbero') return res.status(403).json({ error: 'No puedes crear ese rol' });
     }
 
     const emailNorm = norm(email);

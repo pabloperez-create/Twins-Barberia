@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import { verifyToken } from './_verify-token.js';
 
@@ -74,12 +73,10 @@ export default async function handler(req, res) {
 
     const authId = created.user.id;
 
-    // 2) Insertar fila espejo en `usuarios`. La auth real es Supabase Auth (auth_id);
-    // `password_hash` es NOT NULL todavía, así que ponemos un valor aleatorio
-    // inutilizable (nunca matchea el fallback `=== password`). Se elimina en el DROP de Fase 1.4.
+    // 2) Insertar fila espejo en `usuarios`. La auth real es Supabase Auth (auth_id).
     const { data: usuario, error: uErr } = await admin
       .from('usuarios')
-      .insert({ id, barberia_id, nombre: nombre.trim(), email: emailNorm, rol, auth_id: authId, password_hash: randomUUID() })
+      .insert({ id, barberia_id, nombre: nombre.trim(), email: emailNorm, rol, auth_id: authId })
       .select()
       .single();
 

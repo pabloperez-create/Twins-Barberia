@@ -161,7 +161,10 @@ Email confirmación (dorado + logo WhatsApp + link cancelar) · cancelación por
   - Solo-staff scopeado: `campanas_marketing`, `duraciones_barbero`.
   - Lectura pública + escritura aislada: `barberos`, `servicios_principales`, `servicios_adicionales`, `bloqueos_horarios`, `encuestas`, `barberia` (esta por `id`, INSERT solo super_admin).
   - `reservas`: anón SELECT+INSERT, staff aislado, anón NO update/delete; `usuarios`: anón sin acceso, self-read + staff de su barbería.
-  - **`reservas` etapa B ✅** — anón ya no lee PII: `cancel-reservation` tiene modo GET "detalle" (valida token HMAC), `VistaCancelar` lee por ahí, y un column-GRANT limita el SELECT anónimo de `reservas` a columnas de agenda. Falta el mismo tratamiento en `encuestas` (id `enc-<reservaId>` adivinable; no urgente).
+  - **Etapa B (anti-PII) ✅** — anón ya no lee PII por id adivinable:
+    - `reservas`: `cancel-reservation` modo GET "detalle" (valida token HMAC) + `VistaCancelar` lee por ahí + column-GRANT que limita el SELECT anónimo a columnas de agenda.
+    - `encuestas`: `save-survey` modo GET "detalle" (verifyToken) + `VistaEncuesta` lee por ahí + policy anón `sel_publico_reviews` (solo `visible_publico=true`).
+  - **Endpoints `api/*` usan service_role** (no anon key): obligatorio con RLS activo. La anon key solo en el frontend.
 
 ## Pendientes
 

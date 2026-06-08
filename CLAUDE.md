@@ -161,7 +161,7 @@ Email confirmación (dorado + logo WhatsApp + link cancelar) · cancelación por
   - Solo-staff scopeado: `campanas_marketing`, `duraciones_barbero`.
   - Lectura pública + escritura aislada: `barberos`, `servicios_principales`, `servicios_adicionales`, `bloqueos_horarios`, `encuestas`, `barberia` (esta por `id`, INSERT solo super_admin).
   - `reservas`: anón SELECT+INSERT, staff aislado, anón NO update/delete; `usuarios`: anón sin acceso, self-read + staff de su barbería.
-  - **Pendiente (etapa B, toca frontend):** anón aún lee PII de `reservas`/`encuestas` por id (ids adivinables). Cerrar con column-GRANT + mover el `select *` de `VistaCancelar.jsx` a un endpoint con token HMAC.
+  - **`reservas` etapa B ✅** — anón ya no lee PII: `cancel-reservation` tiene modo GET "detalle" (valida token HMAC), `VistaCancelar` lee por ahí, y un column-GRANT limita el SELECT anónimo de `reservas` a columnas de agenda. Falta el mismo tratamiento en `encuestas` (id `enc-<reservaId>` adivinable; no urgente).
 
 ## Pendientes
 

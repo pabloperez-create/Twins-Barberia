@@ -21,17 +21,25 @@ export function VistaEncuesta({ supabase, encuestaId, estrellasInicial }) {
 
   const cargarEncuesta = async () => {
     try {
-      const { data } = await supabase
-        .from("encuestas")
-        .select("*, barberia:barberia_id(nombre)")
-        .eq("id", encuestaId)
-        .single();
+      // Lectura por endpoint (antes select directo que exponía encuestas por id
+      // adivinable). save-survey en modo GET valida origen y devuelve lo justo.
+      const resp = await fetch(`/api/save-survey?encuestaId=${encodeURIComponent(encuestaId)}`);
+      if (!resp.ok) {
+        setEstado("error");
+        return;
+      }
+      const data = await resp.json();
 
       if (data?.estrellas) {
         setEstado("yaRespondida");
         setEstrellas(data.estrellas);
       }
-      setEncuesta(data);
+      setEncuesta({
+        estrellas: data.estrellas,
+        cliente_nombre: data.cliente_nombre,
+        barbero_id: data.barbero_id,
+        barberia: { nombre: data.barberiaNombre },
+      });
     } catch (err) {
       setEstado("error");
     }

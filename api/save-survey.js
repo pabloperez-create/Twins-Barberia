@@ -14,6 +14,32 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // Modo "detalle" (GET): devuelve lo que muestra VistaEncuesta. Antes era un
+  // select directo anónimo; ahora la lectura pasa por aquí (gateado por verifyToken)
+  // para que el anón no pueda leer encuestas por id adivinable (enc-<reservaId>).
+  if (req.method === 'GET') {
+    try {
+      const { encuestaId } = req.query;
+      if (!encuestaId) return res.status(400).json({ error: 'Falta encuestaId' });
+      const { data: enc } = await supabase
+        .from('encuestas')
+        .select('estrellas, cliente_nombre, barbero_id, barberia:barberia_id(nombre)')
+        .eq('id', encuestaId)
+        .single();
+      if (!enc) return res.status(404).json({ error: 'Encuesta no encontrada' });
+      return res.status(200).json({
+        estrellas: enc.estrellas,
+        cliente_nombre: enc.cliente_nombre,
+        barbero_id: enc.barbero_id,
+        barberiaNombre: enc.barberia?.nombre || '',
+      });
+    } catch (err) {
+      console.error('Error leyendo encuesta:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {

@@ -543,6 +543,33 @@ export function VistaReserva({ supabase, barberiaId }) {
         }
       }
 
+      // WhatsApp de confirmación — best-effort (nunca bloquea la reserva) y gateado por
+      // feature flag. OJO: el endpoint /api/send-whatsapp está DESACTIVADO (renombrado
+      // _send-whatsapp.js) hasta tener el sender de producción de Twilio aprobado; mientras
+      // tanto esta llamada da 404 y se traga en el catch. Ver memoria (estado WhatsApp).
+      if (clienteTelefono && barberiaData?.configuracion?.features?.whatsapp_confirmacion) {
+        try {
+          await fetch("/api/send-whatsapp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              clienteTelefono,
+              clienteNombre,
+              barberiaNombre: barberiaData?.nombre || "Tu Barbería",
+              barberoNombre: barberoFinalData?.nombre || "el profesional",
+              servicioNombre: servicioSeleccionado.nombre,
+              fecha: fechaSeleccionada,
+              hora: horaSeleccionada,
+              precio: precioTotal,
+              barberiaId,
+              tipo: "confirmacion",
+            }),
+          });
+        } catch (waError) {
+          console.error("⚠️ WhatsApp confirmación falló (best-effort):", waError);
+        }
+      }
+
       try {
         await fetch("/api/google-calendar", {
           method: "POST",

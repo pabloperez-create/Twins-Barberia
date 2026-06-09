@@ -109,6 +109,31 @@ export default async function handler(req, res) {
 
         await supabase.from('reservas').update({ recordatorio_email_enviado_at: new Date().toISOString() }).eq('id', r.id);
         resultadosRecordatorios.push({ id: r.id, ok: true });
+
+        // WhatsApp recordatorio — best-effort, gateado por feature flag. El endpoint
+        // /api/send-whatsapp está DESACTIVADO hasta tener el sender de producción de
+        // Twilio; mientras tanto da 404 y se traga en el catch. Ver memoria.
+        if (r.cliente_telefono && configuracion.features?.whatsapp_recordatorios) {
+          try {
+            await fetch('https://twins-barberia.vercel.app/api/send-whatsapp', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-api-token': process.env.API_SECRET_TOKEN || '' },
+              body: JSON.stringify({
+                clienteTelefono: r.cliente_telefono,
+                clienteNombre: r.cliente_nombre,
+                barberiaNombre,
+                barberoNombre: r.barbero?.nombre || 'el profesional',
+                servicioNombre: r.servicio?.nombre || 'tu servicio',
+                fecha: r.fecha,
+                hora: r.hora_inicio,
+                barberiaId: r.barberia_id,
+                tipo: 'recordatorio_24h',
+              }),
+            });
+          } catch (e) {
+            console.error('WhatsApp recordatorio falló (best-effort):', e);
+          }
+        }
       } catch (err) {
         resultadosRecordatorios.push({ id: r.id, ok: false, error: err.message });
       }

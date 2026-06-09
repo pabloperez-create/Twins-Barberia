@@ -48,8 +48,9 @@ export default async function handler(req, res) {
       .single();
 
     const features = barberiaData?.configuracion?.features || {};
-    if (!features.whatsapp_recordatorios) {
-      return res.status(200).json({ ok: false, motivo: 'Feature WhatsApp desactivada para esta barbería' });
+    const flagRequerida = tipo === 'confirmacion' ? 'whatsapp_confirmacion' : 'whatsapp_recordatorios';
+    if (!features[flagRequerida]) {
+      return res.status(200).json({ ok: false, motivo: `Feature ${flagRequerida} desactivada para esta barbería` });
     }
 
     // Verificar credenciales Twilio

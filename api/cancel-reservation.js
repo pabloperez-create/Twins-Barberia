@@ -154,6 +154,31 @@ export default async function handler(req, res) {
       }
     }
 
+    // WhatsApp de cancelación — best-effort, gateado por feature flag. OJO: el endpoint
+    // /api/send-whatsapp está DESACTIVADO (_send-whatsapp.js) hasta tener el sender de
+    // producción de Twilio; mientras tanto da 404 y se traga en el catch. Ver memoria.
+    if (reserva.cliente_telefono && barberia?.configuracion?.features?.whatsapp_recordatorios) {
+      try {
+        await fetch('https://twins-barberia.vercel.app/api/send-whatsapp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-token': process.env.API_SECRET_TOKEN || '' },
+          body: JSON.stringify({
+            clienteTelefono: reserva.cliente_telefono,
+            clienteNombre: reserva.cliente_nombre,
+            barberiaNombre: barberia?.nombre || 'Tu Barbería',
+            barberoNombre: barbero?.nombre || 'tu profesional',
+            servicioNombre: servicio?.nombre || 'tu servicio',
+            fecha: reserva.fecha,
+            hora: reserva.hora_inicio,
+            barberiaId: reserva.barberia_id,
+            tipo: 'cancelacion',
+          }),
+        });
+      } catch (e) {
+        console.error('No se pudo enviar WhatsApp de cancelación:', e);
+      }
+    }
+
     return res.status(200).json({ ok: true });
   } catch (error) {
     console.error('Error en cancel-reservation:', error);

@@ -12,6 +12,7 @@ export function VistaInicio({
   barberiaId = "org-twins",
   onNavigate,
   supabase,
+  barberiaData = null,
 }) {
   const [barberia, setBarberia] = useState(null);
   const [encuestas, setEncuestas] = useState([]);
@@ -140,11 +141,14 @@ export function VistaInicio({
       </span>
     ));
 
-  const bgInicial =
-    barberiaId !== "org-twins"
-      ? "linear-gradient(135deg, #fce8f0 0%, #fdf0f6 40%, #fce4ec 70%, #f8d7e8 100%)"
-      : "#0c0a09";
-  const textInicial = barberiaId !== "org-twins" ? "#b08090" : "#78716c";
+  // Fondo de la pantalla de carga según el TIPO real de la barbería (antes
+  // asumía que solo org-twins era barbería oscura → flasheaba rosado en los demás).
+  const tipoNegocioInicial = barberia?.tipo_negocio ?? barberiaData?.tipo_negocio;
+  const esSalonInicial = tipoNegocioInicial === "salon";
+  const bgInicial = esSalonInicial
+    ? "linear-gradient(135deg, #fce8f0 0%, #fdf0f6 40%, #fce4ec 70%, #f8d7e8 100%)"
+    : "#0c0a09";
+  const textInicial = esSalonInicial ? "#b08090" : "#78716c";
   if (cargando) {
     return (
       <div

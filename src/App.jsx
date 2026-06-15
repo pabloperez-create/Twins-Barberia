@@ -160,7 +160,7 @@ export default function App() {
   }
 
   if (vista === "inicio") {
-    return <VistaInicio barberiaId={barberiaId} onNavigate={(v) => setVista(v)} supabase={supabase} />;
+    return <VistaInicio barberiaId={barberiaId} onNavigate={(v) => setVista(v)} supabase={supabase} barberiaData={barberiaData} />;
   }
 
   const esSalonApp = barberiaData?.tipo_barberia === "salon";

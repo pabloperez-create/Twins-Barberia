@@ -84,7 +84,9 @@ export function VistaReserva({ supabase, barberiaId }) {
 
       const { data: brbs } = await supabase
         .from("barberos")
-        .select("*")
+        // Columnas explícitas (sin google tokens ni telefono): el flujo público
+        // no los necesita y ahora anón no tiene permiso a esas columnas.
+        .select("id, barberia_id, usuario_id, nombre, especialidad, dias_libres, horario_inicio, horario_fin, duracion_promedio_minutos, estado, fecha_creacion, activo, horarios_semana, foto_url, intervalo_minutos, google_calendar_conectado, orden")
         .eq("barberia_id", barberiaId)
         .eq("activo", true)
         .order("orden", { ascending: true, nullsFirst: false })

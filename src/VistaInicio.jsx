@@ -248,7 +248,7 @@ export function VistaInicio({
               fontFamily: T.titleFont,
             }}
           >
-            {barberia?.nombre || "AgendaIA"}
+            {barberia?.nombre || "reservaIA"}
           </h1>
           <p
             style={{
@@ -337,6 +337,7 @@ export function VistaInicio({
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
+              gridAutoRows: "1fr",
               gap: 12,
             }}
           >
@@ -493,6 +494,7 @@ export function VistaInicio({
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
+                gridAutoRows: "1fr",
                 gap: 12,
               }}
             >
@@ -588,7 +590,7 @@ export function VistaInicio({
       {/* Footer */}
       <div style={{ paddingBottom: 24, textAlign: "center" }}>
         <p style={{ color: T.footerColor, fontSize: 11 }}>
-          Powered by AgendaIA
+          Powered by reservaIA
         </p>
       </div>
     </div>

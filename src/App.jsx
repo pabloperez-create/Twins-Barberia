@@ -217,7 +217,7 @@ function VistaLogin({ onLogin, cargando, error, onBack, barberiaData }) {
               ? <div style={{ fontSize: 48, marginBottom: 16 }}>✨</div>
               : <Scissors size={48} style={{ margin: "0 auto 16px", color: T.accent }} />
           }
-          <h1 style={{ fontSize: 32, fontWeight: 700, margin: 0 }}>{barberiaData?.nombre || "AgendaIA"}</h1>
+          <h1 style={{ fontSize: 32, fontWeight: 700, margin: 0 }}>{barberiaData?.nombre || "reservaIA"}</h1>
           <p style={{ color: T.accent, marginTop: 8 }}>Acceso administrativo</p>
         </div>
         <div style={{ background: T.cardBg, border: `1px solid ${T.cardBorder}`, borderRadius: 12, padding: 32 }}>

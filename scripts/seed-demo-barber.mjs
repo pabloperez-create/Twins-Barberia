@@ -44,6 +44,9 @@ const demoBarberia = {
   monto_mensual: null, fecha_ultimo_pago: null, proximo_pago: null,
 };
 delete demoBarberia.fecha_creacion;
+// No clonar el google_place_id de Twins: la demo usa sus propias encuestas como reseñas.
+demoBarberia.configuracion = { ...(src.configuracion || {}) };
+delete demoBarberia.configuracion.google_place_id;
 { const { error } = await svc.from('barberia').insert(demoBarberia); if (error) throw new Error('barberia: ' + error.message); }
 console.log(`✅ Barbería "${demoBarberia.nombre}" creada (${DST}, subdominio "demo", plan pro).`);
 

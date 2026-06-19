@@ -8,17 +8,19 @@ export function InfoContacto({ config = {}, T }) {
   if (!hayAlgo) return null;
 
   return (
-    <div style={{ maxWidth: 600, width: "100%", margin: "0 auto", textAlign: "center", padding: "8px 0 8px" }}>
+    <div style={{ maxWidth: 900, width: "100%", margin: "0 auto", textAlign: "center", padding: "8px 0 8px" }}>
+      {/* Separador de sección */}
+      <div style={{ borderTop: `1px solid ${T.cardBorder}`, maxWidth: 760, margin: "0 auto 36px" }} />
       {/* Info cards */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))",
+          gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
           gap: 12,
         }}
       >
         {config.horario_atencion && (
-          <div style={{ background: T.cardBg, border: `0.5px solid ${T.cardBorder}`, borderRadius: 8, padding: 16, display: "flex", alignItems: "flex-start", gap: 10, textAlign: "left" }}>
+          <div style={{ background: T.cardBg, border: `0.5px solid ${T.cardBorder}`, borderRadius: 10, padding: 18, minHeight: 100, display: "flex", alignItems: "flex-start", gap: 10, textAlign: "left" }}>
             <Clock size={18} color={T.cardIconColor} style={{ flexShrink: 0, marginTop: 2 }} />
             <div>
               <p style={{ margin: 0, color: T.cardLabelColor, fontSize: 10, textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>Horario</p>
@@ -27,7 +29,7 @@ export function InfoContacto({ config = {}, T }) {
           </div>
         )}
         {config.direccion && config.direccion !== "Por definir" && (
-          <div style={{ background: T.cardBg, border: `0.5px solid ${T.cardBorder}`, borderRadius: 8, padding: 16, display: "flex", alignItems: "flex-start", gap: 10, textAlign: "left" }}>
+          <div style={{ background: T.cardBg, border: `0.5px solid ${T.cardBorder}`, borderRadius: 10, padding: 18, minHeight: 100, display: "flex", alignItems: "flex-start", gap: 10, textAlign: "left" }}>
             <MapPin size={18} color={T.cardIconColor} style={{ flexShrink: 0, marginTop: 2 }} />
             <div>
               <p style={{ margin: 0, color: T.cardLabelColor, fontSize: 10, textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>Dirección</p>
@@ -40,7 +42,7 @@ export function InfoContacto({ config = {}, T }) {
             href={`https://instagram.com/${config.instagram.replace("@", "")}`}
             target="_blank"
             rel="noreferrer"
-            style={{ background: T.cardBg, border: `0.5px solid ${T.cardBorder}`, borderRadius: 8, padding: 16, display: "flex", alignItems: "flex-start", gap: 10, textAlign: "left", textDecoration: "none" }}
+            style={{ background: T.cardBg, border: `0.5px solid ${T.cardBorder}`, borderRadius: 10, padding: 18, minHeight: 100, display: "flex", alignItems: "flex-start", gap: 10, textAlign: "left", textDecoration: "none" }}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginTop: 2 }}>
               <defs>

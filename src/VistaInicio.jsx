@@ -432,6 +432,13 @@ export function VistaInicio({
                       color: T.reviewTextColor,
                       fontSize: 12,
                       lineHeight: 1.5,
+                      // Recorta a 4 líneas con "..." y reserva esa altura para
+                      // que todas las tarjetas queden parejas (sin descuadre).
+                      display: "-webkit-box",
+                      WebkitLineClamp: 4,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                      minHeight: 72,
                     }}
                   >
                     "{r.texto}"
@@ -557,6 +564,11 @@ export function VistaInicio({
                         color: T.reviewTextColor,
                         fontSize: 12,
                         lineHeight: 1.5,
+                        display: "-webkit-box",
+                        WebkitLineClamp: 4,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        minHeight: 72,
                       }}
                     >
                       "{e.comentario}"

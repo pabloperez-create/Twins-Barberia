@@ -349,6 +349,7 @@ export function VistaInicio({
                   border: `0.5px solid ${T.cardBorder}`,
                   borderRadius: 10,
                   padding: 18,
+                  minHeight: 200,
                 }}
               >
                 <div
@@ -506,6 +507,7 @@ export function VistaInicio({
                     border: `0.5px solid ${T.cardBorder}`,
                     borderRadius: 10,
                     padding: 18,
+                    minHeight: 200,
                   }}
                 >
                   <div

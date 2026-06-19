@@ -1,11 +1,22 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-// Carrusel de "Nuestros trabajos" para la página pública. Auto-desliza las fotos
-// (sin clicks ni enlaces). Se OCULTA si la barbería no tiene fotos cargadas.
+const INTERVALO_MS = 4500; // tiempo antes de pasar a las siguientes fotos
+
+const calcPerPage = () => {
+  if (typeof window === "undefined") return 3;
+  if (window.innerWidth < 560) return 1;
+  if (window.innerWidth < 900) return 2;
+  return 3;
+};
+
+// Carrusel de "Nuestros trabajos": muestra varias fotos a la vez (3 en desktop,
+// 2 en tablet, 1 en móvil) y auto-avanza a las SIGUIENTES cada INTERVALO_MS.
+// Sin clicks ni enlaces. Se oculta si la barbería no tiene fotos.
 export function GaleriaCarrusel({ barberiaId, supabase, T }) {
   const [fotos, setFotos] = useState([]);
-  const [idx, setIdx] = useState(0);
+  const [perPage, setPerPage] = useState(calcPerPage());
+  const [page, setPage] = useState(0);
   const timer = useRef(null);
 
   useEffect(() => {
@@ -20,68 +31,78 @@ export function GaleriaCarrusel({ barberiaId, supabase, T }) {
           .order("orden", { ascending: true });
         if (activo && data) setFotos(data);
       } catch {
-        // Si la tabla no existe o falla, simplemente no se muestra la galería.
         if (activo) setFotos([]);
       }
     })();
     return () => { activo = false; };
   }, [barberiaId]);
 
-  // Auto-avance cada 4s
+  // Responsivo
   useEffect(() => {
-    if (fotos.length <= 1) return;
-    timer.current = setInterval(() => setIdx((i) => (i + 1) % fotos.length), 4000);
-    return () => clearInterval(timer.current);
-  }, [fotos.length]);
+    const onResize = () => setPerPage(calcPerPage());
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
-  const reiniciarTimer = () => {
+  const pageCount = Math.max(1, Math.ceil(fotos.length / perPage));
+
+  // Si cambia perPage/fotos y la página actual queda fuera de rango, la ajusto
+  useEffect(() => { if (page > pageCount - 1) setPage(0); }, [pageCount, page]);
+
+  // Auto-avance por página
+  useEffect(() => {
+    if (pageCount <= 1) return;
+    timer.current = setInterval(() => setPage((p) => (p + 1) % pageCount), INTERVALO_MS);
+    return () => clearInterval(timer.current);
+  }, [pageCount]);
+
+  const ir = (n) => {
+    setPage(((n % pageCount) + pageCount) % pageCount);
     if (timer.current) clearInterval(timer.current);
-    if (fotos.length > 1) timer.current = setInterval(() => setIdx((i) => (i + 1) % fotos.length), 4000);
+    if (pageCount > 1) timer.current = setInterval(() => setPage((p) => (p + 1) % pageCount), INTERVALO_MS);
   };
-  const ir = (n) => { setIdx((n + fotos.length) % fotos.length); reiniciarTimer(); };
 
   if (fotos.length === 0) return null;
 
   return (
-    <div style={{ marginTop: 56, width: "100%" }}>
-      <h2 style={{ margin: "0 0 20px 0", color: T.titleColor, fontSize: 22, fontWeight: 700, textAlign: "center", fontFamily: T.titleFont }}>
+    <div style={{ marginTop: 52, width: "100%" }}>
+      <h2 style={{ margin: "0 0 18px 0", color: T.titleColor, fontSize: 20, fontWeight: 700, textAlign: "center", fontFamily: T.titleFont }}>
         Nuestros trabajos
       </h2>
 
-      <div style={{ position: "relative", width: "100%", maxWidth: 520, margin: "0 auto" }}>
+      <div style={{ position: "relative", width: "100%", maxWidth: 680, margin: "0 auto" }}>
         {/* Viewport */}
-        <div style={{ overflow: "hidden", borderRadius: 14, border: `0.5px solid ${T.cardBorder}`, aspectRatio: "4 / 5", background: T.cardBg }}>
-          {/* Track */}
-          <div style={{ display: "flex", height: "100%", transform: `translateX(-${idx * 100}%)`, transition: "transform 0.55s ease" }}>
+        <div style={{ overflow: "hidden" }}>
+          {/* Track: una "página" por cada grupo; cada foto ocupa 100/perPage % */}
+          <div style={{ display: "flex", transform: `translateX(-${page * 100}%)`, transition: "transform 0.55s ease" }}>
             {fotos.map((f) => (
-              <img
-                key={f.id}
-                src={f.foto_url}
-                alt="Trabajo"
-                loading="lazy"
-                style={{ minWidth: "100%", width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-              />
+              <div key={f.id} style={{ flex: `0 0 ${100 / perPage}%`, maxWidth: `${100 / perPage}%`, padding: "0 5px", boxSizing: "border-box" }}>
+                <img
+                  src={f.foto_url}
+                  alt="Trabajo"
+                  loading="lazy"
+                  style={{ width: "100%", aspectRatio: "3 / 4", objectFit: "cover", display: "block", borderRadius: 10, border: `0.5px solid ${T.cardBorder}` }}
+                />
+              </div>
             ))}
           </div>
         </div>
 
-        {fotos.length > 1 && (
+        {pageCount > 1 && (
           <>
-            {/* Flechas */}
-            <button onClick={() => ir(idx - 1)} aria-label="Anterior"
-              style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.45)", border: "none", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff" }}>
-              <ChevronLeft size={20} />
+            <button onClick={() => ir(page - 1)} aria-label="Anteriores"
+              style={{ position: "absolute", left: -6, top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.5)", border: "none", borderRadius: "50%", width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff" }}>
+              <ChevronLeft size={18} />
             </button>
-            <button onClick={() => ir(idx + 1)} aria-label="Siguiente"
-              style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.45)", border: "none", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff" }}>
-              <ChevronRight size={20} />
+            <button onClick={() => ir(page + 1)} aria-label="Siguientes"
+              style={{ position: "absolute", right: -6, top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.5)", border: "none", borderRadius: "50%", width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff" }}>
+              <ChevronRight size={18} />
             </button>
 
-            {/* Puntos */}
             <div style={{ display: "flex", justifyContent: "center", gap: 7, marginTop: 14 }}>
-              {fotos.map((_, i) => (
-                <button key={i} onClick={() => ir(i)} aria-label={`Foto ${i + 1}`}
-                  style={{ width: i === idx ? 22 : 8, height: 8, borderRadius: 4, border: "none", cursor: "pointer", padding: 0, transition: "width 0.3s", background: i === idx ? T.iconColor : T.cardBorder }} />
+              {Array.from({ length: pageCount }, (_, i) => (
+                <button key={i} onClick={() => ir(i)} aria-label={`Grupo ${i + 1}`}
+                  style={{ width: i === page ? 22 : 8, height: 8, borderRadius: 4, border: "none", cursor: "pointer", padding: 0, transition: "width 0.3s", background: i === page ? T.iconColor : T.cardBorder }} />
               ))}
             </div>
           </>

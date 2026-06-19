@@ -7,6 +7,7 @@ import {
   LogIn,
   Sparkles,
 } from "lucide-react";
+import { GaleriaCarrusel } from "./components/GaleriaCarrusel";
 
 export function VistaInicio({
   barberiaId = "org-twins",
@@ -488,6 +489,11 @@ export function VistaInicio({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Galería de trabajos */}
+      <div style={{ padding: "0 24px 8px", maxWidth: 900, margin: "0 auto" }}>
+        <GaleriaCarrusel barberiaId={barberiaId} supabase={supabase} T={T} />
       </div>
 
       {/* Reseñas Google */}

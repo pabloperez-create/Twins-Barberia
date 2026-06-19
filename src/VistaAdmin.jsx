@@ -5,6 +5,7 @@ import { TabConfiguracion } from "./admin/TabConfiguracion";
 import { TabServicios } from "./admin/TabServicios";
 import { TabAdicionales } from "./admin/TabAdicionales";
 import { TabBarberos } from "./admin/TabBarberos";
+import { TabGaleria } from "./admin/TabGaleria";
 import { TabEstadisticas } from "./admin/TabEstadisticas";
 import { TabBloqueos } from "./admin/TabBloqueos";
 import { TabEncuestas } from "./admin/TabEncuestas";
@@ -55,6 +56,7 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
     tabs.push({ id: "servicios", label: "Servicios" });
     tabs.push({ id: "adicionales", label: "Adicionales" });
     tabs.push({ id: "barberos", label: t.tipo === "salon" ? "Estilistas" : "Barberos" });
+    tabs.push({ id: "galeria", label: "🖼️ Galería" });
     if (isFeatureEnabled(barberia, "bloqueos_horarios")) {
       tabs.push({ id: "bloqueos", label: "Bloqueos" });
     }
@@ -146,6 +148,7 @@ export function VistaAdmin({ usuario, onLogout, supabase }) {
         {tab === "servicios" && <TabServicios supabase={supabase} barberiaId={usuario?.barberia_id} tema={t} />}
         {tab === "adicionales" && <TabAdicionales supabase={supabase} barberiaId={usuario?.barberia_id} tema={t} />}
         {tab === "barberos" && <TabBarberos supabase={supabase} barberiaId={usuario?.barberia_id} tema={t} />}
+        {tab === "galeria" && <TabGaleria supabase={supabase} barberiaId={usuario?.barberia_id} tema={t} />}
         {tab === "bloqueos" && <TabBloqueos supabase={supabase} barberiaId={usuario?.barberia_id} tema={t} />}
         {tab === "estadisticas" && <TabEstadisticas supabase={supabase} barberiaId={usuario?.barberia_id} tema={t} />}
         {tab === "encuestas" && <TabEncuestas supabase={supabase} barberiaId={usuario?.barberia_id} barberia={barberia} tema={t} />}

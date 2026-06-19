@@ -196,7 +196,6 @@ export function VistaInicio({
       {/* Hero */}
       <div
         style={{
-          minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",

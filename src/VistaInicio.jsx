@@ -19,18 +19,19 @@ export function VistaInicio({
   const [googleReviews, setGoogleReviews] = useState(null);
   const [cargando, setCargando] = useState(true);
 
-  const PLACE_ID = "ChIJGZpoFlLnYpYRQXK09YRxhgk";
-
   useEffect(() => {
     cargarBarberia();
     cargarEncuestas();
-    cargarGoogleReviews();
   }, []);
 
-  const cargarGoogleReviews = async () => {
+  // El place_id de Google ahora es por barbería (configuracion.google_place_id).
+  // Si la barbería no tiene uno configurado, no se piden reseñas de Google y se
+  // usan las encuestas propias como fallback.
+  const cargarGoogleReviews = async (placeId) => {
+    if (!placeId) return;
     try {
       const response = await fetch(
-        `/api/get-google-reviews?barberiaId=${barberiaId}&placeId=${PLACE_ID}`,
+        `/api/get-google-reviews?barberiaId=${barberiaId}&placeId=${placeId}`,
       );
       if (response.ok) {
         const data = await response.json();
@@ -49,6 +50,7 @@ export function VistaInicio({
         .eq("id", barberiaId)
         .single();
       setBarberia(data);
+      cargarGoogleReviews(data?.configuracion?.google_place_id);
     } catch (err) {
       console.error("Error cargando barbería:", err);
     }

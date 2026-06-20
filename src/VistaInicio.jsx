@@ -341,7 +341,7 @@ export function VistaInicio({
               gap: 12,
             }}
           >
-            {googleReviews.reviews.map((r, i) => (
+            {googleReviews.reviews.slice(0, 3).map((r, i) => (
               <div
                 key={i}
                 style={{
@@ -499,7 +499,7 @@ export function VistaInicio({
                 gap: 12,
               }}
             >
-              {encuestas.map((e, i) => (
+              {encuestas.slice(0, 3).map((e, i) => (
                 <div
                   key={i}
                   style={{

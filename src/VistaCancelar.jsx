@@ -114,7 +114,10 @@ export function VistaCancelar({ supabase, reservaId, token }) {
             </div>
             <h2 className="text-2xl font-bold mb-2">Reserva cancelada</h2>
             <p className={`${t.textoSub} mb-1`}>Tu reserva fue cancelada correctamente.</p>
-            <p className={`${t.textoMuted} text-sm`}>Te enviamos un email de confirmación. ¡Esperamos verte pronto! 🙌</p>
+            <p className={`${t.textoMuted} text-sm mb-6`}>Te enviamos un email de confirmación. ¿Quieres agendar otra hora?</p>
+            <a href="/" className={`inline-block w-full py-3 ${t.boton} rounded font-bold text-center`}>
+              Reservar nueva hora
+            </a>
           </div>
         )}
 

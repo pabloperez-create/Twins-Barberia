@@ -195,7 +195,7 @@ export default async function handler(req, res) {
     <tr>
       <td style="background-color: ${esSalon ? "#fafaf9" : "#1c1917"}; padding: 24px 30px; text-align: center; border-top: 1px solid ${esSalon ? "#e7e5e4" : "#292524"};">
         <p style="margin: 0; color: ${esSalon ? "#78716c" : "#a8a29e"}; font-size: 12px;">
-          ¿No puedes asistir? <a href="${cancelUrl}" style="color: ${accentColor}; text-decoration: underline;">Cancela tu reserva aquí</a>
+          ¿No puedes asistir? <a href="${cancelUrl}" style="color: ${accentColor}; text-decoration: underline;">Cancela o reagenda tu reserva aquí</a>
         </p>
         <p style="margin: 8px 0 0 0; color: #a8a29e; font-size: 11px;">
           Reserva ID: ${reservaId}

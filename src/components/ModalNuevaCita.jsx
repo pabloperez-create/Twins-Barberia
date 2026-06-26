@@ -32,6 +32,7 @@ export function ModalNuevaCita({
   const [servicios, setServicios] = useState([]);
   const [adicionales, setAdicionales] = useState([]);
   const [barberos, setBarberos] = useState([]);
+  const [duracionesPorBarbero, setDuracionesPorBarbero] = useState({});
 
   const [clienteNombre, setClienteNombre] = useState("");
   const [clienteTelefono, setClienteTelefono] = useState("");
@@ -87,6 +88,18 @@ export function ModalNuevaCita({
       setServicios(serv.data || []);
       setAdicionales(adic.data || []);
       setBarberos(brbs.data || []);
+
+      // Duraciones personalizadas por barbero (mapa { barberoId: { servicioId: min } }).
+      const { data: durs } = await supabase
+        .from("duraciones_barbero")
+        .select("barbero_id, servicio_id, duracion_minutos")
+        .eq("barberia_id", barberiaId);
+      const mapaDur = {};
+      (durs || []).forEach((d) => {
+        if (!mapaDur[d.barbero_id]) mapaDur[d.barbero_id] = {};
+        mapaDur[d.barbero_id][d.servicio_id] = d.duracion_minutos;
+      });
+      setDuracionesPorBarbero(mapaDur);
     } catch (err) {
       console.error("Error cargando catálogos:", err);
     }
@@ -95,11 +108,14 @@ export function ModalNuevaCita({
 
   const servicioActual = servicios.find((s) => s.id === servicioId);
 
+  // Usa la duración PERSONALIZADA del barbero seleccionado (duraciones_barbero)
+  // con fallback a la duración global del servicio/adicional.
   const calcularDuracion = () => {
-    let total = servicioActual?.duracion_minutos || 0;
+    const dur = barberoId ? duracionesPorBarbero[barberoId] : null;
+    let total = dur?.[servicioId] ?? servicioActual?.duracion_minutos ?? 0;
     adicionalesSeleccionados.forEach((adId) => {
       const ad = adicionales.find((a) => a.id === adId);
-      if (ad) total += ad.duracion_minutos || 0;
+      total += dur?.[adId] ?? ad?.duracion_minutos ?? 0;
     });
     return total;
   };

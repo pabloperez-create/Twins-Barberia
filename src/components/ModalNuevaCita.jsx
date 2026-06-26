@@ -140,8 +140,8 @@ export function ModalNuevaCita({
   };
 
   const handleTelefonoChange = (e) => {
-    const valor = e.target.value.replace(/\D/g, "").slice(0, 8);
-    setClienteTelefono(valor);
+    const soloDigitos = e.target.value.replace(/\D/g, "").slice(0, 9);
+    setClienteTelefono(soloDigitos ? "+56" + soloDigitos : "");
   };
 
   const verificarConflictos = async () => {
@@ -214,8 +214,9 @@ export function ModalNuevaCita({
       setError("El nombre del cliente es obligatorio");
       return;
     }
-    if (clienteTelefono.length !== 8) {
-      setError("El teléfono debe tener 8 dígitos");
+    if (clienteTelefono.replace(/\D/g, "").length !== 11) {
+      // +56 (2) + 9 dígitos = 11
+      setError("El teléfono debe tener 9 dígitos (ej: 9 1234 5678)");
       return;
     }
 
@@ -252,7 +253,7 @@ export function ModalNuevaCita({
     try {
       const duracion = calcularDuracion();
       const precio = calcularPrecio();
-      const telefonoCompleto = "569" + clienteTelefono;
+      const telefonoCompleto = clienteTelefono; // ya viene como +56XXXXXXXXX
       const reservaId = `r-${Date.now()}`;
 
       // ⭐ La columna correcta se llama "adicionales_ids" (tipo ARRAY)
@@ -392,14 +393,15 @@ export function ModalNuevaCita({
                     </label>
                     <div className="flex">
                       <span className="bg-stone-700 border border-stone-700 border-r-0 rounded-l px-2 py-2 text-stone-300 text-sm">
-                        +569
+                        +56
                       </span>
                       <input
                         type="tel"
-                        value={clienteTelefono}
+                        inputMode="numeric"
+                        value={clienteTelefono.replace(/^\+56/, "")}
                         onChange={handleTelefonoChange}
-                        placeholder="12345678"
-                        maxLength={8}
+                        placeholder="9 1234 5678"
+                        maxLength={9}
                         className="flex-1 bg-stone-900 border border-stone-700 rounded-r px-3 py-2 text-white text-sm"
                       />
                     </div>

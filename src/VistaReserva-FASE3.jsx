@@ -464,6 +464,11 @@ export function VistaReserva({ supabase, barberiaId }) {
       setError("Completa nombre, teléfono y email");
       return false;
     }
+    if (paso === 5 && clienteTelefono.replace(/\D/g, "").length !== 11) {
+      // +56 (2) + 9 dígitos = 11 dígitos
+      setError("El teléfono debe tener 9 dígitos (ej: 9 1234 5678)");
+      return false;
+    }
     if (paso === 5 && clienteEmail && !/\S+@\S+\.\S+/.test(clienteEmail)) {
       setError("El email no es válido");
       return false;
@@ -887,13 +892,22 @@ export function VistaReserva({ supabase, barberiaId }) {
                 <label className="block text-sm font-semibold mb-2">
                   Teléfono <span className="text-red-400">*</span>
                 </label>
-                <input
-                  type="tel"
-                  value={clienteTelefono}
-                  onChange={(e) => setClienteTelefono(e.target.value)}
-                  placeholder="+56912345678"
-                  className="w-full bg-stone-800 border border-stone-700 rounded px-4 py-3 text-white"
-                />
+                {/* Prefijo +56 fijo: el cliente solo escribe su número (9 dígitos).
+                    Garantiza el formato correcto para WhatsApp/Twilio. */}
+                <div className="flex items-center w-full bg-stone-800 border border-stone-700 rounded overflow-hidden focus-within:border-amber-200">
+                  <span className="px-3 py-3 text-stone-400 bg-stone-900 border-r border-stone-700 select-none">+56</span>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    value={clienteTelefono.replace(/^\+56/, "")}
+                    onChange={(e) => {
+                      const soloDigitos = e.target.value.replace(/\D/g, "").slice(0, 9);
+                      setClienteTelefono(soloDigitos ? "+56" + soloDigitos : "");
+                    }}
+                    placeholder="9 1234 5678"
+                    className="flex-1 bg-stone-800 px-4 py-3 text-white outline-none"
+                  />
+                </div>
               </div>
 
               <div>

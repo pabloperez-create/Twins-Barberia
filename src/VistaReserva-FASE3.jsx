@@ -40,6 +40,7 @@ export function VistaReserva({ supabase, barberiaId }) {
   const [servicios, setServicios] = useState([]);
   const [adicionales, setAdicionales] = useState([]);
   const [barberos, setBarberos] = useState([]);
+  const [duracionesPorBarbero, setDuracionesPorBarbero] = useState({});
   const [horariosBarbero, setHorariosBarbero] = useState([]);
   const [barberiaData, setBarberiaData] = useState(null);
 
@@ -96,22 +97,42 @@ export function VistaReserva({ supabase, barberiaId }) {
       console.log("Adicionales cargados:", ads);
       console.log("Barberos cargados:", brbs);
 
+      // Duraciones personalizadas por barbero (cada barbero puede tener una
+      // duración distinta por servicio/adicional). Mapa: { barberoId: { servicioId: min } }.
+      const { data: durs } = await supabase
+        .from("duraciones_barbero")
+        .select("barbero_id, servicio_id, duracion_minutos")
+        .eq("barberia_id", barberiaId);
+      const mapaDur = {};
+      (durs || []).forEach((d) => {
+        if (!mapaDur[d.barbero_id]) mapaDur[d.barbero_id] = {};
+        mapaDur[d.barbero_id][d.servicio_id] = d.duracion_minutos;
+      });
+
       setServicios(srvs || []);
       setAdicionales(ads || []);
       setBarberos(brbs || []);
+      setDuracionesPorBarbero(mapaDur);
     } catch (err) {
       console.error("Error cargando datos:", err);
       setError("Error cargando datos");
     }
   };
 
-  const calcularDuracionTotal = () => {
-    const duracionServicio = servicioSeleccionado?.duracion_minutos || 30;
-    const duracionAdicionales = adicionalesSeleccionados.reduce(
-      (sum, id) =>
-        sum + (adicionales.find((a) => a.id === id)?.duracion_minutos || 0),
-      0,
-    );
+  // Duración total de la cita. Usa la duración PERSONALIZADA del barbero
+  // (duraciones_barbero) si está configurada; si no, cae a la duración global
+  // del servicio/adicional. Antes ignoraba duraciones_barbero → guardaba la
+  // global (ej. Corte 30min) aunque el barbero atendiera 60min → doble-booking.
+  const calcularDuracionTotal = (barberoId = null) => {
+    const dur = barberoId ? duracionesPorBarbero[barberoId] : null;
+    const duracionServicio =
+      dur?.[servicioSeleccionado?.id] ??
+      servicioSeleccionado?.duracion_minutos ??
+      30;
+    const duracionAdicionales = adicionalesSeleccionados.reduce((sum, id) => {
+      const global = adicionales.find((a) => a.id === id)?.duracion_minutos || 0;
+      return sum + (dur?.[id] ?? global);
+    }, 0);
     return duracionServicio + duracionAdicionales;
   };
 
@@ -124,7 +145,7 @@ export function VistaReserva({ supabase, barberiaId }) {
     horarioInicioOverride = null,
     horarioFinOverride = null,
   ) => {
-    const duracionTotal = calcularDuracionTotal();
+    const duracionTotal = calcularDuracionTotal(barbero?.id);
     const horaInicio = new Date(`2000-01-01 ${horarioInicioOverride || barbero.horario_inicio}`);
     const horaFin    = new Date(`2000-01-01 ${horarioFinOverride    || barbero.horario_fin}`);
     const horaTest   = new Date(`2000-01-01 ${hora}`);
@@ -209,7 +230,7 @@ export function VistaReserva({ supabase, barberiaId }) {
       const horaInicio = new Date(`2000-01-01 ${horarioDia?.inicio || barbero.horario_inicio}`);
       const horaFin    = new Date(`2000-01-01 ${horarioDia?.fin    || barbero.horario_fin}`);
 
-      const duracionTotal = calcularDuracionTotal();
+      const duracionTotal = calcularDuracionTotal(barberoId);
       const horariosDisponibles = [];
       let hora = new Date(horaInicio);
 
@@ -495,7 +516,7 @@ export function VistaReserva({ supabase, barberiaId }) {
         cliente_email: clienteEmail || null,
         fecha: fechaSeleccionada,
         hora_inicio: horaSeleccionada,
-        duracion_minutos: calcularDuracionTotal(),
+        duracion_minutos: calcularDuracionTotal(barberoFinalId),
         precio_original: precioTotal,
         precio_final: precioTotal,
         estado: "confirmada",
@@ -581,7 +602,7 @@ export function VistaReserva({ supabase, barberiaId }) {
             reserva: {
               fecha: fechaSeleccionada,
               hora_inicio: horaSeleccionada,
-              duracion_minutos: calcularDuracionTotal(),
+              duracion_minutos: calcularDuracionTotal(barberoFinalId),
               cliente_nombre: clienteNombre,
               cliente_telefono: clienteTelefono,
               cliente_email: clienteEmail || "",

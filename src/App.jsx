@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Scissors, ArrowLeft } from "lucide-react";
 import { supabase } from "./lib/supabase";
+import { COLS_PUBLICAS_BARBERIA } from "./utils/barberiaCols";
 import { VistaReserva } from "./VistaReserva-FASE3";
 import { VistaInicio } from "./VistaInicio";
 import { VistaAdmin } from "./VistaAdmin";
@@ -64,7 +65,7 @@ export default function App() {
     if (barberiaDetectada.tipo === "subdominio") {
       supabase
         .from("barberia")
-        .select("*")
+        .select(COLS_PUBLICAS_BARBERIA)
         .eq("subdominio", barberiaDetectada.valor)
         .single()
         .then(({ data }) => {
@@ -80,7 +81,7 @@ export default function App() {
     } else {
       supabase
         .from("barberia")
-        .select("*")
+        .select(COLS_PUBLICAS_BARBERIA)
         .eq("id", barberiaDetectada.valor)
         .single()
         .then(({ data }) => { if (data) setBarberiaData(data); });

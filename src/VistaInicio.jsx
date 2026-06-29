@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { GaleriaCarrusel } from "./components/GaleriaCarrusel";
 import { InfoContacto } from "./components/InfoContacto";
+import { COLS_PUBLICAS_BARBERIA } from "./utils/barberiaCols";
 
 export function VistaInicio({
   barberiaId = "org-twins",
@@ -46,7 +47,7 @@ export function VistaInicio({
     try {
       const { data } = await supabase
         .from("barberia")
-        .select("*")
+        .select(COLS_PUBLICAS_BARBERIA)
         .eq("id", barberiaId)
         .single();
       setBarberia(data);

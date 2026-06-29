@@ -9,6 +9,7 @@ import {
   Info,
 } from "lucide-react";
 import { CalendarioPicker } from "./components/CalendarioPicker";
+import { COLS_PUBLICAS_BARBERIA } from "./utils/barberiaCols";
 
 // ⭐ ¿La hora ya pasó? Solo aplica si la fecha es hoy (hora de Chile).
 // Evita que aparezcan horas pasadas (ej: son las 18h y muestra las 13h) al reservar.
@@ -57,7 +58,7 @@ export function VistaReserva({ supabase, barberiaId }) {
     try {
       const { data, error } = await supabase
         .from("barberia")
-        .select("*")
+        .select(COLS_PUBLICAS_BARBERIA)
         .eq("id", barberiaId)
         .single();
 

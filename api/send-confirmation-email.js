@@ -220,15 +220,10 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: error.message });
     }
 
-    // ── Notificación interna al admin y barbero ──
-    if (barberiaId) {
+    // ── Notificación interna al barbero asignado (el admin ve la reserva en su panel;
+    //    se dejó de enviar copia al admin para bajar el volumen de emails / plan free) ──
+    if (barberiaId && barberoId) {
       try {
-        const { data: barberiaInfo } = await supabase
-          .from('barberia')
-          .select('email_admin')
-          .eq('id', barberiaId)
-          .single();
-
         const { data: barberoInfo } = await supabase
           .from('barberos')
           .select('usuario:usuario_id(email)')
@@ -254,18 +249,8 @@ export default async function handler(req, res) {
 </td></tr>
 </table></body></html>`;
 
-        // Enviar al admin
-        if (barberiaInfo?.email_admin) {
-          await resend.emails.send({
-            from: `${barberiaNombre} <no-reply@reservaia.cl>`,
-            to: barberiaInfo.email_admin,
-            subject: `🆕 Nueva reserva: ${clienteNombre} - ${fecha} ${hora}`,
-            html: emailNotif,
-          });
-        }
-
-        // Enviar al barbero (si tiene email y es distinto al admin)
-        if (barberoEmail && barberoEmail !== barberiaInfo?.email_admin) {
+        // Enviar al barbero asignado (incluye el caso admin-barbero, ej. Alonso)
+        if (barberoEmail) {
           await resend.emails.send({
             from: `${barberiaNombre} <no-reply@reservaia.cl>`,
             to: barberoEmail,

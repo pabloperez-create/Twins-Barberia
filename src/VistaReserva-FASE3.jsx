@@ -561,7 +561,18 @@ export function VistaReserva({ supabase, barberiaId }) {
         estado: "confirmada",
       });
 
-      if (errorSupabase) throw errorSupabase;
+      if (errorSupabase) {
+        // El trigger de BD rechaza solapes del flujo público (red final anti doble-booking)
+        if (/SOLAPE_RESERVA|exclusion/i.test(errorSupabase.message || "")) {
+          setError("Uy, esa hora acaba de ser reservada. Por favor elige otro horario.");
+          setCargando(false);
+          if (barberoSeleccionado === CUALQUIERA) cargarHorariosCualquierBarbero(fechaSeleccionada);
+          else cargarHorariosBarbero(barberoFinalId, fechaSeleccionada);
+          setPaso(4);
+          return;
+        }
+        throw errorSupabase;
+      }
 
       if (clienteEmail) {
         try {

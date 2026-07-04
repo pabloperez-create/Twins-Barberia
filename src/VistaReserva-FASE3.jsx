@@ -511,6 +511,39 @@ export function VistaReserva({ supabase, barberiaId }) {
         setBarberoAsignado(barberoFinalData);
       }
 
+      // ⭐ Re-validación de última milla contra doble-booking: los slots se calculan
+      // al cargar la página, pero el horario pudo ocuparse después (página abierta
+      // rato o dos personas reservando a la vez). Antes de insertar, re-consultamos
+      // las reservas confirmadas del barbero y abortamos si el slot ya solapa.
+      const durNueva = calcularDuracionTotal(barberoFinalId);
+      const { data: yaReservado } = await supabase
+        .from("reservas")
+        .select("hora_inicio, duracion_minutos")
+        .eq("barbero_id", barberoFinalId)
+        .eq("fecha", fechaSeleccionada)
+        .eq("estado", "confirmada");
+      const [hSel, mSel] = horaSeleccionada.split(":").map(Number);
+      const iniNueva = hSel * 60 + mSel;
+      const finNueva = iniNueva + durNueva;
+      const haySolape = (yaReservado || []).some((r) => {
+        const [rh, rm] = r.hora_inicio.split(":").map(Number);
+        const iniR = rh * 60 + rm;
+        const finR = iniR + (r.duracion_minutos || 0);
+        return iniNueva < finR && iniR < finNueva;
+      });
+      if (haySolape) {
+        setError("Uy, esa hora acaba de ser reservada. Por favor elige otro horario.");
+        setCargando(false);
+        // Refrescar los horarios disponibles para que el cliente vea el estado actual
+        if (barberoSeleccionado === CUALQUIERA) {
+          cargarHorariosCualquierBarbero(fechaSeleccionada);
+        } else {
+          cargarHorariosBarbero(barberoFinalId, fechaSeleccionada);
+        }
+        setPaso(4);
+        return;
+      }
+
       const { error: errorSupabase } = await supabase.from("reservas").insert({
         id: reservaId,
         barberia_id: barberiaId,

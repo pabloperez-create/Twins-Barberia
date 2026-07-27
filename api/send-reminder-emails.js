@@ -245,10 +245,94 @@ export default async function handler(req, res) {
       }
     }
 
+    // ══════════════════════════════════════
+    // 3. RESUMEN DIARIO AL ADMIN — "Agenda de hoy" (1 email/día por barbería)
+    //    Opt-in por feature flag configuracion.features.resumen_diario_admin.
+    //    Se manda al barberia.email_admin con TODAS las citas confirmadas de hoy,
+    //    agrupadas por barbero. Piggyback en este cron (sin función nueva → respeta
+    //    el límite de 12 funciones del plan Hobby). Ver memoria (idea guardada).
+    // ══════════════════════════════════════
+    const resultadosResumen = [];
+    try {
+      const fechaHoy = hoy.toISOString().split('T')[0];
+      const { data: reservasHoy } = await supabase
+        .from('reservas')
+        .select(`barberia_id, hora_inicio, cliente_nombre, barbero:barbero_id(nombre), servicio:servicio_id(nombre), barberia:barberia_id(nombre, email_admin, configuracion)`)
+        .eq('fecha', fechaHoy)
+        .eq('estado', 'confirmada')
+        .order('hora_inicio', { ascending: true });
+
+      // Agrupar por barbería
+      const porBarberia = {};
+      for (const r of reservasHoy || []) {
+        if (!porBarberia[r.barberia_id]) porBarberia[r.barberia_id] = { barberia: r.barberia, reservas: [] };
+        porBarberia[r.barberia_id].reservas.push(r);
+      }
+
+      for (const bid of Object.keys(porBarberia)) {
+        const { barberia, reservas: resDia } = porBarberia[bid];
+        const config = barberia?.configuracion || {};
+        if (!config.features?.resumen_diario_admin) { resultadosResumen.push({ barberia: bid, ok: false, motivo: 'flag off' }); continue; }
+        const emailAdmin = barberia?.email_admin;
+        if (!emailAdmin) { resultadosResumen.push({ barberia: bid, ok: false, motivo: 'sin email_admin' }); continue; }
+        const barberiaNombre = barberia?.nombre || 'Tu Barbería';
+
+        // Agrupar por barbero (dentro de cada uno, ya vienen ordenadas por hora)
+        const porBarbero = {};
+        for (const r of resDia) {
+          const nom = r.barbero?.nombre || 'Sin asignar';
+          (porBarbero[nom] = porBarbero[nom] || []).push(r);
+        }
+
+        const bloquesBarbero = Object.keys(porBarbero).sort().map((nom) => {
+          const filas = porBarbero[nom].map((r) => `
+            <tr>
+              <td style="padding:8px 12px;color:#d97706;font-size:15px;font-weight:700;white-space:nowrap;">${r.hora_inicio}</td>
+              <td style="padding:8px 12px;color:#1c1917;font-size:14px;font-weight:600;">${r.cliente_nombre || 'Cliente'}</td>
+              <td style="padding:8px 12px;color:#57534e;font-size:13px;">${r.servicio?.nombre || ''}</td>
+            </tr>`).join('');
+          return `
+            <tr><td style="padding:16px 30px 6px 30px;">
+              <p style="margin:0;color:#1c1917;font-size:15px;font-weight:700;">✂️ ${nom} <span style="color:#a8a29e;font-weight:400;">· ${porBarbero[nom].length} cita${porBarbero[nom].length !== 1 ? 's' : ''}</span></p>
+            </td></tr>
+            <tr><td style="padding:0 30px 8px 30px;">
+              <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#fafaf9;border-radius:8px;">${filas}</table>
+            </td></tr>`;
+        }).join('');
+
+        const emailHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;font-family:Arial,sans-serif;background-color:#f5f5f5;">
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="100%" style="max-width:600px;margin:40px auto;background-color:#ffffff;border-radius:12px;overflow:hidden;">
+  <tr><td style="background-color:#1c1917;padding:32px 30px;text-align:center;">
+    <h1 style="margin:0;color:#fde68a;font-size:24px;">${barberiaNombre}</h1>
+    <p style="margin:8px 0 0 0;color:#a8a29e;font-size:14px;">📋 Agenda de hoy · ${fechaHoy}</p>
+  </td></tr>
+  <tr><td style="padding:26px 30px 4px 30px;text-align:center;">
+    <p style="margin:0;color:#1c1917;font-size:16px;">Tienes <strong>${resDia.length}</strong> cita${resDia.length !== 1 ? 's' : ''} confirmada${resDia.length !== 1 ? 's' : ''} para hoy</p>
+  </td></tr>
+  ${bloquesBarbero}
+  <tr><td style="background-color:#fafaf9;padding:20px 30px;text-align:center;border-top:1px solid #e7e5e4;">
+    <p style="margin:0;color:#a8a29e;font-size:12px;">Resumen automático · reservaIA</p>
+  </td></tr>
+</table></body></html>`;
+
+        const { error } = await resend.emails.send({
+          from: `${barberiaNombre} <no-reply@reservaia.cl>`,
+          to: emailAdmin,
+          subject: `📋 Agenda de hoy (${fechaHoy}) — ${resDia.length} cita${resDia.length !== 1 ? 's' : ''}`,
+          html: emailHtml,
+        });
+        resultadosResumen.push({ barberia: bid, ok: !error, citas: resDia.length, error: error?.message });
+      }
+    } catch (err) {
+      console.error('Error resumen diario admin:', err);
+    }
+
     return res.status(200).json({
       success: true,
       recordatorios: { total: resultadosRecordatorios.length, exitosos: resultadosRecordatorios.filter(r => r.ok).length },
       encuestas: { total: resultadosEncuestas.length, exitosos: resultadosEncuestas.filter(r => r.ok).length },
+      resumen: { total: resultadosResumen.length, exitosos: resultadosResumen.filter(r => r.ok).length },
     });
 
   } catch (error) {

@@ -166,6 +166,7 @@ export function VistaReservaNueva({ supabase, barberiaId }) {
   const [barberiaData, setBarberiaData] = useState(null);
   const [googleReviews, setGoogleReviews] = useState(null);
   const [galeria, setGaleria] = useState([]);
+  const [galeriaIdx, setGaleriaIdx] = useState(0); // carrusel sidebar "Nuestros trabajos"
 
   const CUALQUIERA = "cualquiera";
   const DIAS_KEY = ["dom", "lun", "mar", "mie", "jue", "vie", "sab"];
@@ -179,6 +180,13 @@ export function VistaReservaNueva({ supabase, barberiaId }) {
     cargarBarberia();
     cargarGaleria();
   }, []);
+
+  // Auto-avance del carrusel "Nuestros trabajos" (1 foto a la vez, cada 4.5s)
+  useEffect(() => {
+    if (galeria.length <= 1) return;
+    const t = setInterval(() => setGaleriaIdx((i) => (i + 1) % galeria.length), 4500);
+    return () => clearInterval(t);
+  }, [galeria.length]);
 
   const cargarBarberia = async () => {
     try {
@@ -753,11 +761,24 @@ export function VistaReservaNueva({ supabase, barberiaId }) {
               <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 <ImageIcon className="h-3 w-3" /> Nuestros trabajos
               </p>
-              <div className="grid grid-cols-3 gap-1.5">
-                {galeria.slice(0, 3).map((f) => (
-                  <img key={f.id} src={f.foto_url} alt="" className="aspect-square w-full rounded-lg border border-border object-cover" />
-                ))}
+              <div className="overflow-hidden rounded-lg border border-border">
+                <img
+                  key={galeria[galeriaIdx]?.id}
+                  src={galeria[galeriaIdx]?.foto_url}
+                  alt=""
+                  className="aspect-[4/3] w-full animate-in fade-in object-cover duration-700"
+                />
               </div>
+              {galeria.length > 1 && (
+                <div className="mt-2 flex justify-center gap-1.5">
+                  {galeria.map((_, i) => (
+                    <span
+                      key={i}
+                      className={cn("h-1.5 rounded-full transition-all", i === galeriaIdx ? "w-4 bg-primary" : "w-1.5 bg-border")}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </aside>

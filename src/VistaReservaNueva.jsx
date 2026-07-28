@@ -875,18 +875,20 @@ export function VistaReservaNueva({ supabase, barberiaId }) {
                         key={s.id}
                         onClick={() => setServicioSeleccionado(sel ? null : s)}
                         className={cn(
-                          "relative flex flex-col items-center gap-1.5 rounded-2xl border-[1.5px] bg-card p-4 pt-5 text-center transition-colors",
+                          // Mobile: fila horizontal compacta (ícono izq · nombre · precio · radio der)
+                          // sm+: tarjeta vertical centrada dentro del grid
+                          "relative flex items-center gap-4 rounded-2xl border-[1.5px] bg-card p-4 text-left transition-colors sm:flex-col sm:gap-1.5 sm:pt-5 sm:text-center",
                           sel ? "border-primary bg-primary/10" : "border-border hover:border-border-strong hover:bg-card-hover",
                         )}
                       >
-                        <span className={cn("absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors", sel ? "border-primary bg-primary text-primary-foreground" : "border-border text-transparent")}>
-                          <Check className="h-3 w-3" />
-                        </span>
-                        <span className="flex h-[70px] w-[70px] items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-primary">
+                        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-primary sm:h-[70px] sm:w-[70px]">
                           <IconoServicio nombre={s.nombre} />
                         </span>
-                        <span className="mt-1 text-[15px] font-bold">{s.nombre}</span>
-                        <span className="text-lg font-extrabold tabular-nums text-primary">{fmtPrecio(s.precio)}</span>
+                        <span className="min-w-0 flex-1 text-[15px] font-bold sm:mt-1 sm:flex-none">{s.nombre}</span>
+                        <span className="shrink-0 text-lg font-extrabold tabular-nums text-primary">{fmtPrecio(s.precio)}</span>
+                        <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors sm:absolute sm:right-3 sm:top-3", sel ? "border-primary bg-primary text-primary-foreground" : "border-border text-transparent")}>
+                          <Check className="h-3 w-3" />
+                        </span>
                       </button>
                     );
                   })}

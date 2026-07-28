@@ -1,3 +1,61 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Puente de theming shadcn/ui <-> theming multi-tenant de Twins.
+ * :root         = tema BARBERÍA (negro/dorado, oscuro)   -> Twins
+ * .theme-salon  = tema SALÓN (rosado, claro)             -> Nail Studio
+ * Los valores replican la paleta de src/utils/tema.js en formato HSL.
+ */
+@layer base {
+  :root {
+    --background: 20 14% 4%;
+    --foreground: 0 0% 100%;
+    --card: 24 10% 10%;
+    --card-foreground: 0 0% 100%;
+    --popover: 24 10% 10%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 48 96% 77%;
+    --primary-foreground: 20 14% 4%;
+    --secondary: 12 6% 15%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 12 6% 15%;
+    --muted-foreground: 24 6% 64%;
+    --accent: 12 6% 15%;
+    --accent-foreground: 48 96% 77%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 30 6% 25%;
+    --border-strong: 30 6% 34%;
+    --card-hover: 24 8% 13%;
+    --input: 30 6% 25%;
+    --ring: 48 96% 77%;
+    --radius: 0.625rem;
+  }
+
+  .theme-salon {
+    --background: 327 73% 97%;
+    --foreground: 215 28% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 28% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 28% 17%;
+    --primary: 330 81% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 326 78% 95%;
+    --secondary-foreground: 333 71% 41%;
+    --muted: 327 73% 97%;
+    --muted-foreground: 330 40% 60%;
+    --accent: 326 78% 95%;
+    --accent-foreground: 333 71% 41%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 326 78% 90%;
+    --border-strong: 326 60% 82%;
+    --card-hover: 327 60% 97%;
+    --input: 326 78% 90%;
+    --ring: 330 81% 60%;
+    --radius: 0.625rem;
+  }
+}

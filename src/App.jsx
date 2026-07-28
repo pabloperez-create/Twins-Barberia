@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Scissors, ArrowLeft } from "lucide-react";
 import { supabase } from "./lib/supabase";
 import { COLS_PUBLICAS_BARBERIA } from "./utils/barberiaCols";
-import { VistaReserva } from "./VistaReserva-FASE3";
+import { VistaReservaNueva } from "./VistaReservaNueva";
 import { VistaInicio } from "./VistaInicio";
 import { VistaAdmin } from "./VistaAdmin";
 import { VistaBarbero } from "./VistaBarbero";
@@ -173,7 +173,7 @@ export default function App() {
             <ArrowLeft size={16} />Volver al inicio
           </button>
         </div>
-        <VistaReserva supabase={supabase} barberiaId={barberiaId} />
+        <VistaReservaNueva supabase={supabase} barberiaId={barberiaId} />
       </div>
     );
   }

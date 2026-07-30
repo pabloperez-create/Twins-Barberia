@@ -328,11 +328,72 @@ export default async function handler(req, res) {
       console.error('Error resumen diario admin:', err);
     }
 
+    // ══════════════════════════════════════
+    // 4. BARRIDO ANTI-FALLO — avisos al barbero pendientes (Capa 2, red de seguridad)
+    //    Reservas confirmadas de HOY o a futuro cuyo aviso al barbero NO se marcó
+    //    (barbero_notificado_at IS NULL) → reintenta el envío y marca. Atrapa fallos
+    //    transitorios o casos en que el fetch del momento no llegó al servidor.
+    // ══════════════════════════════════════
+    const resultadosBarrido = [];
+    try {
+      const fechaHoy2 = hoy.toISOString().split('T')[0];
+      const { data: pendientes } = await supabase
+        .from('reservas')
+        .select(`id, fecha, hora_inicio, cliente_nombre, servicio:servicio_id(nombre), barbero:barbero_id(nombre, usuario:usuario_id(email)), barberia:barberia_id(nombre)`)
+        .gte('fecha', fechaHoy2)
+        .eq('estado', 'confirmada')
+        .is('barbero_notificado_at', null)
+        .limit(300);
+
+      for (const r of pendientes || []) {
+        const email = r.barbero?.usuario?.email;
+        const barberiaNombre = r.barberia?.nombre || 'Tu Barbería';
+        if (!email) {
+          // Barbero sin email → marcar igual para no reprocesar cada día (dato a revisar).
+          await supabase.from('reservas').update({ barbero_notificado_at: new Date().toISOString() }).eq('id', r.id);
+          resultadosBarrido.push({ id: r.id, ok: false, motivo: 'barbero sin email' });
+          continue;
+        }
+        const emailNotif = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f5f5f5;">
+<table align="center" width="100%" style="max-width:500px;margin:30px auto;background:#fff;border-radius:12px;overflow:hidden;">
+<tr><td style="background:#1c1917;padding:20px;text-align:center;">
+  <h2 style="margin:0;color:#fde68a;font-size:20px;">Nueva reserva 🎉</h2>
+  <p style="margin:4px 0 0;color:#a8a29e;font-size:12px;">${barberiaNombre}</p>
+</td></tr>
+<tr><td style="padding:20px;">
+  <table width="100%" style="background:#fafaf9;border-radius:8px;">
+    <tr><td style="padding:8px 12px;"><p style="margin:0;color:#78716c;font-size:11px;text-transform:uppercase;">Cliente</p><p style="margin:3px 0 0;font-size:15px;font-weight:600;">${r.cliente_nombre || 'Cliente'}</p></td></tr>
+    <tr><td style="padding:8px 12px;"><p style="margin:0;color:#78716c;font-size:11px;text-transform:uppercase;">Servicio</p><p style="margin:3px 0 0;font-size:15px;font-weight:600;">${r.servicio?.nombre || ''}</p></td></tr>
+    <tr><td style="padding:8px 12px;"><p style="margin:0;color:#78716c;font-size:11px;text-transform:uppercase;">Fecha y Hora</p><p style="margin:3px 0 0;color:#d97706;font-size:16px;font-weight:700;">${r.fecha} a las ${r.hora_inicio}</p></td></tr>
+  </table>
+</td></tr>
+</table></body></html>`;
+
+        let ok = false;
+        for (let intento = 1; intento <= 2 && !ok; intento++) {
+          const { error } = await resend.emails.send({
+            from: `${barberiaNombre} <no-reply@reservaia.cl>`,
+            to: email,
+            subject: `✂️ Nueva cita asignada: ${r.cliente_nombre || 'Cliente'} - ${r.fecha} ${r.hora_inicio}`,
+            html: emailNotif,
+          });
+          ok = !error;
+          if (!ok) console.error(`[barrido ${r.id}] intento ${intento} falló:`, error?.message || error);
+        }
+        if (ok) await supabase.from('reservas').update({ barbero_notificado_at: new Date().toISOString() }).eq('id', r.id);
+        resultadosBarrido.push({ id: r.id, ok });
+      }
+    } catch (err) {
+      console.error('Error barrido avisos al barbero:', err);
+    }
+
     return res.status(200).json({
       success: true,
       recordatorios: { total: resultadosRecordatorios.length, exitosos: resultadosRecordatorios.filter(r => r.ok).length },
       encuestas: { total: resultadosEncuestas.length, exitosos: resultadosEncuestas.filter(r => r.ok).length },
       resumen: { total: resultadosResumen.length, exitosos: resultadosResumen.filter(r => r.ok).length },
+      barrido: { total: resultadosBarrido.length, exitosos: resultadosBarrido.filter(r => r.ok).length },
     });
 
   } catch (error) {

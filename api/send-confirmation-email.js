@@ -9,6 +9,22 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY,
 );
 
+// Envía un email con hasta 2 reintentos ante fallos transitorios de Resend.
+// Nunca lanza: devuelve { ok, id, error } para no cortar el resto del flujo.
+async function enviarConReintento(payload, etiqueta, ref) {
+  for (let intento = 1; intento <= 2; intento++) {
+    try {
+      const { data, error } = await resend.emails.send(payload);
+      if (!error) return { ok: true, id: data?.id };
+      console.error(`[${ref}] ${etiqueta}: intento ${intento} falló:`, error?.message || error);
+    } catch (e) {
+      console.error(`[${ref}] ${etiqueta}: intento ${intento} excepción:`, e?.message || e);
+    }
+    if (intento < 2) await new Promise((r) => setTimeout(r, 600));
+  }
+  return { ok: false, error: `${etiqueta} falló tras reintentos` };
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -207,21 +223,19 @@ export default async function handler(req, res) {
 </html>
     `;
 
-    // ── Email al cliente ──
-    const { data, error } = await resend.emails.send({
+    const ref = reservaId || clienteEmail;
+
+    // ── Email al cliente (con reintento) ──
+    // OJO: su fallo NO debe impedir la notificación al barbero (antes hacía return 500 acá).
+    const clienteRes = await enviarConReintento({
       from: `${barberiaNombre} <no-reply@reservaia.cl>`,
       to: clienteEmail,
       subject: `✂️ Reserva confirmada en ${barberiaNombre}`,
       html: emailHtml,
-    });
+    }, 'email-cliente', ref);
 
-    if (error) {
-      console.error('Error de Resend:', error);
-      return res.status(500).json({ error: error.message });
-    }
-
-    // ── Notificación interna al barbero asignado (el admin ve la reserva en su panel;
-    //    se dejó de enviar copia al admin para bajar el volumen de emails / plan free) ──
+    // ── Notificación al barbero asignado — INDEPENDIENTE del email al cliente ──
+    let barberoRes = { ok: false, motivo: 'sin barberoId' };
     if (barberiaId && barberoId) {
       try {
         const { data: barberoInfo } = await supabase
@@ -251,21 +265,40 @@ export default async function handler(req, res) {
 
         // Enviar al barbero asignado (incluye el caso admin-barbero, ej. Alonso)
         if (barberoEmail) {
-          await resend.emails.send({
+          barberoRes = await enviarConReintento({
             from: `${barberiaNombre} <no-reply@reservaia.cl>`,
             to: barberoEmail,
             subject: `✂️ Nueva cita asignada: ${clienteNombre} - ${fecha} ${hora}`,
             html: emailNotif,
-          });
+          }, 'email-barbero', ref);
+        } else {
+          barberoRes = { ok: false, motivo: 'barbero sin email (usuario_id vacío?)' };
+          console.error(`[${ref}] barbero ${barberoId} sin email — no se notifica`);
         }
       } catch (notifError) {
-        console.error('Error enviando notificacion interna:', notifError);
+        console.error(`[${ref}] error notificando barbero:`, notifError?.message || notifError);
+        barberoRes = { ok: false, motivo: notifError?.message };
       }
     }
 
+    // Capa 2: marcar la reserva como "barbero notificado" para que el barrido diario
+    // (send-reminder-emails) NO la reenvíe. Si el aviso al barbero falló, se deja sin
+    // marcar a propósito → el barrido la atrapa.
+    if (reservaId && barberoRes.ok) {
+      try {
+        await supabase.from('reservas').update({ barbero_notificado_at: new Date().toISOString() }).eq('id', reservaId);
+      } catch (e) {
+        console.error(`[${ref}] no se pudo marcar barbero_notificado_at:`, e?.message || e);
+      }
+    }
+
+    if (!clienteRes.ok || !barberoRes.ok) {
+      console.error(`[${ref}] RESUMEN envío → cliente:${clienteRes.ok} barbero:${barberoRes.ok}`);
+    }
     return res.status(200).json({
       success: true,
-      messageId: data?.id,
+      cliente: clienteRes,
+      barbero: barberoRes,
     });
 
   } catch (error) {

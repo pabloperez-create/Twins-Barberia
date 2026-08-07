@@ -31,6 +31,15 @@ function horaYaPaso(fecha, horaStr) {
   return h * 60 + m <= ahoraCL.getHours() * 60 + ahoraCL.getMinutes();
 }
 
+// ¿El bloqueo aplica en esta fecha por día de la semana?
+// Los bloqueos recurrentes guardan dias_semana como números JS (Dom=0..Sáb=6).
+// Si no tiene dias_semana (bloqueo por rango normal), aplica siempre (el rango de
+// fechas ya se filtra aparte). Si es recurrente, solo aplica en los días elegidos.
+function bloqueoAplicaPorDia(b, fecha) {
+  if (!Array.isArray(b?.dias_semana) || b.dias_semana.length === 0) return true;
+  return b.dias_semana.includes(new Date(fecha + "T12:00:00").getDay());
+}
+
 // Ícono temático RELLENO (dorado, con brillo) por servicio, deducido del nombre.
 // Usa currentColor → se adapta al tema (dorado en barbería, rosado en salón). Sin pedir fotos al admin.
 function IconoServicio({ nombre = "", className = "h-8 w-8" }) {
@@ -323,7 +332,7 @@ export function VistaReservaNueva({ supabase, barberiaId }) {
     return todosLosBloqueos.filter((b) => {
       const aplicaABarbero = b.barbero_id === barberoId || b.barbero_id === null;
       const enRango = fecha >= b.fecha_inicio && fecha <= b.fecha_fin;
-      return aplicaABarbero && enRango;
+      return aplicaABarbero && enRango && bloqueoAplicaPorDia(b, fecha);
     });
   };
 
@@ -345,7 +354,7 @@ export function VistaReservaNueva({ supabase, barberiaId }) {
         .gte("fecha_fin", fecha);
 
       const bloqueosDelBarbero = (bloqueosExistentes || []).filter(
-        (b) => b.barbero_id === barberoId || b.barbero_id === null,
+        (b) => (b.barbero_id === barberoId || b.barbero_id === null) && bloqueoAplicaPorDia(b, fecha),
       );
 
       const tieneBloqueoCompleto = bloqueosDelBarbero.some((b) => !b.hora_inicio);
@@ -405,7 +414,7 @@ export function VistaReservaNueva({ supabase, barberiaId }) {
         .gte("fecha_fin", fecha);
 
       const todosLosBloqueos = bloqueosExistentes || [];
-      const barberiaCerrada = todosLosBloqueos.some((b) => b.barbero_id === null && !b.hora_inicio);
+      const barberiaCerrada = todosLosBloqueos.some((b) => b.barbero_id === null && !b.hora_inicio && bloqueoAplicaPorDia(b, fecha));
       if (barberiaCerrada) { setHorariosBarbero([]); return; }
 
       const diaSemana = DIAS_KEY[new Date(fecha + "T12:00:00").getDay()];

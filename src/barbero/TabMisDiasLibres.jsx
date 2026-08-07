@@ -9,7 +9,7 @@ export function TabMisDiasLibres({ supabase, barbero, barberia, tema: t }) {
   const [cargando, setCargando] = useState(true);
   const [mensaje, setMensaje] = useState({ tipo: "", texto: "" });
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [form, setForm] = useState({ tipo: "dia_completo", fecha_inicio: "", fecha_fin: "", hora_inicio: "", hora_fin: "", motivo: "" });
+  const [form, setForm] = useState({ tipo: "dia_completo", fecha_inicio: "", fecha_fin: "", hora_inicio: "", hora_fin: "", motivo: "", dias_semana: [] });
   const [procesando, setProcesando] = useState(false);
 
   useEffect(() => { cargarBloqueos(); }, []);
@@ -27,15 +27,28 @@ export function TabMisDiasLibres({ supabase, barbero, barberia, tema: t }) {
   const mostrarMensaje = (tipo, texto) => { setMensaje({ tipo, texto }); setTimeout(() => setMensaje({ tipo: "", texto: "" }), 4000); };
 
   const guardar = async () => {
-    if (!form.fecha_inicio || !form.fecha_fin) { mostrarMensaje("error", "Selecciona las fechas"); return; }
-    if (form.fecha_inicio > form.fecha_fin) { mostrarMensaje("error", "La fecha de inicio debe ser anterior a la de fin"); return; }
-    if (form.tipo === "bloque_horas") {
+    const recurrente = form.tipo === "recurrente";
+    const conHoras = form.tipo === "bloque_horas" || recurrente;
+    if (!recurrente && (!form.fecha_inicio || !form.fecha_fin)) { mostrarMensaje("error", "Selecciona las fechas"); return; }
+    if (form.fecha_inicio && form.fecha_fin && form.fecha_inicio > form.fecha_fin) { mostrarMensaje("error", "La fecha de inicio debe ser anterior a la de fin"); return; }
+    if (conHoras) {
       if (!form.hora_inicio || !form.hora_fin) { mostrarMensaje("error", "Especifica las horas"); return; }
       if (form.hora_inicio >= form.hora_fin) { mostrarMensaje("error", "La hora de inicio debe ser menor a la de fin"); return; }
     }
+    if (recurrente && form.dias_semana.length === 0) { mostrarMensaje("error", "Selecciona al menos un día de la semana"); return; }
     setProcesando(true);
     try {
-      const { error } = await supabase.from("bloqueos_horarios").insert({ id: `bl-${Date.now()}`, barberia_id: barbero.barberia_id, barbero_id: barbero.id, fecha_inicio: form.fecha_inicio, fecha_fin: form.fecha_fin, hora_inicio: form.tipo === "bloque_horas" ? form.hora_inicio : null, hora_fin: form.tipo === "bloque_horas" ? form.hora_fin : null, motivo: form.motivo.trim() || null });
+      const { error } = await supabase.from("bloqueos_horarios").insert({
+        id: `bl-${Date.now()}`,
+        barberia_id: barbero.barberia_id,
+        barbero_id: barbero.id,
+        fecha_inicio: form.fecha_inicio || hoyChile(),
+        fecha_fin: form.fecha_fin || (recurrente ? "2099-12-31" : null),
+        hora_inicio: conHoras ? form.hora_inicio : null,
+        hora_fin: conHoras ? form.hora_fin : null,
+        motivo: form.motivo.trim() || null,
+        dias_semana: recurrente ? form.dias_semana : null,
+      });
       if (error) throw error;
       mostrarMensaje("success", "✅ Bloqueo creado");
       setModalAbierto(false);
@@ -60,12 +73,18 @@ export function TabMisDiasLibres({ supabase, barbero, barberia, tema: t }) {
 
   const inputClass = `w-full ${t.bgInput} border ${t.borderInput} rounded px-3 py-2 ${t.texto} text-sm`;
 
+  const DIAS_LBL = { 0: "Dom", 1: "Lun", 2: "Mar", 3: "Mié", 4: "Jue", 5: "Vie", 6: "Sáb" };
+  const etiquetaFecha = (b) =>
+    Array.isArray(b.dias_semana) && b.dias_semana.length
+      ? "🔁 " + [...b.dias_semana].sort((a, z) => (a === 0 ? 7 : a) - (z === 0 ? 7 : z)).map((d) => DIAS_LBL[d]).join(", ")
+      : b.fecha_inicio === b.fecha_fin ? b.fecha_inicio : `${b.fecha_inicio} al ${b.fecha_fin}`;
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Mis Días Libres</h2>
         <button
-          onClick={() => { setForm({ tipo: "dia_completo", fecha_inicio: "", fecha_fin: "", hora_inicio: "", hora_fin: "", motivo: "" }); setModalAbierto(true); }}
+          onClick={() => { setForm({ tipo: "dia_completo", fecha_inicio: "", fecha_fin: "", hora_inicio: "", hora_fin: "", motivo: "", dias_semana: [] }); setModalAbierto(true); }}
           className={`flex items-center gap-2 ${t.boton} px-4 py-2 rounded`}
         >
           <Plus size={18} />Agregar bloqueo
@@ -92,7 +111,7 @@ export function TabMisDiasLibres({ supabase, barbero, barberia, tema: t }) {
             <div key={b.id} className={`${t.bgCard} border ${t.border} rounded p-4 flex justify-between items-center`}>
               <div>
                 <p className="font-semibold">
-                  {b.fecha_inicio === b.fecha_fin ? b.fecha_inicio : `${b.fecha_inicio} al ${b.fecha_fin}`}
+                  {etiquetaFecha(b)}
                   {b.hora_inicio && b.hora_fin && ` · ${b.hora_inicio.slice(0, 5)} - ${b.hora_fin.slice(0, 5)}`}
                 </p>
                 <p className={`${t.textoSub} text-sm`}>{b.motivo || "Sin motivo"}</p>
@@ -114,22 +133,38 @@ export function TabMisDiasLibres({ supabase, barbero, barberia, tema: t }) {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-semibold mb-2">Tipo</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <button type="button" onClick={() => setForm({ ...form, tipo: "dia_completo" })} className={`p-3 rounded text-sm ${tipoActivo("dia_completo")}`}>🏖️ Día completo</button>
-              <button type="button" onClick={() => setForm({ ...form, tipo: "bloque_horas" })} className={`p-3 rounded text-sm ${tipoActivo("bloque_horas")}`}>⏰ Horas específicas</button>
+              <button type="button" onClick={() => setForm({ ...form, tipo: "bloque_horas", hora_inicio: form.hora_inicio || "09:00", hora_fin: form.hora_fin || "10:00" })} className={`p-3 rounded text-sm ${tipoActivo("bloque_horas")}`}>⏰ Horas</button>
+              <button type="button" onClick={() => setForm({ ...form, tipo: "recurrente", hora_inicio: form.hora_inicio || "09:00", hora_fin: form.hora_fin || "10:00" })} className={`p-3 rounded text-sm ${tipoActivo("recurrente")}`}>🔁 Recurrente</button>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          {form.tipo === "recurrente" ? (
             <div>
-              <label className="block text-sm font-semibold mb-2">Desde <span className="text-red-400">*</span></label>
-              <input type="date" value={form.fecha_inicio} onChange={(e) => setForm({ ...form, fecha_inicio: e.target.value, fecha_fin: form.fecha_fin || e.target.value })} min={hoyChile()} className={inputClass} />
+              <label className="block text-sm font-semibold mb-2">Días de la semana <span className="text-red-400">*</span></label>
+              <div className="flex gap-2 flex-wrap">
+                {[["L", 1], ["M", 2], ["X", 3], ["J", 4], ["V", 5], ["S", 6], ["D", 0]].map(([label, val]) => (
+                  <button key={val} type="button"
+                    onClick={() => setForm({ ...form, dias_semana: form.dias_semana.includes(val) ? form.dias_semana.filter((d) => d !== val) : [...form.dias_semana, val] })}
+                    className={`w-9 h-9 rounded-full text-sm font-bold ${form.dias_semana.includes(val) ? `${t.acentoBg} ${t.acentoText}` : `border ${t.border} ${t.textoSub}`}`}
+                  >{label}</button>
+                ))}
+              </div>
+              <p className={`${t.textoMuted} text-xs mt-2`}>Se bloqueará todos esos días, indefinidamente.</p>
             </div>
-            <div>
-              <label className="block text-sm font-semibold mb-16">Hasta <span className="text-red-400">*</span></label>
-              <input type="date" value={form.fecha_fin} onChange={(e) => setForm({ ...form, fecha_fin: e.target.value })} min={form.fecha_inicio} className={inputClass} />
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-semibold mb-2">Desde <span className="text-red-400">*</span></label>
+                <input type="date" value={form.fecha_inicio} onChange={(e) => setForm({ ...form, fecha_inicio: e.target.value, fecha_fin: form.fecha_fin || e.target.value })} min={hoyChile()} className={inputClass} />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-2">Hasta <span className="text-red-400">*</span></label>
+                <input type="date" value={form.fecha_fin} onChange={(e) => setForm({ ...form, fecha_fin: e.target.value })} min={form.fecha_inicio} className={inputClass} />
+              </div>
             </div>
-          </div>
-          {form.tipo === "bloque_horas" && (
+          )}
+          {(form.tipo === "bloque_horas" || form.tipo === "recurrente") && (
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-semibold mb-2">Hora inicio <span className="text-red-400">*</span></label>

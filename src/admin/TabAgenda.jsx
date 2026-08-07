@@ -96,9 +96,16 @@ export function TabAgenda({ supabase, barberiaId, usuario, barberia, tema: t, ba
     ...bloqueos.filter((b) => !esVistaBarbero || b.barbero_id === barberoFijo || b.barbero_id === null).flatMap((b) => {
       const eventos = [];
       const inicio = new Date(b.fecha_inicio);
-      const fin = new Date(b.fecha_fin);
+      const finReal = new Date(b.fecha_fin);
+      // Los bloqueos recurrentes usan fecha_fin lejana (ej. 2099). Topamos la pintura
+      // a ~120 días desde hoy para no generar decenas de miles de eventos.
+      const tope = new Date(); tope.setHours(0, 0, 0, 0); tope.setDate(tope.getDate() + 120);
+      const fin = finReal < tope ? finReal : tope;
+      const recurrente = Array.isArray(b.dias_semana) && b.dias_semana.length > 0;
       for (let d = new Date(inicio); d <= fin; d.setDate(d.getDate() + 1)) {
         const fechaStr = d.toISOString().split("T")[0];
+        // Recurrente: solo pintar los días de la semana elegidos (Dom=0..Sáb=6).
+        if (recurrente && !b.dias_semana.includes(new Date(fechaStr + "T12:00:00").getDay())) continue;
         const titulo = b.barbero ? `🚫 ${b.barbero.nombre}` : `🏪 Cerrado`;
         const subtitulo = b.motivo ? ` - ${b.motivo}` : "";
         if (b.hora_inicio && b.hora_fin) {

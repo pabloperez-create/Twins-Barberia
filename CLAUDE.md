@@ -50,36 +50,48 @@ Gestiona las capacidades según el plan contratado (BASE / PLUS / PRO).
 ## Estructura de archivos
 
 ```
-api/                                # funciones serverless (Vercel)
-├── send-confirmation-email.js      # confirmación (tema oscuro/dorado TWINS, logo WhatsApp, link cancelar)
-├── send-reminder-emails.js         # recordatorios
+api/                                # funciones serverless (Vercel) — LÍMITE 12 en plan Hobby (los `_*` no cuentan)
+├── send-confirmation-email.js      # confirmación (cliente + barbero). Envíos con reintento (2x) e INDEPENDIENTES
+│                                   #   (si falla el del cliente igual se avisa al barbero). Marca reservas.barbero_notificado_at al OK.
+├── send-reminder-emails.js         # cron diario 13:00 UTC: recordatorios (mañana) + encuestas (ayer) +
+│                                   #   "Agenda de hoy" al email_admin (flag resumen_diario_admin) + BARRIDO de avisos al
+│                                   #   barbero pendientes (barbero_notificado_at IS NULL) como red de seguridad
 ├── send-cancellation-email.js      # cancelación (botón "Reservar nueva hora" → link self-service)
 ├── send-reassignment-email.js
-├── send-inactive-clients.js        # reactivación clientes inactivos
-├── send-marketing.js               # campañas
-├── send-whatsapp.js                # DESACTIVADO
-├── cancel-reservation.js           # cancela reserva (token HMAC + política 2h) y notifica
-├── _cancel-token.js                # HMAC(reservaId, API_SECRET_TOKEN) — link de cancelación
+├── send-inactive-clients.js        # reactivación clientes inactivos (cron)
+├── send-marketing.js               # campañas (cron)
+├── _send-whatsapp.js               # DESACTIVADO (renombrado con _ para no contar en el límite de 12)
+├── admin-create-user.js            # crea usuario Auth + fila usuarios (service_role, exige JWT + rol)
+├── cancel-reservation.js           # cancela reserva (token HMAC + antelación por barbero) y notifica
+├── get-google-reviews.js           # reseñas de Google por place_id
+├── save-survey.js                  # guarda encuesta de satisfacción
+├── _verify-token.js / _cancel-token.js  # helpers HMAC / Origin (no son funciones desplegadas)
 ├── google-calendar.js              # crea evento al confirmar (cliente OAuth POR-REQUEST, ver nota)
 └── google-calendar-callback.js     # OAuth Google
 src/
 ├── App.jsx                         # subdominio → barberiaId; rutas /encuesta/:id y /cancelar/:id
 ├── VistaInicio.jsx
-├── VistaReserva-FASE3.jsx          # flujo de reserva (oculta horas pasadas si es hoy, hora de Chile)
+├── VistaReservaNueva.jsx           # ⭐ FLUJO DE RESERVA OFICIAL (rediseño shadcn jul 2026): sidebar 2 col + stepper +
+│                                   #   grid de servicios (íconos dorados) + resumen sticky; mobile = filas horizontales +
+│                                   #   encabezado compacto colapsable. (Reemplazó a VistaReserva-FASE3.jsx, eliminado.)
 ├── VistaCancelar.jsx               # página de cancelación por cliente (/cancelar/:id?t=token)
-├── VistaAdmin.jsx                  # admin; si es admin-barbero suma tabs personales (incl. Mis Reservas)
-├── VistaBarbero.jsx
-├── VistaSuperAdmin.jsx
-├── admin/                          # TabAgenda, TabServicios, TabAdicionales, TabBarberos,
-│                                   #   TabBloqueos, TabEstadisticas, TabEncuestas,
-│                                   #   TabMarketing, TabConfiguracion
-├── barbero/                        # TabMisReservas (asistencia + nueva cita), TabMiPerfil,
-│                                   #   TabMiHorario, TabMisDiasLibres
-├── components/                     # ModalNuevaCita (prop barberoFijo), Modal, SelectorHora, ...
+├── VistaAdmin.jsx / VistaBarbero.jsx / VistaSuperAdmin.jsx / VistaEncuesta.jsx
+├── admin/                          # TabAgenda, TabServicios, TabAdicionales, TabBarberos, TabBloqueos,
+│                                   #   TabEstadisticas, TabEncuestas, TabMarketing, TabConfiguracion, TabGaleria
+├── barbero/                        # TabMisReservas, TabMiPerfil, TabMiHorario, TabMisDiasLibres
+├── components/                     # ModalNuevaCita (barberoFijo), GaleriaCarrusel, InfoContacto, ui/ (shadcn), ...
+├── components/ui/                  # shadcn/ui (button, card, input, label, separator, badge, radio-group)
+├── lib/
+│   ├── supabase.js                 # cliente frontend (anon key)
+│   └── utils.js                    # cn() de shadcn
 └── utils/
     ├── features.js                 # capacidades por plan
-    └── tema.js                     # theming barberia/salon
+    ├── fecha.js                    # hoyChile() / ahoraChileHM() (America/Santiago)
+    ├── barberiaCols.js             # COLS_PUBLICAS_BARBERIA
+    └── tema.js                     # theming barberia/salon (clases). Puente a tokens shadcn en src/index.css
 ```
+
+**Stack UI (jul 2026):** shadcn/ui sobre Tailwind v3 (alias `@/` en `vite.config.js`, `components.json` con `tsx:false`). Puente de theming en `src/index.css`: tokens shadcn como variables CSS — `:root` = barbería (negro/dorado), `.theme-salon` = salón (rosado); `tailwind.config.js` mapea los tokens. Así shadcn se adapta por tenant sin tocar `getTema()`.
 
 ## Base de datos (Supabase)
 
@@ -89,18 +101,25 @@ Tablas principales:
 3. `barberos` — `foto_url`, `telefono`, `google_access_token`, `google_refresh_token`, `google_calendar_conectado`, `usuario_id` (FK → `usuarios`). **Ojo:** el barbero NO tiene email propio; su email vive en `usuarios` y se obtiene vía el join `usuario:usuario_id(email)`. (La antigua columna `barberos.email` con datos dummy fue eliminada en jun 2026.)
 4. `servicios_principales` — `barbero_exclusivo_id`
 5. `servicios_adicionales`
-6. `reservas` — `estado` (`confirmada`/`cancelada`), `motivo_cancelacion`, `asistencia` (`asistio`/`no_asistio`/null), `creada_manualmente`. **Ojo:** la asistencia es un campo aparte de `estado` (no romper los filtros `estado === 'confirmada'`). IDs tipo `r-<timestamp>`.
+6. `reservas` — `estado` (`confirmada`/`cancelada`), `motivo_cancelacion`, `asistencia` (`asistio`/`no_asistio`/null), `creada_manualmente`, `recordatorio_email_enviado_at`, `barbero_notificado_at` (ago 2026: marca que al barbero ya se le avisó; el barrido diario reenvía las que quedan NULL). **Ojo:** la asistencia es un campo aparte de `estado` (no romper los filtros `estado === 'confirmada'`). IDs tipo `r-<timestamp>`.
 7. `encuestas`
-8. `bloqueos_horarios`
+8. `bloqueos_horarios` — `barbero_id` (null = toda la barbería), `fecha_inicio`/`fecha_fin`, `hora_inicio`/`hora_fin` (null = día completo), `dias_semana` (int[] JS Dom=0..Sáb=6; si tiene valores = bloqueo RECURRENTE que solo aplica esos días, con `fecha_fin` lejana tipo 2099).
 9. `duraciones_barbero`
 10. `campanas_marketing`
+11. `galeria_trabajos` — fotos "Nuestros trabajos" (`foto_url`, `orden`, `activo`)
+12. `audit_log` — auditoría de cambios (trigger `fn_audit`)
+
+**`barberia.configuracion` (jsonb) — claves usadas:** `direccion`, `whatsapp`, `horario_atencion`, `google_place_id`, `instagram`, `features` (flags por plan/feature, ej. `resumen_diario_admin`, `whatsapp_recordatorios`). `barberia.email_admin` (columna, no en configuracion) = destino del resumen diario.
 
 **Storage buckets:** `barberos` (público, RLS activo), `Barberos` (logos).
 
 ## Email (Resend)
 
-- Dominio verificado: `reservaia.cl`. From: `no-reply@reservaia.cl`. Puede enviar a cualquier email.
-- **Flujo de confirmación:** el cliente recibe confirmación con detalles; el barbero asignado recibe "✂️ Nueva cita asignada"; el admin recibe "🆕 Nueva reserva". Si el admin es el barbero asignado → solo 1 email.
+- Dominio verificado: `reservaia.cl`. From: `no-reply@reservaia.cl`. Plan **free** (100/día — techo diario es el limitante; ~65-72/día real).
+- **Confirmación (`send-confirmation-email`):** 2 emails por reserva — cliente ("Reserva confirmada") + barbero asignado ("✂️ Nueva cita asignada"). El admin YA NO recibe copia por reserva (se quitó para bajar volumen). Ambos envíos con **reintento (2x)** e **INDEPENDIENTES** (si falla el del cliente, igual se avisa al barbero). El email del barbero se resuelve por `barberos.usuario_id → usuarios.email`.
+- **Resumen diario "Agenda de hoy" al admin** (idea implementada ago 2026, piggyback en `send-reminder-emails`): 1 email/día al `barberia.email_admin` con las citas confirmadas de hoy agrupadas por barbero. Opt-in por flag `configuracion.features.resumen_diario_admin`.
+- **Barrido anti-fallo (red de seguridad):** el mismo cron reenvía el aviso al barbero de reservas confirmadas de hoy/futuras con `barbero_notificado_at IS NULL`. Cubre fallos del envío del momento. Hueco residual (Hobby, cron 1x/día): reserva del mismo día hecha después del barrido para una cita ese mismo día cuyo envío del momento también falle → recién al día siguiente.
+- **Recordatorios/encuestas:** `send-reminder-emails` (cron 13:00 UTC ≈ 09:00 Chile) manda recordatorio a citas de mañana y encuesta de satisfacción a citas de ayer.
 
 ## Google Calendar
 
@@ -186,6 +205,18 @@ Email confirmación (dorado + logo WhatsApp + link cancelar) · cancelación por
 - **Fix doble-booking ✅** (`dd960ea`/`407aa06`, 2026-07-04): 3 capas — (1) slots ocupados no aparecen al cargar; (2) `confirmarReserva` re-valida solape antes del insert; (3) trigger BD `fn_no_solape_reserva`. Distingue por `creada_manualmente`: público (false) bloquea, admin (true) pasa (conserva override).
 - **Auditoría de cambios ✅** (2026-06-26, SQL): tabla `audit_log` + `public.fn_audit()` (SECURITY DEFINER, captura `auth.uid()`→email, diff de columnas). Triggers AFTER en `barberos`, `servicios_principales`, `servicios_adicionales`, `duraciones_barbero`, `barberia` y `reservas` (solo UPDATE/DELETE). No es retroactivo. RLS activa, se consulta vía service_role/dashboard (no hay UI aún).
 
+## Hecho recientemente (jul–ago 2026)
+
+**Rediseño del flujo de reserva con shadcn/ui ✅ DESPLEGADO (2026-07-28):** `VistaReservaNueva.jsx` es el flujo oficial (se eliminó `VistaReserva-FASE3.jsx` y el flag `?ui=nuevo`). Reutiliza toda la lógica de reserva anterior (slots, anti-doble-booking, duración por barbero, emails, GCal). Desktop: sidebar 2 columnas (logo, dirección, teléfono, horario, reseñas de Google en vivo, carrusel "Nuestros trabajos") + stepper horizontal + grid de servicios con **íconos dorados auto-generados por nombre** (`IconoServicio`: tijera/máquina/bigote/navaja/gota/ondas/pincel/secador) + barra de resumen sticky. Mobile: encabezado compacto con "Información y horarios" colapsable (sin galería) + servicios en **filas horizontales**. Modelo: 1 servicio principal + adicionales (sin mostrar duración, porque varía por barbero).
+
+**Resumen diario "Agenda de hoy" al admin ✅ DESPLEGADO (2026-07-30):** ver sección Email. Piggyback en `send-reminder-emails` (sin función nueva → respeta límite 12 Hobby). Flag `resumen_diario_admin` (activo en Twins).
+
+**Robustez de avisos al barbero ✅ DESPLEGADO (2026-07-30):** Capa 1 (endpoint: reintento + barbero independiente del cliente + marca `barbero_notificado_at`) + Capa 2 (barrido diario en el cron). Diagnóstico del bug original: un aviso puntual falló transitoriamente y dejó al barbero (Alonso González) sin email; se notaba porque recibe muy pocas reservas. NO era dato malo ni regresión. (Tip: `GET https://api.resend.com/emails?limit=100` con RESEND_API_KEY audita qué se envió/entregó.)
+
+**Bloqueos de horario recurrentes ✅ DESPLEGADO (2026-08-07, commit `dc0f009`):** estaban a medias — la UI admin (`TabBloqueos` "🔁 Recurrente") y la columna `bloqueos_horarios.dias_semana` existían, pero el flujo de reserva IGNORABA `dias_semana` (bloqueaba todos los días del rango) y `TabAgenda` se colgaba iterando hasta 2099. Fix: helper `bloqueoAplicaPorDia(b, fecha)` en `VistaReservaNueva` (aplicado en `obtenerBloqueosDelBarbero`, `cargarHorariosBarbero` y el check de barbería cerrada) + `TabAgenda` topa a 120 días y respeta `dias_semana`. Sin SQL (la columna ya existía). Verificado en `org-demo-barber`.
+
+**⚠️ Deploy:** el auto-deploy por `git push` a `main` funciona pero **ocasionalmente el webhook no dispara** (hipo transitorio, no desconexión). Si un push no despliega en ~5 min: re-disparar con `git commit --allow-empty` + push, o `vercel deploy --prod --yes` (manual). El CLI local está desactualizado (v54 vs v58).
+
 ## Pendientes
 
 **Técnico:**
@@ -195,4 +226,4 @@ Email confirmación (dorado + logo WhatsApp + link cancelar) · cancelación por
 
 **Futuro:**
 - Sincronización bidireccional Google Calendar ↔ agenda (bloqueos automáticos desde GCal)
-- Idea guardada: resumen diario en 1 email al admin (cron) en vez de reactivar 1 email por reserva, si extraña el aviso de reservas nuevas.
+- Cerrar el hueco residual del aviso al barbero (reserva mismo-día post-barrido con envío fallido) requeriría crons frecuentes (plan Pro) o webhook al insertar reserva.

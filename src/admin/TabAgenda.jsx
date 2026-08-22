@@ -282,7 +282,7 @@ export function TabAgenda({ supabase, barberiaId, usuario, barberia, tema: t, ba
             eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
             slotLabelFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
             displayEventTime={true}
-            dayMaxEvents={3}
+            dayMaxEvents={false}
             moreLinkText={(num) => `+${num} más`}
             firstDay={1}
             weekends={true}

@@ -48,6 +48,18 @@ export function TabAgenda({ supabase, barberiaId, usuario, barberia, tema: t, ba
 
   useEffect(() => { cargarDatos(); }, []);
 
+  // En móvil el calendario suele montar antes de que el contenedor tenga su ancho
+  // final; cuando los eventos llegan (async) FullCalendar puede dejar algunos SIN
+  // pintar aunque los datos estén correctos (síntoma: reservas que existen y bloquean
+  // la hora, pero no se ven en la agenda). Forzar un recálculo de tamaño cuando
+  // terminan de cargar los datos vuelve a pintar todos los eventos.
+  useEffect(() => {
+    if (cargando || !calendarRef.current) return;
+    const api = calendarRef.current.getApi();
+    const t = setTimeout(() => api.updateSize(), 60);
+    return () => clearTimeout(t);
+  }, [cargando, reservas, bloqueos, vista]);
+
   const cargarDatos = async () => {
     setCargando(true);
     try {
@@ -73,6 +85,16 @@ export function TabAgenda({ supabase, barberiaId, usuario, barberia, tema: t, ba
     filtroBarbero === "todos" ? true : r.barbero_id === filtroBarbero
   );
 
+  // Formatea un Date a string local naive "YYYY-MM-DDTHH:mm:ss" (sin zona horaria).
+  // Clave: start y end DEBEN estar en el mismo marco temporal. Antes el end usaba
+  // .toISOString() (UTC) mientras el start era naive-local → si el dispositivo del
+  // barbero tenía otra TZ, el evento quedaba con duración cero/negativa y FullCalendar
+  // lo descartaba (no se pintaba aunque la reserva existía y bloqueaba la hora).
+  const fmtLocal = (d) => {
+    const p = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  };
+
   const eventosCalendario = [
     ...reservasFiltradas.map((r) => {
       const color = getColorBarbero(r.barbero_id);
@@ -84,7 +106,7 @@ export function TabAgenda({ supabase, barberiaId, usuario, barberia, tema: t, ba
         id: r.id,
         title: r.cliente_nombre,
         start: fechaHoraInicio,
-        end: fechaFin.toISOString(),
+        end: fmtLocal(fechaFin),
         backgroundColor: esCancelada ? "#44403c" : color,
         borderColor: esCancelada ? "#44403c" : color,
         textColor: "#ffffff",

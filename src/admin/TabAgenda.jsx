@@ -64,9 +64,21 @@ export function TabAgenda({ supabase, barberiaId, usuario, barberia, tema: t, ba
     setCargando(true);
     try {
       const { data: brbs } = await supabase.from("barberos").select("*").eq("barberia_id", barberiaId).order("nombre");
-      let rsvQuery = supabase.from("reservas").select("*, barbero:barbero_id(nombre), servicio:servicio_id(nombre, precio)").eq("barberia_id", barberiaId);
-      if (barberoFijo) rsvQuery = rsvQuery.eq("barbero_id", barberoFijo);
-      const { data: rsvs } = await rsvQuery.order("fecha", { ascending: true });
+      // Supabase/PostgREST corta las consultas en 1000 filas por defecto (y .limit()
+      // también queda topado por el max_rows del servidor). Con >1000 reservas, las
+      // más nuevas se descartaban en silencio y no se pintaban en la agenda (aunque
+      // sí bloqueaban la hora, que se calcula en otra query). Paginamos con .range()
+      // para traer TODAS las reservas sin importar cuántas haya.
+      const PAGE = 1000;
+      let rsvs = [];
+      for (let desde = 0; ; desde += PAGE) {
+        let rsvQuery = supabase.from("reservas").select("*, barbero:barbero_id(nombre), servicio:servicio_id(nombre, precio)").eq("barberia_id", barberiaId);
+        if (barberoFijo) rsvQuery = rsvQuery.eq("barbero_id", barberoFijo);
+        const { data: pagina, error: errPag } = await rsvQuery.order("fecha", { ascending: true }).range(desde, desde + PAGE - 1);
+        if (errPag) throw errPag;
+        rsvs = rsvs.concat(pagina || []);
+        if (!pagina || pagina.length < PAGE) break;
+      }
       const hoy = hoyChile();
       const { data: blqs } = await supabase.from("bloqueos_horarios").select("*, barbero:barbero_id(nombre)").eq("barberia_id", barberiaId).gte("fecha_fin", hoy);
       setBarberos(brbs || []);

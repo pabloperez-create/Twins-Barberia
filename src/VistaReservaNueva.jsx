@@ -311,6 +311,11 @@ export function VistaReservaNueva({ supabase, barberiaId }) {
     if (horaTest < horaInicio) return false;
     if (horaTest.getTime() + duracionTotal * 60000 > horaFin.getTime()) return false;
 
+    // La hora debe caer en la grilla propia del barbero (su inicio + múltiplos de su intervalo).
+    // Sin esto, en modo "Cualquiera" se le asignaba a un barbero de 60 min una hora como 12:30.
+    const intervalo = barbero?.intervalo_minutos || 15;
+    if (((horaTest - horaInicio) / 60000) % intervalo !== 0) return false;
+
     const choca = reservasDelBarbero.some((r) => {
       const horaRes = new Date(`2000-01-01 ${r.hora_inicio}`);
       const horaResEnd = new Date(horaRes.getTime() + r.duracion_minutos * 60000);
@@ -418,33 +423,32 @@ export function VistaReservaNueva({ supabase, barberiaId }) {
       if (barberiaCerrada) { setHorariosBarbero([]); return; }
 
       const diaSemana = DIAS_KEY[new Date(fecha + "T12:00:00").getDay()];
-      let horaMinima = null, horaMaxima = null;
-      barberos.forEach((b) => {
-        const horarioDia = b?.horarios_semana?.[diaSemana];
-        if (horarioDia && !horarioDia.activo) return;
-        const inicio = new Date(`2000-01-01 ${horarioDia?.inicio || b.horario_inicio}`);
-        const fin    = new Date(`2000-01-01 ${horarioDia?.fin    || b.horario_fin}`);
-        if (!horaMinima || inicio < horaMinima) horaMinima = inicio;
-        if (!horaMaxima || fin > horaMaxima) horaMaxima = fin;
-      });
-      if (!horaMinima || !horaMaxima) { setHorariosBarbero([]); return; }
 
-      const horariosDisponibles = [];
-      let hora = new Date(horaMinima);
-      const duracionTotal = calcularDuracionTotal();
-      while (hora.getTime() + duracionTotal * 60000 <= horaMaxima.getTime()) {
-        const horaStr = hora.toTimeString().slice(0, 5);
-        const hayAlguienDisponible = barberos.some((barbero) => {
-          const horarioDia = barbero?.horarios_semana?.[diaSemana];
-          if (horarioDia && !horarioDia.activo) return false;
-          const reservasDelBarbero = reservasExistentes.filter((r) => r.barbero_id === barbero.id);
-          const bloqueosDelBarbero = obtenerBloqueosDelBarbero(barbero.id, fecha, todosLosBloqueos);
-          return barberoDisponibleEnHora(barbero, horaStr, reservasDelBarbero, bloqueosDelBarbero, horarioDia?.inicio || null, horarioDia?.fin || null);
-        });
-        if (hayAlguienDisponible && !horaYaPaso(fecha, horaStr)) horariosDisponibles.push(horaStr);
-        hora.setMinutes(hora.getMinutes() + (barberos[0]?.intervalo_minutos || 15));
-      }
-      setHorariosBarbero(horariosDisponibles);
+      // Unión de las grillas propias de cada barbero (cada uno con su inicio e intervalo),
+      // en vez de una grilla única con el intervalo de barberos[0].
+      const horasLibres = new Set();
+      barberos.forEach((barbero) => {
+        const horarioDia = barbero?.horarios_semana?.[diaSemana];
+        if (horarioDia && !horarioDia.activo) return;
+        const inicioStr = horarioDia?.inicio || barbero.horario_inicio;
+        const finStr    = horarioDia?.fin    || barbero.horario_fin;
+        const reservasDelBarbero = reservasExistentes.filter((r) => r.barbero_id === barbero.id);
+        const bloqueosDelBarbero = obtenerBloqueosDelBarbero(barbero.id, fecha, todosLosBloqueos);
+        const fin = new Date(`2000-01-01 ${finStr}`);
+        const hora = new Date(`2000-01-01 ${inicioStr}`);
+        while (hora < fin) {
+          const horaStr = hora.toTimeString().slice(0, 5);
+          if (
+            !horasLibres.has(horaStr) &&
+            !horaYaPaso(fecha, horaStr) &&
+            barberoDisponibleEnHora(barbero, horaStr, reservasDelBarbero, bloqueosDelBarbero, horarioDia?.inicio || null, horarioDia?.fin || null)
+          ) {
+            horasLibres.add(horaStr);
+          }
+          hora.setMinutes(hora.getMinutes() + (barbero?.intervalo_minutos || 15));
+        }
+      });
+      setHorariosBarbero([...horasLibres].sort());
     } catch (err) {
       console.error("Error cargando horarios (cualquier barbero):", err);
     }

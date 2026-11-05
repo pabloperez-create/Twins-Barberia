@@ -133,6 +133,20 @@ export default async function handler(req, res) {
             </td>
           </tr>`;
 
+    // Botón de cancelar/reagendar: mismo tamaño que el de WhatsApp pero con borde (secundario),
+    // para que sea visible sin competir con la acción principal.
+    const bloqueCancelar = `
+    <tr>
+      <td style="padding: 6px 30px 10px 30px; text-align: center;">
+        <p style="margin: 0 0 12px 0; color: ${esSalon ? "#57534e" : "#d6d3d1"}; font-size: 14px;">
+          ¿No puedes asistir?
+        </p>
+        <a href="${cancelUrl}" target="_blank" style="display: inline-block; background-color: transparent; color: ${accentColor}; border: 2px solid ${accentColor}; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px;">
+          Cancelar o reagendar
+        </a>
+      </td>
+    </tr>`;
+
     const bloqueWhatsApp = mostrarWhatsApp ? `
     <tr>
       <td style="padding: 20px 30px 10px 30px; text-align: center;">
@@ -144,6 +158,7 @@ export default async function handler(req, res) {
         </a>
       </td>
     </tr>
+    ${bloqueCancelar}
     <tr>
       <td style="padding: 10px 30px 30px 30px; text-align: center;">
         <p style="margin: 0; color: #a8a29e; font-size: 13px; font-style: italic;">
@@ -151,6 +166,7 @@ export default async function handler(req, res) {
         </p>
       </td>
     </tr>` : `
+    ${bloqueCancelar}
     <tr>
       <td style="padding: 20px 30px 30px 30px; text-align: center;">
         <p style="margin: 0; color: #a8a29e; font-size: 13px; font-style: italic;">
@@ -210,10 +226,7 @@ export default async function handler(req, res) {
     ${bloqueWhatsApp}
     <tr>
       <td style="background-color: ${esSalon ? "#fafaf9" : "#1c1917"}; padding: 24px 30px; text-align: center; border-top: 1px solid ${esSalon ? "#e7e5e4" : "#292524"};">
-        <p style="margin: 0; color: ${esSalon ? "#78716c" : "#a8a29e"}; font-size: 12px;">
-          ¿No puedes asistir? <a href="${cancelUrl}" style="color: ${accentColor}; text-decoration: underline;">Cancela o reagenda tu reserva aquí</a>
-        </p>
-        <p style="margin: 8px 0 0 0; color: #a8a29e; font-size: 11px;">
+        <p style="margin: 0; color: #a8a29e; font-size: 11px;">
           Reserva ID: ${reservaId}
         </p>
       </td>
